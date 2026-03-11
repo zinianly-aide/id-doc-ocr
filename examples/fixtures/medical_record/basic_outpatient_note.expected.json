@@ -1,0 +1,28 @@
+{
+  "plugin": "medical_record",
+  "ocr_result": {
+    "lines": [
+      {"text": "杭州市第一人民医院", "score": 0.99},
+      {"text": "姓名: 张三", "score": 0.98},
+      {"text": "性别: 男", "score": 0.97},
+      {"text": "年龄: 34岁", "score": 0.97},
+      {"text": "就诊日期: 2026年03月11日", "score": 0.96},
+      {"text": "科室: 呼吸内科", "score": 0.96},
+      {"text": "诊断: 上呼吸道感染；发热", "score": 0.95},
+      {"text": "用药: 对乙酰氨基酚、阿莫西林", "score": 0.95},
+      {"text": "备注: 建议多饮水休息", "score": 0.94}
+    ]
+  },
+  "expected_fields": {
+    "doc_type": "medical_record",
+    "hospital_name": "杭州市第一人民医院",
+    "patient_name": "张三",
+    "gender": "男",
+    "age": "34",
+    "visit_date": "2026-03-11",
+    "department": "呼吸内科",
+    "diagnosis": ["上呼吸道感染", "发热"],
+    "medications": ["对乙酰氨基酚", "阿莫西林"],
+    "notes": "建议多饮水休息"
+  }
+}

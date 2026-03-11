@@ -1,17 +1,17 @@
 {
   "schema_version": "0.2.0",
   "report_name": "parser_regression",
-  "generated_at": "2026-03-11T09:58:04.110467+00:00",
+  "generated_at": "2026-03-11T10:05:00+00:00",
   "runner": {
     "pipeline": "DemoPipelineRunner",
     "ocr_backend": "rapidocr"
   },
   "totals": {
-    "num_fixtures": 1,
-    "num_passed": 1,
+    "num_fixtures": 3,
+    "num_passed": 3,
     "num_failed": 0,
-    "num_fields": 8,
-    "num_matched_fields": 8,
+    "num_fields": 24,
+    "num_matched_fields": 24,
     "overall_field_exact_match_rate": 1.0,
     "status": "pass"
   },
@@ -25,54 +25,52 @@
       "num_matched_fields": 8,
       "field_exact_match_rate": 1.0,
       "fields": [
-        {
-          "field": "document_variant",
-          "expected": "boarding_pass",
-          "predicted": "boarding_pass",
-          "matched": true
-        },
-        {
-          "field": "passenger_name",
-          "expected": "ZHANGQIWEI",
-          "predicted": "ZHANGQIWEI",
-          "matched": true
-        },
-        {
-          "field": "flight_number",
-          "expected": "MU2379",
-          "predicted": "MU2379",
-          "matched": true
-        },
-        {
-          "field": "ticket_number",
-          "expected": "7813699238489/1",
-          "predicted": "7813699238489/1",
-          "matched": true
-        },
-        {
-          "field": "departure_date",
-          "expected": "03DEC",
-          "predicted": "03DEC",
-          "matched": true
-        },
-        {
-          "field": "departure_airport",
-          "expected": "TAIYUAN",
-          "predicted": "TAIYUAN",
-          "matched": true
-        },
-        {
-          "field": "arrival_airport",
-          "expected": "FUZHOU",
-          "predicted": "FUZHOU",
-          "matched": true
-        },
-        {
-          "field": "gate",
-          "expected": "G11",
-          "predicted": "G11",
-          "matched": true
-        }
+        {"field": "document_variant", "expected": "boarding_pass", "predicted": "boarding_pass", "matched": true},
+        {"field": "passenger_name", "expected": "ZHANGQIWEI", "predicted": "ZHANGQIWEI", "matched": true},
+        {"field": "flight_number", "expected": "MU2379", "predicted": "MU2379", "matched": true},
+        {"field": "ticket_number", "expected": "7813699238489/1", "predicted": "7813699238489/1", "matched": true},
+        {"field": "departure_date", "expected": "03DEC", "predicted": "03DEC", "matched": true},
+        {"field": "departure_airport", "expected": "TAIYUAN", "predicted": "TAIYUAN", "matched": true},
+        {"field": "arrival_airport", "expected": "FUZHOU", "predicted": "FUZHOU", "matched": true},
+        {"field": "gate", "expected": "G11", "predicted": "G11", "matched": true}
+      ]
+    },
+    {
+      "fixture": "examples/fixtures/train_ticket/basic_text_ticket.expected.json",
+      "sample": "<inline_ocr_result>",
+      "plugin": "train_ticket",
+      "status": "pass",
+      "num_fields": 6,
+      "num_matched_fields": 6,
+      "field_exact_match_rate": 1.0,
+      "fields": [
+        {"field": "document_variant", "expected": "train_ticket", "predicted": "train_ticket", "matched": true},
+        {"field": "train_number", "expected": "G1234", "predicted": "G1234", "matched": true},
+        {"field": "departure_station", "expected": "SHANGHAI", "predicted": "SHANGHAI", "matched": true},
+        {"field": "arrival_station", "expected": "HANGZHOU", "predicted": "HANGZHOU", "matched": true},
+        {"field": "departure_time", "expected": "2026-03-11", "predicted": "2026-03-11", "matched": true},
+        {"field": "ticket_number", "expected": null, "predicted": null, "matched": true}
+      ]
+    },
+    {
+      "fixture": "examples/fixtures/medical_record/basic_outpatient_note.expected.json",
+      "sample": "<inline_ocr_result>",
+      "plugin": "medical_record",
+      "status": "pass",
+      "num_fields": 10,
+      "num_matched_fields": 10,
+      "field_exact_match_rate": 1.0,
+      "fields": [
+        {"field": "doc_type", "expected": "medical_record", "predicted": "medical_record", "matched": true},
+        {"field": "hospital_name", "expected": "杭州市第一人民医院", "predicted": "杭州市第一人民医院", "matched": true},
+        {"field": "patient_name", "expected": "张三", "predicted": "张三", "matched": true},
+        {"field": "gender", "expected": "男", "predicted": "男", "matched": true},
+        {"field": "age", "expected": "34", "predicted": "34", "matched": true},
+        {"field": "visit_date", "expected": "2026-03-11", "predicted": "2026-03-11", "matched": true},
+        {"field": "department", "expected": "呼吸内科", "predicted": "呼吸内科", "matched": true},
+        {"field": "diagnosis", "expected": ["上呼吸道感染", "发热"], "predicted": ["上呼吸道感染", "发热"], "matched": true},
+        {"field": "medications", "expected": ["对乙酰氨基酚", "阿莫西林"], "predicted": ["对乙酰氨基酚", "阿莫西林"], "matched": true},
+        {"field": "notes", "expected": "建议多饮水休息", "predicted": "建议多饮水休息", "matched": true}
       ]
     }
   ]

@@ -1,0 +1,22 @@
+{
+  "plugin": "train_ticket",
+  "ocr_result": {
+    "lines": [
+      {"text": "中国铁路客票", "score": 0.99},
+      {"text": "G1234", "score": 0.99},
+      {"text": "SHANGHAI", "score": 0.98},
+      {"text": "HANGZHOU", "score": 0.98},
+      {"text": "2026-03-11 08:30", "score": 0.97},
+      {"text": "二等座 05车12A号", "score": 0.96},
+      {"text": "票号 E123456789", "score": 0.95}
+    ]
+  },
+  "expected_fields": {
+    "document_variant": "train_ticket",
+    "train_number": "G1234",
+    "departure_station": "SHANGHAI",
+    "arrival_station": "HANGZHOU",
+    "departure_time": "2026-03-11",
+    "ticket_number": null
+  }
+}
