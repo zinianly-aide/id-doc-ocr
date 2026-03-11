@@ -1,6 +1,7 @@
 from id_doc_ocr.core.contracts import PluginMetadata
 from id_doc_ocr.plugins.base import BaseDocumentPlugin
 from id_doc_ocr.plugins.train_ticket.validator import validate_train_ticket
+from id_doc_ocr.plugins.train_ticket.parser import parse_train_ticket_fields
 
 
 class TrainTicketPlugin(BaseDocumentPlugin):
@@ -13,6 +14,9 @@ class TrainTicketPlugin(BaseDocumentPlugin):
 
     def get_schema_name(self) -> str:
         return 'train_ticket'
+
+    def parse_fields(self, ocr_result: dict) -> dict:
+        return parse_train_ticket_fields(ocr_result)
 
     def validate_fields(self, fields: dict) -> dict:
         return validate_train_ticket(fields).model_dump()

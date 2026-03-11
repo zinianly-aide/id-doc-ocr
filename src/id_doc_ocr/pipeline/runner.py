@@ -22,18 +22,28 @@ class DemoPipelineRunner:
 
     def run(self, plugin_name: str, image: bytes | str | Path, fields: dict | None = None) -> dict[str, Any]:
         plugin = registry.get(plugin_name)
-        fields = fields or {}
+        provided_fields = fields or {}
         ocr_result = self.ocr.infer(image)
+        parsed_fields = self.parse_plugin_fields(plugin, ocr_result)
+        merged_fields = {**parsed_fields, **provided_fields}
         return {
             "plugin": plugin.metadata.name,
             "schema": plugin.get_schema_name(),
             "ocr_backend": self.ocr_backend,
             "ocr": ocr_result,
+            "parsed_fields": parsed_fields,
+            "merged_fields": merged_fields,
             "vlm": self.vlm.infer(b"" if not isinstance(image, (bytes, bytearray)) else image),
             "region_ocr": self.region_ocr.infer(b"" if not isinstance(image, (bytes, bytearray)) else image),
             "annotation": self.to_internal_annotation(plugin_name, image, ocr_result),
-            "validation": plugin.validate_fields(fields),
+            "validation": plugin.validate_fields(merged_fields),
         }
+
+    def parse_plugin_fields(self, plugin: Any, ocr_result: dict[str, Any]) -> dict[str, Any]:
+        parse_fn = getattr(plugin, "parse_fields", None)
+        if callable(parse_fn):
+            return parse_fn(ocr_result)
+        return {}
 
     def to_internal_annotation(
         self, plugin_name: str, image: bytes | str | Path, ocr_result: dict[str, Any]
