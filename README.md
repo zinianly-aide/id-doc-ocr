@@ -27,6 +27,29 @@ A self-hosted OCR system for identity documents with a production-oriented archi
 
 See [docs/architecture.md](docs/architecture.md).
 
+## Regression track
+
+Public smoke-regression assets and fixture-based parser regression are documented in [docs/regression.md](docs/regression.md).
+
+## PaddleOCR-VL track
+
+The repository now includes a concrete PaddleOCR-VL integration path with:
+
+- optional runtime detection
+- normalized VLM output (`text`, `layout`, `kv`, `confidence`)
+- demo runner wiring with `vlm_backend="auto"`
+- graceful fallback when Paddle runtime is not installed
+
+Setup and caveats: [docs/paddleocr-vl.md](docs/paddleocr-vl.md).
+
+## OCR backbones today
+
+- `mock`: default lightweight stub for pipeline development
+- `rapidocr`: working ONNX runtime baseline for local smoke tests
+- `paddleocr`: concrete adapter layer with lazy runtime import, normalization, and demo wiring
+
+For PaddleOCR local setup and environment knobs, see [docs/paddleocr-setup.md](docs/paddleocr-setup.md).
+
 ## Initial scope
 
 Phase 1 focuses on:

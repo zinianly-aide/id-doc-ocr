@@ -22,6 +22,14 @@ ocr = [
   "rapidocr_onnxruntime>=1.4.4",
   "pillow>=10.0",
 ]
+paddle-vl = [
+  "paddleocr>=3.0.0",
+  "pillow>=10.0",
+]
+paddle = [
+  "paddleocr>=2.7.3",
+  "pillow>=10.0",
+]
 
 [project.scripts]
 id-doc-ocr = "id_doc_ocr.cli.main:main"

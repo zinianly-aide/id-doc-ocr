@@ -3,24 +3,49 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from id_doc_ocr import plugins as _plugins  # noqa: F401
 from id_doc_ocr.backbones.mock import MockGOTOCRAdapter, MockPaddleOCRAdapter, MockPaddleOCRVLAdapter
+from id_doc_ocr.backbones.paddleocr_vl import PaddleOCRVLAdapter
 from id_doc_ocr.core.registry import registry
 from id_doc_ocr.datasets.schema import FieldAnnotation, InternalAnnotation, RegionAnnotation
 from id_doc_ocr.tools.failure_log import write_failure_case
 
 
 class DemoPipelineRunner:
-    def __init__(self, ocr_backend: str = "mock", failure_dir: str | None = None) -> None:
+    def __init__(
+        self,
+        ocr_backend: str = "mock",
+        vlm_backend: str = "auto",
+        failure_dir: str | None = None,
+    ) -> None:
         self.ocr_backend = ocr_backend
+        self.vlm_backend = vlm_backend
         self.failure_dir = failure_dir
+        self.ocr = self._build_ocr_backend(ocr_backend)
+        self.vlm = self._build_vlm_backend(vlm_backend)
+        self.region_ocr = MockGOTOCRAdapter()
+
+    def _build_ocr_backend(self, ocr_backend: str) -> Any:
         if ocr_backend == "rapidocr":
             from id_doc_ocr.backbones.rapidocr import RapidOCRAdapter
 
-            self.ocr = RapidOCRAdapter()
-        else:
-            self.ocr = MockPaddleOCRAdapter()
-        self.vlm = MockPaddleOCRVLAdapter()
-        self.region_ocr = MockGOTOCRAdapter()
+            return RapidOCRAdapter()
+        if ocr_backend == "paddleocr":
+            from id_doc_ocr.backbones.paddleocr import PaddleOCRAdapter
+
+            return PaddleOCRAdapter()
+        return MockPaddleOCRAdapter()
+
+    def _build_vlm_backend(self, vlm_backend: str) -> Any:
+        if vlm_backend == "mock":
+            return MockPaddleOCRVLAdapter()
+        if vlm_backend in {"paddleocr_vl", "auto"}:
+            adapter = PaddleOCRVLAdapter(auto_init=vlm_backend != "mock")
+            if vlm_backend == "paddleocr_vl":
+                return adapter
+            if adapter.is_runtime_available():
+                return adapter
+        return MockPaddleOCRVLAdapter()
 
     def run(self, plugin_name: str, image: bytes | str | Path, fields: dict | None = None) -> dict[str, Any]:
         plugin = registry.get(plugin_name)
@@ -28,14 +53,16 @@ class DemoPipelineRunner:
         ocr_result = self.ocr.infer(image)
         parsed_fields = self.parse_plugin_fields(plugin, ocr_result)
         merged_fields = {**parsed_fields, **provided_fields}
+        vlm_result = self.vlm.infer(image)
         result = {
             "plugin": plugin.metadata.name,
             "schema": plugin.get_schema_name(),
             "ocr_backend": self.ocr_backend,
+            "vlm_backend": getattr(self.vlm, "info", None).name if getattr(self.vlm, "info", None) else self.vlm_backend,
             "ocr": ocr_result,
             "parsed_fields": parsed_fields,
             "merged_fields": merged_fields,
-            "vlm": self.vlm.infer(b"" if not isinstance(image, (bytes, bytearray)) else image),
+            "vlm": vlm_result,
             "region_ocr": self.region_ocr.infer(b"" if not isinstance(image, (bytes, bytearray)) else image),
             "annotation": self.to_internal_annotation(plugin_name, image, ocr_result),
             "validation": plugin.validate_fields(merged_fields),
