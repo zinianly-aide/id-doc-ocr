@@ -1,0 +1,20 @@
+{
+  "samples": [
+    {
+      "sample_id": "mr-001",
+      "doc_type": "medical_record",
+      "image_path": "examples/medical_record_001.jpg",
+      "annotation_path": "examples/medical_record_001.json",
+      "split": "train",
+      "tags": ["blur"]
+    },
+    {
+      "sample_id": "tt-001",
+      "doc_type": "train_ticket",
+      "image_path": "examples/train_ticket_001.jpg",
+      "annotation_path": "examples/train_ticket_001.json",
+      "split": "val",
+      "tags": ["cropped"]
+    }
+  ]
+}

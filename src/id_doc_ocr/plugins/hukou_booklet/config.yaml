@@ -1,3 +1,16 @@
 name: hukou_booklet
 version: 0.1.0
-fields: []
+fields:
+  - household_id
+  - householder_name
+  - address
+  - member_name
+  - relation_to_head
+  - gender
+  - birth_date
+  - id_number
+quality_rules:
+  - blur
+  - glare
+  - shadow
+  - page_curvature

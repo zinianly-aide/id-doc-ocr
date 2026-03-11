@@ -1,3 +1,16 @@
 name: train_ticket
 version: 0.1.0
-fields: []
+fields:
+  - ticket_number
+  - passenger_name
+  - id_number
+  - train_number
+  - departure_station
+  - arrival_station
+  - departure_time
+  - seat_no
+  - fare
+quality_rules:
+  - blur
+  - low_contrast
+  - cropped

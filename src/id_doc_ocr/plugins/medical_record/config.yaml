@@ -1,3 +1,16 @@
 name: medical_record
 version: 0.1.0
-fields: []
+fields:
+  - hospital_name
+  - patient_name
+  - gender
+  - age
+  - visit_date
+  - department
+  - diagnosis
+  - medications
+  - notes
+quality_rules:
+  - blur
+  - glare
+  - cropped
