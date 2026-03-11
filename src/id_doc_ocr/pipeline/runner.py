@@ -5,6 +5,7 @@ from typing import Any
 
 from id_doc_ocr import plugins as _plugins  # noqa: F401
 from id_doc_ocr.backbones.mock import MockGOTOCRAdapter, MockPaddleOCRAdapter, MockPaddleOCRVLAdapter
+from id_doc_ocr.backbones.paddleocr import PaddleOCRAdapter
 from id_doc_ocr.backbones.paddleocr_vl import PaddleOCRVLAdapter
 from id_doc_ocr.core.registry import registry
 from id_doc_ocr.datasets.schema import FieldAnnotation, InternalAnnotation, RegionAnnotation
