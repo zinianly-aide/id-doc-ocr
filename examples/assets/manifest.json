@@ -1,0 +1,25 @@
+{
+  "name": "public-regression-assets",
+  "version": "0.1.0",
+  "source": "PaddleOCR public repository examples",
+  "samples": [
+    {"sample_id": "boarding-00006737", "category": "boarding_pass", "path": "examples/assets/boarding_pass/paddle_boarding_00006737.jpg", "kind": "boarding_pass"},
+    {"sample_id": "doc-ch-1", "category": "doc", "path": "examples/assets/doc/paddle_doc_ch_doc1.jpg", "kind": "document"},
+    {"sample_id": "doc-ch-3", "category": "doc", "path": "examples/assets/doc/paddle_doc_ch_doc3.jpg", "kind": "document"},
+    {"sample_id": "doc-cmb", "category": "doc", "path": "examples/assets/doc/paddle_doc_cmb_demo.jpg", "kind": "document"},
+    {"sample_id": "xfund-zh-0", "category": "multilingual", "path": "examples/assets/multilingual/paddle_xfund_zh_0.jpg", "kind": "form"},
+    {"sample_id": "xfund-zh-1", "category": "multilingual", "path": "examples/assets/multilingual/paddle_xfund_zh_1.jpg", "kind": "form"},
+    {"sample_id": "funsd-40534", "category": "multilingual", "path": "examples/assets/multilingual/paddle_funsd_00040534.jpg", "kind": "form"},
+    {"sample_id": "funsd-70353", "category": "multilingual", "path": "examples/assets/multilingual/paddle_funsd_00070353.jpg", "kind": "form"},
+    {"sample_id": "receipt-1", "category": "receipt", "path": "examples/assets/receipt/paddle_receipt_1.jpeg", "kind": "receipt"},
+    {"sample_id": "receipt-2769", "category": "receipt", "path": "examples/assets/receipt/paddle_receipt_2769.jpeg", "kind": "receipt"},
+    {"sample_id": "table-tal-1", "category": "table", "path": "examples/assets/table/paddle_table_tal_1.jpg", "kind": "table"},
+    {"sample_id": "table-tal-2", "category": "table", "path": "examples/assets/table/paddle_table_tal_2.jpg", "kind": "table"},
+    {"sample_id": "tablebank-004", "category": "table", "path": "examples/assets/table/paddle_tablebank_004.png", "kind": "table"},
+    {"sample_id": "tablebank-005", "category": "table", "path": "examples/assets/table/paddle_tablebank_005.png", "kind": "table"},
+    {"sample_id": "formula-hme-00", "category": "formula", "path": "examples/assets/formula/paddle_formula_hme_00.jpg", "kind": "formula"},
+    {"sample_id": "formula-hme-01", "category": "formula", "path": "examples/assets/formula/paddle_formula_hme_01.jpg", "kind": "formula"},
+    {"sample_id": "street-rec-1", "category": "street", "path": "examples/assets/street/paddle_street_rec_1.png", "kind": "scene_text"},
+    {"sample_id": "street-rec-2", "category": "street", "path": "examples/assets/street/paddle_street_rec_2.png", "kind": "scene_text"}
+  ]
+}
