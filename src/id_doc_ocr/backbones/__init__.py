@@ -1,0 +1,1 @@
+"""Backbone adapter layer."""
