@@ -12,22 +12,34 @@ This repo now includes a concrete `PaddleOCRAdapter` integration layer, but it s
 
 ## Local install options
 
+Requirements observed on this machine:
+
+- Python `>=3.10` (the project metadata already requires this; a Python 3.9 venv will not satisfy the package)
+- `paddleocr` alone is not enough for real inference; you also need a matching `paddlepaddle` runtime
+
 Pick one of these approaches depending on how heavy you want the environment to be.
 
 ### Option A: project extras
 
 ```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -U pip setuptools wheel
 pip install -e '.[dev,paddle]'
+pip install paddlepaddle
 ```
 
 ### Option B: manual install
 
 ```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -U pip setuptools wheel
 pip install -e '.[dev]'
-pip install paddleocr
+pip install paddleocr paddlepaddle
 ```
 
-Depending on your platform, you may also need the matching Paddle / PaddlePaddle runtime recommended by PaddleOCR.
+Depending on your platform, you may need to choose a specific `paddlepaddle` build/version recommended by PaddleOCR.
 
 ## Environment knobs
 
@@ -40,8 +52,15 @@ Example:
 ```bash
 export ID_DOC_OCR_PADDLE_LANG=en
 export ID_DOC_OCR_PADDLE_USE_ANGLE_CLS=1
+export PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK=True
 python examples/run_paddleocr_demo.py
 ```
+
+Notes from local validation:
+
+- with PaddleOCR 3.x, the adapter now translates the repo's legacy config knobs to the newer constructor/inference API
+- first run downloads model assets into `~/.paddlex/official_models/`
+- if your environment routes HTTPS through a SOCKS proxy, you may also need `pip install 'httpx[socks]'`
 
 ## Demo usage
 

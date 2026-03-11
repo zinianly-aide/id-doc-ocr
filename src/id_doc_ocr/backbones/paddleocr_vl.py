@@ -48,26 +48,32 @@ class PaddleOCRVLAdapter(OCRBackboneAdapter):
             self._runtime_error = f"paddleocr import failed: {exc}"
             return None
 
+        errors: list[str] = []
         for class_name in ("PaddleOCRVL", "PaddleOCR"):
             candidate = getattr(paddleocr, class_name, None)
             if candidate is None:
                 continue
             try:
-                kwargs = self._filter_kwargs(candidate, self._default_init_kwargs())
+                kwargs = self._filter_kwargs(candidate, self._default_init_kwargs(class_name))
                 engine = candidate(**kwargs)
                 self._runtime_class = class_name
+                self._runtime_error = None
                 return engine
             except Exception as exc:
-                self._runtime_error = f"{class_name} init failed: {exc}"
+                errors.append(f"{class_name} init failed: {exc}")
+
+        if errors:
+            self._runtime_error = " | ".join(errors)
         return None
 
-    def _default_init_kwargs(self) -> dict[str, Any]:
+    def _default_init_kwargs(self, runtime_class: str) -> dict[str, Any]:
         defaults = {
-            "model_name": self.model_name,
             "use_doc_orientation_classify": False,
             "use_doc_unwarping": False,
             "use_textline_orientation": False,
         }
+        if runtime_class == "PaddleOCRVL":
+            defaults["model_name"] = self.model_name
         defaults.update(self.engine_kwargs)
         return defaults
 
@@ -110,10 +116,11 @@ class PaddleOCRVLAdapter(OCRBackboneAdapter):
         return normalized
 
     def _invoke_engine(self, image: bytes | str | Path) -> Any:
+        normalized_image = str(image) if isinstance(image, Path) else image
         for method_name in ("predict", "ocr"):
             method = getattr(self._engine, method_name, None)
             if callable(method):
-                return method(image)
+                return method(normalized_image)
         raise RuntimeError("PaddleOCR-VL engine does not expose a supported inference method (predict/ocr).")
 
     def _normalize_output(self, raw: Any) -> dict[str, Any]:

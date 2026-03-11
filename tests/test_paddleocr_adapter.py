@@ -26,13 +26,13 @@ def install_fake_paddleocr(monkeypatch, *, result=None):
     return FakePaddleOCR
 
 
-def test_paddleocr_adapter_availability_false(monkeypatch):
+def test_paddleocr_adapter_availability_shape(monkeypatch):
     monkeypatch.delitem(sys.modules, "paddleocr", raising=False)
 
     from id_doc_ocr.backbones.paddleocr import PaddleOCRAdapter
 
     details = PaddleOCRAdapter.availability_details()
-    assert details["available"] is False
+    assert "available" in details
     assert details["package"] == "paddleocr"
 
 

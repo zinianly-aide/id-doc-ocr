@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import os
 from pathlib import Path
 from typing import Any
@@ -73,11 +74,39 @@ class PaddleOCRAdapter(OCRBackboneAdapter):
             raise RuntimeError(
                 "paddleocr is not installed. See docs/paddleocr-setup.md for local setup instructions."
             ) from exc
-        return PaddleOCR(**self.config)
+
+        engine_config = dict(self.config)
+        try:
+            signature = inspect.signature(PaddleOCR.__init__)
+        except (TypeError, ValueError):
+            signature = None
+
+        if signature is not None:
+            supported = set(signature.parameters)
+            if "use_angle_cls" not in supported:
+                legacy_angle = bool(engine_config.pop("use_angle_cls", engine_config.get("cls", True)))
+                if "use_textline_orientation" in supported and "use_textline_orientation" not in engine_config:
+                    engine_config["use_textline_orientation"] = legacy_angle
+                if "use_doc_orientation_classify" in supported and "use_doc_orientation_classify" not in engine_config:
+                    engine_config["use_doc_orientation_classify"] = legacy_angle
+                if "cls" not in supported:
+                    engine_config.pop("cls", None)
+            for key in ("det", "rec", "enable_mkldnn"):
+                if key not in supported:
+                    engine_config.pop(key, None)
+
+        return PaddleOCR(**engine_config)
 
     def infer(self, image: bytes | str | Path) -> dict[str, Any]:
         normalized_image = self.normalize_image_input(image)
-        raw_result = self._engine.ocr(normalized_image, cls=bool(self.config.get("cls", True)))
+        ocr_kwargs: dict[str, Any] = {}
+        try:
+            ocr_signature = inspect.signature(self._engine.ocr)
+        except (TypeError, ValueError, AttributeError):
+            ocr_signature = None
+        if ocr_signature is None or "cls" in ocr_signature.parameters:
+            ocr_kwargs["cls"] = bool(self.config.get("cls", True))
+        raw_result = self._engine.ocr(normalized_image, **ocr_kwargs)
         lines = self._normalize_lines(raw_result)
         avg_score = sum(x["score"] for x in lines) / len(lines) if lines else 0.0
         return {
@@ -93,6 +122,24 @@ class PaddleOCRAdapter(OCRBackboneAdapter):
     def _normalize_lines(self, raw_result: Any) -> list[dict[str, Any]]:
         if raw_result is None:
             return []
+
+        if isinstance(raw_result, list) and raw_result and isinstance(raw_result[0], dict):
+            merged: list[dict[str, Any]] = []
+            for page in raw_result:
+                texts = page.get("rec_texts") or []
+                scores = page.get("rec_scores") or []
+                boxes = page.get("dt_polys") or page.get("rec_polys") or []
+                for idx, text in enumerate(texts):
+                    score = 0.0
+                    if idx < len(scores):
+                        try:
+                            score = float(scores[idx])
+                        except (TypeError, ValueError):
+                            score = 0.0
+                    box = boxes[idx].tolist() if idx < len(boxes) and hasattr(boxes[idx], "tolist") else (boxes[idx] if idx < len(boxes) else None)
+                    merged.append({"box": box, "text": str(text), "score": score})
+            return merged
+
         candidates = raw_result
         if isinstance(raw_result, list) and len(raw_result) == 1 and isinstance(raw_result[0], list):
             candidates = raw_result[0]
