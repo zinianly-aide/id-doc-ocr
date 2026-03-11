@@ -1,8 +1,12 @@
 import json
 from collections import defaultdict
+from datetime import datetime, timezone
 from pathlib import Path
 
 from id_doc_ocr.backbones.rapidocr import RapidOCRAdapter
+
+
+REPORT_PATH = Path("reports/asset_smoke_regression_latest.json")
 
 
 def summarize(results):
@@ -39,7 +43,9 @@ if __name__ == "__main__":
             "text_preview": result.get("text", "")[:120],
         })
     payload = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
         "summary": summarize(results),
         "results": results,
     }
+    REPORT_PATH.write_text(json.dumps(payload, ensure_ascii=False, indent=2))
     print(json.dumps(payload, ensure_ascii=False, indent=2))
