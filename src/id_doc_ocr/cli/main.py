@@ -5,6 +5,7 @@ import json
 
 from id_doc_ocr.core.registry import registry
 from id_doc_ocr.tools.dataset_quality import summarize_dataset
+from id_doc_ocr.tools.manifest_ops import build_manifest, split_manifest
 
 
 def cmd_list_plugins(_: argparse.Namespace) -> None:
@@ -27,6 +28,21 @@ def cmd_dataset_summary(args: argparse.Namespace) -> None:
     print(json.dumps(summarize_dataset(samples), ensure_ascii=False, indent=2))
 
 
+
+
+def cmd_manifest_build(args: argparse.Namespace) -> None:
+    with open(args.path, "r", encoding="utf-8") as f:
+        payload = json.load(f)
+    manifest = build_manifest(args.name, payload.get("samples", payload))
+    print(manifest.model_dump_json(indent=2))
+
+
+def cmd_manifest_split(args: argparse.Namespace) -> None:
+    with open(args.path, "r", encoding="utf-8") as f:
+        payload = json.load(f)
+    result = split_manifest(payload.get("samples", payload), train_ratio=args.train_ratio)
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="id-doc-ocr")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -41,6 +57,16 @@ def build_parser() -> argparse.ArgumentParser:
     p3 = sub.add_parser("dataset-summary")
     p3.add_argument("path")
     p3.set_defaults(func=cmd_dataset_summary)
+
+    p4 = sub.add_parser("manifest-build")
+    p4.add_argument("name")
+    p4.add_argument("path")
+    p4.set_defaults(func=cmd_manifest_build)
+
+    p5 = sub.add_parser("manifest-split")
+    p5.add_argument("path")
+    p5.add_argument("--train-ratio", type=float, default=0.8)
+    p5.set_defaults(func=cmd_manifest_split)
 
     return parser
 
