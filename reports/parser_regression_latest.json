@@ -1,9 +1,28 @@
 {
-  "num_fixtures": 1,
+  "schema_version": "0.2.0",
+  "report_name": "parser_regression",
+  "generated_at": "2026-03-11T09:58:04.110467+00:00",
+  "runner": {
+    "pipeline": "DemoPipelineRunner",
+    "ocr_backend": "rapidocr"
+  },
+  "totals": {
+    "num_fixtures": 1,
+    "num_passed": 1,
+    "num_failed": 0,
+    "num_fields": 8,
+    "num_matched_fields": 8,
+    "overall_field_exact_match_rate": 1.0,
+    "status": "pass"
+  },
   "results": [
     {
       "fixture": "examples/fixtures/boarding_pass/public_sample_00006737.expected.json",
+      "sample": "examples/assets/paddle_sample_doc_00006737.jpg",
       "plugin": "boarding_pass",
+      "status": "pass",
+      "num_fields": 8,
+      "num_matched_fields": 8,
       "field_exact_match_rate": 1.0,
       "fields": [
         {
@@ -56,6 +75,5 @@
         }
       ]
     }
-  ],
-  "overall_field_exact_match_rate": 1.0
+  ]
 }

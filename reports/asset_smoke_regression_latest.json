@@ -1,292 +1,515 @@
 {
-  "generated_at": "2026-03-11T08:04:46.612749+00:00",
+  "schema_version": "0.2.0",
+  "report_name": "asset_smoke_regression",
+  "generated_at": "2026-03-11T09:58:27.340244+00:00",
+  "runner": {
+    "ocr_backend": "rapidocr",
+    "manifest_path": "examples/assets/manifest.json"
+  },
+  "manifest": {
+    "name": "public-regression-assets",
+    "version": "0.2.0",
+    "source": "PaddleOCR public repository examples",
+    "num_samples": 27
+  },
+  "totals": {
+    "num_samples": 27,
+    "num_processed": 27,
+    "num_errors": 0,
+    "status": "pass"
+  },
   "summary": {
-    "boarding_pass": {
-      "count": 1,
-      "avg_confidence": 0.978,
-      "avg_num_lines": 72.0,
-      "min_confidence": 0.978,
-      "max_confidence": 0.978
+    "by_category": {
+      "boarding_pass": {
+        "count": 1,
+        "avg_confidence": 0.978,
+        "avg_num_lines": 72.0,
+        "min_confidence": 0.978,
+        "max_confidence": 0.978
+      },
+      "captcha": {
+        "count": 1,
+        "avg_confidence": 0.8166,
+        "avg_num_lines": 8.0,
+        "min_confidence": 0.8166,
+        "max_confidence": 0.8166
+      },
+      "char_rec": {
+        "count": 1,
+        "avg_confidence": 0.7245,
+        "avg_num_lines": 1.0,
+        "min_confidence": 0.7245,
+        "max_confidence": 0.7245
+      },
+      "doc": {
+        "count": 3,
+        "avg_confidence": 0.9732,
+        "avg_num_lines": 4.67,
+        "min_confidence": 0.9384,
+        "max_confidence": 0.9983
+      },
+      "formula": {
+        "count": 2,
+        "avg_confidence": 0.6698,
+        "avg_num_lines": 3.5,
+        "min_confidence": 0.6535,
+        "max_confidence": 0.6861
+      },
+      "layout": {
+        "count": 4,
+        "avg_confidence": 0.9548,
+        "avg_num_lines": 93.0,
+        "min_confidence": 0.9344,
+        "max_confidence": 0.9721
+      },
+      "license_plate": {
+        "count": 1,
+        "avg_confidence": 0.9949,
+        "avg_num_lines": 2.0,
+        "min_confidence": 0.9949,
+        "max_confidence": 0.9949
+      },
+      "multilingual": {
+        "count": 4,
+        "avg_confidence": 0.9656,
+        "avg_num_lines": 69.0,
+        "min_confidence": 0.9542,
+        "max_confidence": 0.9766
+      },
+      "receipt": {
+        "count": 2,
+        "avg_confidence": 0.9475,
+        "avg_num_lines": 40.5,
+        "min_confidence": 0.9378,
+        "max_confidence": 0.9571
+      },
+      "seal": {
+        "count": 2,
+        "avg_confidence": 0.9848,
+        "avg_num_lines": 29.0,
+        "min_confidence": 0.9723,
+        "max_confidence": 0.9974
+      },
+      "street": {
+        "count": 2,
+        "avg_confidence": 0.8965,
+        "avg_num_lines": 5.0,
+        "min_confidence": 0.8666,
+        "max_confidence": 0.9263
+      },
+      "table": {
+        "count": 4,
+        "avg_confidence": 0.9435,
+        "avg_num_lines": 58.5,
+        "min_confidence": 0.9135,
+        "max_confidence": 0.957
+      }
     },
-    "doc": {
-      "count": 3,
-      "avg_confidence": 0.9732,
-      "avg_num_lines": 4.67,
-      "min_confidence": 0.9384,
-      "max_confidence": 0.9983
-    },
-    "multilingual": {
-      "count": 4,
-      "avg_confidence": 0.9656,
-      "avg_num_lines": 69.0,
-      "min_confidence": 0.9542,
-      "max_confidence": 0.9766
-    },
-    "receipt": {
-      "count": 2,
-      "avg_confidence": 0.9475,
-      "avg_num_lines": 40.5,
-      "min_confidence": 0.9378,
-      "max_confidence": 0.9571
-    },
-    "table": {
-      "count": 4,
-      "avg_confidence": 0.9435,
-      "avg_num_lines": 58.5,
-      "min_confidence": 0.9135,
-      "max_confidence": 0.957
-    },
-    "formula": {
-      "count": 2,
-      "avg_confidence": 0.6698,
-      "avg_num_lines": 3.5,
-      "min_confidence": 0.6535,
-      "max_confidence": 0.6861
-    },
-    "street": {
-      "count": 2,
-      "avg_confidence": 0.8965,
-      "avg_num_lines": 5.0,
-      "min_confidence": 0.8666,
-      "max_confidence": 0.9263
-    },
-    "layout": {
-      "count": 4,
-      "avg_confidence": 0.9548,
-      "avg_num_lines": 93.0,
-      "min_confidence": 0.9344,
-      "max_confidence": 0.9721
-    },
-    "captcha": {
-      "count": 1,
-      "avg_confidence": 0.8166,
-      "avg_num_lines": 8.0,
-      "min_confidence": 0.8166,
-      "max_confidence": 0.8166
-    },
-    "license_plate": {
-      "count": 1,
-      "avg_confidence": 0.9949,
-      "avg_num_lines": 2.0,
-      "min_confidence": 0.9949,
-      "max_confidence": 0.9949
-    },
-    "seal": {
-      "count": 2,
-      "avg_confidence": 0.9848,
-      "avg_num_lines": 29.0,
-      "min_confidence": 0.9723,
-      "max_confidence": 0.9974
+    "by_kind": {
+      "boarding_pass": {
+        "count": 1,
+        "avg_confidence": 0.978,
+        "avg_num_lines": 72.0,
+        "min_confidence": 0.978,
+        "max_confidence": 0.978
+      },
+      "captcha": {
+        "count": 1,
+        "avg_confidence": 0.8166,
+        "avg_num_lines": 8.0,
+        "min_confidence": 0.8166,
+        "max_confidence": 0.8166
+      },
+      "document": {
+        "count": 3,
+        "avg_confidence": 0.9732,
+        "avg_num_lines": 4.67,
+        "min_confidence": 0.9384,
+        "max_confidence": 0.9983
+      },
+      "form": {
+        "count": 4,
+        "avg_confidence": 0.9656,
+        "avg_num_lines": 69.0,
+        "min_confidence": 0.9542,
+        "max_confidence": 0.9766
+      },
+      "formula": {
+        "count": 2,
+        "avg_confidence": 0.6698,
+        "avg_num_lines": 3.5,
+        "min_confidence": 0.6535,
+        "max_confidence": 0.6861
+      },
+      "layout": {
+        "count": 4,
+        "avg_confidence": 0.9548,
+        "avg_num_lines": 93.0,
+        "min_confidence": 0.9344,
+        "max_confidence": 0.9721
+      },
+      "license_plate": {
+        "count": 1,
+        "avg_confidence": 0.9949,
+        "avg_num_lines": 2.0,
+        "min_confidence": 0.9949,
+        "max_confidence": 0.9949
+      },
+      "receipt": {
+        "count": 2,
+        "avg_confidence": 0.9475,
+        "avg_num_lines": 40.5,
+        "min_confidence": 0.9378,
+        "max_confidence": 0.9571
+      },
+      "scene_text": {
+        "count": 3,
+        "avg_confidence": 0.8392,
+        "avg_num_lines": 3.67,
+        "min_confidence": 0.7245,
+        "max_confidence": 0.9263
+      },
+      "seal": {
+        "count": 2,
+        "avg_confidence": 0.9848,
+        "avg_num_lines": 29.0,
+        "min_confidence": 0.9723,
+        "max_confidence": 0.9974
+      },
+      "table": {
+        "count": 4,
+        "avg_confidence": 0.9435,
+        "avg_num_lines": 58.5,
+        "min_confidence": 0.9135,
+        "max_confidence": 0.957
+      }
     }
   },
+  "errors": [],
   "results": [
     {
       "sample_id": "boarding-00006737",
       "category": "boarding_pass",
       "kind": "boarding_pass",
+      "path": "examples/assets/boarding_pass/paddle_boarding_00006737.jpg",
+      "size_bytes": 217613,
+      "sha256": "d7d51c344a54f83aed49fdf93258a66e4bf2fcad24542c6cabda3c196bbf8c02",
       "num_lines": 72,
       "confidence": 0.9779550761543434,
-      "text_preview": "www.997700\nwww.997788.com\n中国收藏热线\n登机牌\nBOARDING\nPASS\nPASS\n登机牌\nBOARDING\n日期\n舱位\nCLASS\n序号SERIAL NO\n座位号\nSEAT NO.\n舱位\nCLASS\n序号\nSE"
+      "text_preview": "www.997700\nwww.997788.com\n中国收藏热线\n登机牌\nBOARDING\nPASS\nPASS\n登机牌\nBOARDING\n日期\n舱位\nCLASS\n序号SERIAL NO\n座位号\nSEAT NO.\n舱位\nCLASS\n序号\nSE",
+      "status": "ok"
+    },
+    {
+      "sample_id": "char-rec-0",
+      "category": "char_rec",
+      "kind": "scene_text",
+      "path": "examples/assets/paddle_sample_rec_0.jpg",
+      "size_bytes": 6369,
+      "sha256": "ce8e0a2d47df9d9bcfdfa912903beb374c480faa751b0b3bb63b95b0d1ca564c",
+      "num_lines": 1,
+      "confidence": 0.7245416045188904,
+      "text_preview": "口",
+      "status": "ok"
     },
     {
       "sample_id": "doc-ch-1",
       "category": "doc",
       "kind": "document",
+      "path": "examples/assets/doc/paddle_doc_ch_doc1.jpg",
+      "size_bytes": 2226,
+      "sha256": "19588f23a55ded05245de1fcfdfe2425b1ee913522d16d743d4f04306b878dee",
       "num_lines": 2,
       "confidence": 0.9827289804816246,
-      "text_preview": "如，\n和对旅游表演形式"
+      "text_preview": "如，\n和对旅游表演形式",
+      "status": "ok"
     },
     {
       "sample_id": "doc-ch-3",
       "category": "doc",
       "kind": "document",
+      "path": "examples/assets/doc/paddle_doc_ch_doc3.jpg",
+      "size_bytes": 2117,
+      "sha256": "e6ec7927162c3f138f43f5fd4ccf4fdaad6899a257098361e72356f76d062675",
       "num_lines": 2,
       "confidence": 0.9983009894688925,
-      "text_preview": "4年工作报告\n中指出"
+      "text_preview": "4年工作报告\n中指出",
+      "status": "ok"
     },
     {
       "sample_id": "doc-cmb",
       "category": "doc",
       "kind": "document",
+      "path": "examples/assets/doc/paddle_doc_cmb_demo.jpg",
+      "size_bytes": 92190,
+      "sha256": "7d444c81f4ee3d33270abc669502f1117c44a24de4b856e0b75f491c1d50bb3a",
       "num_lines": 10,
       "confidence": 0.9384459966255558,
-      "text_preview": "招商银行\n6225-1583\n6225\nMONTH/YEAR\nVALID\n071\nTHRU\nUnionPay\nMICHAEL\n银联"
+      "text_preview": "招商银行\n6225-1583\n6225\nMONTH/YEAR\nVALID\n071\nTHRU\nUnionPay\nMICHAEL\n银联",
+      "status": "ok"
     },
     {
       "sample_id": "xfund-zh-0",
       "category": "multilingual",
       "kind": "form",
+      "path": "examples/assets/multilingual/paddle_xfund_zh_0.jpg",
+      "size_bytes": 650714,
+      "sha256": "2ba146db051f082916cc69fe2abd59ac61299f2cbe9662cd283fa42259247502",
       "num_lines": 138,
       "confidence": 0.9766184290754999,
-      "text_preview": "汇丰晋信\n开放式基金账户业务申请表\n一机构\n2020.6.15\n受理时间：\n特别提示\n基金账号：\n（新开户免填）\n1.请在填表前仔细阅读有关基金的《基金合同》、最新《招募说明书》及《开\n放式基金业务规则》。请用黑色或蓝黑色钢笔或签字笔填写，"
+      "text_preview": "汇丰晋信\n开放式基金账户业务申请表\n一机构\n2020.6.15\n受理时间：\n特别提示\n基金账号：\n（新开户免填）\n1.请在填表前仔细阅读有关基金的《基金合同》、最新《招募说明书》及《开\n放式基金业务规则》。请用黑色或蓝黑色钢笔或签字笔填写，",
+      "status": "ok"
     },
     {
       "sample_id": "xfund-zh-1",
       "category": "multilingual",
       "kind": "form",
+      "path": "examples/assets/multilingual/paddle_xfund_zh_1.jpg",
+      "size_bytes": 774202,
+      "sha256": "e979376361e8a407b2e2969575913fb68181e07ba1bbcfe889c2a51141d14183",
       "num_lines": 36,
       "confidence": 0.9737234440452952,
-      "text_preview": "中国人体器官捐献\n编号：MC545715483585\nCHINA ORGAN DONATION\n中国人体器官捐献志愿登记表\n在志愿登记前，请仔细阅读以下内容：\n，人体器官捐献遵循“自愿、无偿”的原则。\n。捐献发生在逝世之后，不会影响对您的抢"
+      "text_preview": "中国人体器官捐献\n编号：MC545715483585\nCHINA ORGAN DONATION\n中国人体器官捐献志愿登记表\n在志愿登记前，请仔细阅读以下内容：\n，人体器官捐献遵循“自愿、无偿”的原则。\n。捐献发生在逝世之后，不会影响对您的抢",
+      "status": "ok"
     },
     {
       "sample_id": "funsd-40534",
       "category": "multilingual",
       "kind": "form",
+      "path": "examples/assets/multilingual/paddle_funsd_00040534.jpg",
+      "size_bytes": 242411,
+      "sha256": "4a58cd9cf5aabca81c01d882cb09b14a8591596a8c7126c1a6ccbab6b4504de8",
       "num_lines": 76,
       "confidence": 0.9542232774482414,
-      "text_preview": "ACUTE TOXICITYIN MICE\nCOMPOUND\n3-Hydroxy-3-methylbutanoic acid (Tur 13)\nLorillard- Organic Chemistry\nOR39-23\nSOURCE\nLORI"
+      "text_preview": "ACUTE TOXICITYIN MICE\nCOMPOUND\n3-Hydroxy-3-methylbutanoic acid (Tur 13)\nLorillard- Organic Chemistry\nOR39-23\nSOURCE\nLORI",
+      "status": "ok"
     },
     {
       "sample_id": "funsd-70353",
       "category": "multilingual",
       "kind": "form",
+      "path": "examples/assets/multilingual/paddle_funsd_00070353.jpg",
+      "size_bytes": 112894,
+      "sha256": "365d9d34485f2a26ae61faf97ddf69e3e170698268a884789ffea9066bb5550e",
       "num_lines": 26,
       "confidence": 0.9579218249939406,
-      "text_preview": "Manuscript Review Form\nTOBACCO SCIENCE\nRegistration No.\n533\nDate March 18,1968\nAUTHORS\nAndrey G.Kallianoa, Richard B.Mea"
+      "text_preview": "Manuscript Review Form\nTOBACCO SCIENCE\nRegistration No.\n533\nDate March 18,1968\nAUTHORS\nAndrey G.Kallianoa, Richard B.Mea",
+      "status": "ok"
     },
     {
       "sample_id": "receipt-1",
       "category": "receipt",
       "kind": "receipt",
+      "path": "examples/assets/receipt/paddle_receipt_1.jpeg",
+      "size_bytes": 185497,
+      "sha256": "3b25aa0499033bc3fe24b353a283069fd1e270f8b65e1f440d3591cc7759ad8e",
       "num_lines": 40,
       "confidence": 0.9378166905755668,
-      "text_preview": "STORE NAME VALUE:\nscarmi chael\nCarWash\nSTORE\nSTORE ADDR\nCarmichael\nCA 95608\n916-488-3274E\nTELVALUE:\nDATE\n7/18/2016\n8:10A"
+      "text_preview": "STORE NAME VALUE:\nscarmi chael\nCarWash\nSTORE\nSTORE ADDR\nCarmichael\nCA 95608\n916-488-3274E\nTELVALUE:\nDATE\n7/18/2016\n8:10A",
+      "status": "ok"
     },
     {
       "sample_id": "receipt-2769",
       "category": "receipt",
       "kind": "receipt",
+      "path": "examples/assets/receipt/paddle_receipt_2769.jpeg",
+      "size_bytes": 178786,
+      "sha256": "d5b9225067091769703bff7993b22d02173b7f3d5dfb367a0351111d495ef26e",
       "num_lines": 41,
       "confidence": 0.9571407115493836,
-      "text_preview": "GRI\nOur guac rocks.\nSTOREADDR VALUE:\n806 Avenida Pico,Suite D\nSan Clemente CA 92672\n（949)272-5955\nDATE VALUE:\nHost:Laure"
+      "text_preview": "GRI\nOur guac rocks.\nSTOREADDR VALUE:\n806 Avenida Pico,Suite D\nSan Clemente CA 92672\n（949)272-5955\nDATE VALUE:\nHost:Laure",
+      "status": "ok"
     },
     {
       "sample_id": "table-tal-1",
       "category": "table",
       "kind": "table",
+      "path": "examples/assets/table/paddle_table_tal_1.jpg",
+      "size_bytes": 238316,
+      "sha256": "c474365f54eea113d941550e31e00d6a9b524224fa0ba9bbb8833792d9bf784f",
       "num_lines": 26,
       "confidence": 0.95696863405495,
-      "text_preview": "3.小龙在学校组织的社会调查活动中负责\n数，单位：元）、并绘制了如下的频数分布表和频数\n分布直方图（如图10.2-1）.\n分组\n频数\n百分比\n600≤x<800\n2\n5%\n800≤x<1000\n6\n15%\n1000≤x<1200\n91\n45"
+      "text_preview": "3.小龙在学校组织的社会调查活动中负责\n数，单位：元）、并绘制了如下的频数分布表和频数\n分布直方图（如图10.2-1）.\n分组\n频数\n百分比\n600≤x<800\n2\n5%\n800≤x<1000\n6\n15%\n1000≤x<1200\n91\n45",
+      "status": "ok"
     },
     {
       "sample_id": "table-tal-2",
       "category": "table",
       "kind": "table",
+      "path": "examples/assets/table/paddle_table_tal_2.jpg",
+      "size_bytes": 238316,
+      "sha256": "c474365f54eea113d941550e31e00d6a9b524224fa0ba9bbb8833792d9bf784f",
       "num_lines": 26,
       "confidence": 0.95696863405495,
-      "text_preview": "3.小龙在学校组织的社会调查活动中负责\n数，单位：元）、并绘制了如下的频数分布表和频数\n分布直方图（如图10.2-1）.\n分组\n频数\n百分比\n600≤x<800\n2\n5%\n800≤x<1000\n6\n15%\n1000≤x<1200\n91\n45"
+      "text_preview": "3.小龙在学校组织的社会调查活动中负责\n数，单位：元）、并绘制了如下的频数分布表和频数\n分布直方图（如图10.2-1）.\n分组\n频数\n百分比\n600≤x<800\n2\n5%\n800≤x<1000\n6\n15%\n1000≤x<1200\n91\n45",
+      "status": "ok"
     },
     {
       "sample_id": "tablebank-004",
       "category": "table",
       "kind": "table",
+      "path": "examples/assets/table/paddle_tablebank_004.png",
+      "size_bytes": 627735,
+      "sha256": "84e504204db82ff320e200b03f353c70700b0e24a83026f70ddca3b6af7e7137",
       "num_lines": 74,
       "confidence": 0.9135375114846728,
-      "text_preview": "(bik\nGM3\nFigure 5. Videα-to-Image translation results (bModel1d)Model2-0Moel and heir reconstructed resuls (c)-fe}-g) on"
+      "text_preview": "(bik\nGM3\nFigure 5. Videα-to-Image translation results (bModel1d)Model2-0Moel and heir reconstructed resuls (c)-fe}-g) on",
+      "status": "ok"
     },
     {
       "sample_id": "tablebank-005",
       "category": "table",
       "kind": "table",
+      "path": "examples/assets/table/paddle_tablebank_005.png",
+      "size_bytes": 229473,
+      "sha256": "f0938cf98a784f8277d8a5dfc4242be437135263ec7bec871c477b931cb7830e",
       "num_lines": 108,
       "confidence": 0.9464878418775987,
-      "text_preview": "Branch:M.A，Political Science &PublicAdministration\nTime:2.00pm to5.00pm\nDate&Day\nPaper\nTitles\nMarks\n31-10-2011\nPolitical"
+      "text_preview": "Branch:M.A，Political Science &PublicAdministration\nTime:2.00pm to5.00pm\nDate&Day\nPaper\nTitles\nMarks\n31-10-2011\nPolitical",
+      "status": "ok"
     },
     {
       "sample_id": "formula-hme-00",
       "category": "formula",
       "kind": "formula",
+      "path": "examples/assets/formula/paddle_formula_hme_00.jpg",
+      "size_bytes": 11789,
+      "sha256": "9e7bfdf149d57e71368843e79d38ef9abd6699fcb4c0e3935e2fbedce7f145e7",
       "num_lines": 2,
       "confidence": 0.6535390689969063,
-      "text_preview": "yyxK\n十"
+      "text_preview": "yyxK\n十",
+      "status": "ok"
     },
     {
       "sample_id": "formula-hme-01",
       "category": "formula",
       "kind": "formula",
+      "path": "examples/assets/formula/paddle_formula_hme_01.jpg",
+      "size_bytes": 15278,
+      "sha256": "09b99f6f1c18b71e033d9af46e89a272d5aa0460c01ebf2c7f7380ea8bbb1f92",
       "num_lines": 5,
       "confidence": 0.6861434309681256,
-      "text_preview": "Q\nf(r)\nX\nan \n>=1x0"
+      "text_preview": "Q\nf(r)\nX\nan \n>=1x0",
+      "status": "ok"
     },
     {
       "sample_id": "street-rec-1",
       "category": "street",
       "kind": "scene_text",
+      "path": "examples/assets/street/paddle_street_rec_1.png",
+      "size_bytes": 102648,
+      "sha256": "561a08f36ab0685d95d560217835f4106261c6d1edc6a8e720c1346ed00812b4",
       "num_lines": 4,
       "confidence": 0.8666064701974392,
-      "text_preview": "魅派\n集厅\n美成吊顶\n吊顶"
+      "text_preview": "魅派\n集厅\n美成吊顶\n吊顶",
+      "status": "ok"
     },
     {
       "sample_id": "street-rec-2",
       "category": "street",
       "kind": "scene_text",
+      "path": "examples/assets/street/paddle_street_rec_2.png",
+      "size_bytes": 116907,
+      "sha256": "0506a717662d4ddd1b8260c37a6cf70831984979936b569366cef645567a8e5a",
       "num_lines": 6,
       "confidence": 0.9263302783171335,
-      "text_preview": "贝\n用\n连\n锁\n安\n品"
+      "text_preview": "贝\n用\n连\n锁\n安\n品",
+      "status": "ok"
     },
     {
       "sample_id": "layout-publaynet-3724501",
       "category": "layout",
       "kind": "layout",
+      "path": "examples/assets/layout/paddle_layout_publaynet_3724501.jpg",
+      "size_bytes": 166596,
+      "sha256": "e4e82984899677a54dd736442189b57c770c25f5d6cce6045a30882837051567",
       "num_lines": 67,
       "confidence": 0.9419258278579902,
-      "text_preview": "0°1oz 5uuafug eoyfo o ouan peqpun pue uemH\nPage 7 of 11\nhttp//www.jbioleng.org/content/7/1/10\nfigure1.00\nB\nC\n50\n500\n160\n"
+      "text_preview": "0°1oz 5uuafug eoyfo o ouan peqpun pue uemH\nPage 7 of 11\nhttp//www.jbioleng.org/content/7/1/10\nfigure1.00\nB\nC\n50\n500\n160\n",
+      "status": "ok"
     },
     {
       "sample_id": "layout-publaynet-5086060",
       "category": "layout",
       "kind": "layout",
+      "path": "examples/assets/layout/paddle_layout_publaynet_5086060.jpg",
+      "size_bytes": 123255,
+      "sha256": "34f04a2a1cc004f71f44c69fe668c040577bff91204f5606bc79a135fbdefed6",
       "num_lines": 173,
       "confidence": 0.9344438122297974,
-      "text_preview": "Gao and Wu Translationa/ Neurodegeneration (2016) 5:18\nPage 3 of 7\ntable 1. 00y of the characterstics of the reviewed st"
+      "text_preview": "Gao and Wu Translationa/ Neurodegeneration (2016) 5:18\nPage 3 of 7\ntable 1. 00y of the characterstics of the reviewed st",
+      "status": "ok"
     },
     {
       "sample_id": "layout-cdla-0633",
       "category": "layout",
       "kind": "layout",
+      "path": "examples/assets/layout/paddle_layout_cdla_0633.jpg",
+      "size_bytes": 608678,
+      "sha256": "bf5a4894c0fc861f24d8bfc38778162878683ef0fcf4b32d9ecee999388376ee",
       "num_lines": 52,
       "confidence": 0.9707343562716345,
-      "text_preview": "Header 1. 00\nHeader 1.00\nHeader 1.00\n第40卷\n计算机学报\nVol.40\n2017论文在线出版号No.28\nCHINESEJOURNALOFCOMPUTERS\nOnlinePublishingNo.28\n"
+      "text_preview": "Header 1. 00\nHeader 1.00\nHeader 1.00\n第40卷\n计算机学报\nVol.40\n2017论文在线出版号No.28\nCHINESEJOURNALOFCOMPUTERS\nOnlinePublishingNo.28\n",
+      "status": "ok"
     },
     {
       "sample_id": "layout-cdla-0941",
       "category": "layout",
       "kind": "layout",
+      "path": "examples/assets/layout/paddle_layout_cdla_0941.jpg",
+      "size_bytes": 643585,
+      "sha256": "950fb05e4252b8a6db406c544e31d4dc6f87cbe2f9e1d7598251cebb387f2cda",
       "num_lines": 80,
       "confidence": 0.9721367145720814,
-      "text_preview": "Teader 1.00\nTeader 1.00\n2076\nJournalofSofware软件学报Vol.31，No.7，July2020\nText1.00\n抽取术语.该类方法中有监督抽取方法依赖于人工标注得到训练集，准确率较高，无需人工制"
+      "text_preview": "Teader 1.00\nTeader 1.00\n2076\nJournalofSofware软件学报Vol.31，No.7，July2020\nText1.00\n抽取术语.该类方法中有监督抽取方法依赖于人工标注得到训练集，准确率较高，无需人工制",
+      "status": "ok"
     },
     {
       "sample_id": "captcha-demo",
       "category": "captcha",
       "kind": "captcha",
+      "path": "examples/assets/captcha/paddle_captcha_demo.png",
+      "size_bytes": 170046,
+      "sha256": "7bb6e4fdd46ce708c70d9b514dcc62bac0c738246be6a766eab65c2f71bdf7d6",
       "num_lines": 8,
       "confidence": 0.8166120461784019,
-      "text_preview": "2 16502\n2 d m 157e.6.034\nm273051.60Ae\nA76d20e31m\nmq10.d.366027\n46720e1a5.m\n6m0 543000 z1\n34 2d0.6/75.c.m"
+      "text_preview": "2 16502\n2 d m 157e.6.034\nm273051.60Ae\nA76d20e31m\nmq10.d.366027\n46720e1a5.m\n6m0 543000 z1\n34 2d0.6/75.c.m",
+      "status": "ok"
     },
     {
       "sample_id": "license-plate-demo",
       "category": "license_plate",
       "kind": "license_plate",
+      "path": "examples/assets/license_plate/paddle_ccpd_demo.png",
+      "size_bytes": 312361,
+      "sha256": "9e23fb97363f5aed5a85488ebff223cf25eebda4e42a2c7b6194b75ac4a4a0f8",
       "num_lines": 2,
       "confidence": 0.9948807336390019,
-      "text_preview": "皖A·533Y3\nGT:皖A533Y3"
+      "text_preview": "皖A·533Y3\nGT:皖A533Y3",
+      "status": "ok"
     },
     {
       "sample_id": "seal-demo-1",
       "category": "seal",
       "kind": "seal",
+      "path": "examples/assets/seal/paddle_seal_demo_1.png",
+      "size_bytes": 931458,
+      "sha256": "2c3bde3000a56d7fe89767d68c3bf703af75334f1ab87947018c2b6fe0bbb30f",
       "num_lines": 34,
       "confidence": 0.9973695227226966,
-      "text_preview": "学生个人信息登记表\n姓名\n王致和\n性别\n女\n民族\n汉\n曾用名\n出生日期\n2000年2月27日\n籍贯\n出生地\n甘肃省兰州市\n甘肃省兰州市\n登记照电子版一张\n政治面貌\n党员\n589658215\n身份证号\n620100200002270054\nE"
+      "text_preview": "学生个人信息登记表\n姓名\n王致和\n性别\n女\n民族\n汉\n曾用名\n出生日期\n2000年2月27日\n籍贯\n出生地\n甘肃省兰州市\n甘肃省兰州市\n登记照电子版一张\n政治面貌\n党员\n589658215\n身份证号\n620100200002270054\nE",
+      "status": "ok"
     },
     {
       "sample_id": "seal-demo-2",
       "category": "seal",
       "kind": "seal",
+      "path": "examples/assets/seal/paddle_seal_demo_2.png",
+      "size_bytes": 193959,
+      "sha256": "4b3df71b0b5ab8d37490e284ab76695939a2a5d61a37a3a8ae598545a5956cf3",
       "num_lines": 24,
       "confidence": 0.9722825474508835,
-      "text_preview": "LORILLARDTOBACCOCOMPANY\nMarketPlanningandInformationDepartment\nTo\nMike Mozina\nFirm:\nMSA\nFAX#\nAutodial\nFrom\nSusan Smith\nF"
+      "text_preview": "LORILLARDTOBACCOCOMPANY\nMarketPlanningandInformationDepartment\nTo\nMike Mozina\nFirm:\nMSA\nFAX#\nAutodial\nFrom\nSusan Smith\nF",
+      "status": "ok"
     }
   ]
 }
