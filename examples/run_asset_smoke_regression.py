@@ -1,7 +1,26 @@
 import json
+from collections import defaultdict
 from pathlib import Path
 
 from id_doc_ocr.backbones.rapidocr import RapidOCRAdapter
+
+
+def summarize(results):
+    by_category = defaultdict(list)
+    for item in results:
+        by_category[item["category"]].append(item)
+    summary = {}
+    for category, items in by_category.items():
+        avg_conf = sum(x["confidence"] for x in items) / len(items) if items else 0.0
+        avg_lines = sum(x["num_lines"] for x in items) / len(items) if items else 0.0
+        summary[category] = {
+            "count": len(items),
+            "avg_confidence": round(avg_conf, 4),
+            "avg_num_lines": round(avg_lines, 2),
+            "min_confidence": round(min(x["confidence"] for x in items), 4),
+            "max_confidence": round(max(x["confidence"] for x in items), 4),
+        }
+    return summary
 
 
 if __name__ == "__main__":
@@ -19,4 +38,8 @@ if __name__ == "__main__":
             "confidence": result.get("confidence", 0.0),
             "text_preview": result.get("text", "")[:120],
         })
-    print(json.dumps(results, ensure_ascii=False, indent=2))
+    payload = {
+        "summary": summarize(results),
+        "results": results,
+    }
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
