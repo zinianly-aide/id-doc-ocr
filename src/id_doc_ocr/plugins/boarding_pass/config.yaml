@@ -1,0 +1,15 @@
+name: boarding_pass
+version: 0.1.0
+fields:
+  - passenger_name
+  - flight_number
+  - ticket_number
+  - departure_date
+  - departure_airport
+  - arrival_airport
+  - gate
+  - seat_no
+quality_rules:
+  - blur
+  - glare
+  - cropped
