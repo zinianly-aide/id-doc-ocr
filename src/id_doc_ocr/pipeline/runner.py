@@ -6,11 +6,13 @@ from typing import Any
 from id_doc_ocr.backbones.mock import MockGOTOCRAdapter, MockPaddleOCRAdapter, MockPaddleOCRVLAdapter
 from id_doc_ocr.core.registry import registry
 from id_doc_ocr.datasets.schema import FieldAnnotation, InternalAnnotation, RegionAnnotation
+from id_doc_ocr.tools.failure_log import write_failure_case
 
 
 class DemoPipelineRunner:
-    def __init__(self, ocr_backend: str = "mock") -> None:
+    def __init__(self, ocr_backend: str = "mock", failure_dir: str | None = None) -> None:
         self.ocr_backend = ocr_backend
+        self.failure_dir = failure_dir
         if ocr_backend == "rapidocr":
             from id_doc_ocr.backbones.rapidocr import RapidOCRAdapter
 
@@ -26,7 +28,7 @@ class DemoPipelineRunner:
         ocr_result = self.ocr.infer(image)
         parsed_fields = self.parse_plugin_fields(plugin, ocr_result)
         merged_fields = {**parsed_fields, **provided_fields}
-        return {
+        result = {
             "plugin": plugin.metadata.name,
             "schema": plugin.get_schema_name(),
             "ocr_backend": self.ocr_backend,
@@ -38,6 +40,10 @@ class DemoPipelineRunner:
             "annotation": self.to_internal_annotation(plugin_name, image, ocr_result),
             "validation": plugin.validate_fields(merged_fields),
         }
+        if self.failure_dir and not result["validation"].get("accepted", False):
+            sample_id = Path(str(image)).stem if isinstance(image, (str, Path)) else "in_memory_sample"
+            write_failure_case(self.failure_dir, result, sample_id)
+        return result
 
     def parse_plugin_fields(self, plugin: Any, ocr_result: dict[str, Any]) -> dict[str, Any]:
         parse_fn = getattr(plugin, "parse_fields", None)

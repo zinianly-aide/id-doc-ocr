@@ -1,0 +1,14 @@
+{
+  "plugin": "boarding_pass",
+  "sample": "examples/assets/paddle_sample_doc_00006737.jpg",
+  "expected_fields": {
+    "document_variant": "boarding_pass",
+    "passenger_name": "ZHANGQIWEI",
+    "flight_number": "MU2379",
+    "ticket_number": "7813699238489/1",
+    "departure_date": "03DEC",
+    "departure_airport": "TAIYUAN",
+    "arrival_airport": "FUZHOU",
+    "gate": "G11"
+  }
+}
