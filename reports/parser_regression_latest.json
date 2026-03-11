@@ -1,0 +1,61 @@
+{
+  "num_fixtures": 1,
+  "results": [
+    {
+      "fixture": "examples/fixtures/boarding_pass/public_sample_00006737.expected.json",
+      "plugin": "boarding_pass",
+      "field_exact_match_rate": 1.0,
+      "fields": [
+        {
+          "field": "document_variant",
+          "expected": "boarding_pass",
+          "predicted": "boarding_pass",
+          "matched": true
+        },
+        {
+          "field": "passenger_name",
+          "expected": "ZHANGQIWEI",
+          "predicted": "ZHANGQIWEI",
+          "matched": true
+        },
+        {
+          "field": "flight_number",
+          "expected": "MU2379",
+          "predicted": "MU2379",
+          "matched": true
+        },
+        {
+          "field": "ticket_number",
+          "expected": "7813699238489/1",
+          "predicted": "7813699238489/1",
+          "matched": true
+        },
+        {
+          "field": "departure_date",
+          "expected": "03DEC",
+          "predicted": "03DEC",
+          "matched": true
+        },
+        {
+          "field": "departure_airport",
+          "expected": "TAIYUAN",
+          "predicted": "TAIYUAN",
+          "matched": true
+        },
+        {
+          "field": "arrival_airport",
+          "expected": "FUZHOU",
+          "predicted": "FUZHOU",
+          "matched": true
+        },
+        {
+          "field": "gate",
+          "expected": "G11",
+          "predicted": "G11",
+          "matched": true
+        }
+      ]
+    }
+  ],
+  "overall_field_exact_match_rate": 1.0
+}
