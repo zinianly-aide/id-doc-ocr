@@ -14,5 +14,13 @@ dependencies = [
   "pydantic>=2.0",
 ]
 
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+]
+
+[project.scripts]
+id-doc-ocr = "id_doc_ocr.cli.main:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
