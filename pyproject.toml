@@ -18,6 +18,10 @@ dependencies = [
 dev = [
   "pytest>=8.0",
 ]
+ocr = [
+  "rapidocr_onnxruntime>=1.4.4",
+  "pillow>=10.0",
+]
 
 [project.scripts]
 id-doc-ocr = "id_doc_ocr.cli.main:main"
