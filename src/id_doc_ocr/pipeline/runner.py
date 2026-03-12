@@ -9,6 +9,8 @@ from id_doc_ocr.backbones.paddleocr import PaddleOCRAdapter
 from id_doc_ocr.backbones.paddleocr_vl import PaddleOCRVLAdapter
 from id_doc_ocr.core.registry import registry
 from id_doc_ocr.datasets.schema import FieldAnnotation, InternalAnnotation, RegionAnnotation
+from id_doc_ocr.detector.mock import MockDocumentDetectorAdapter
+from id_doc_ocr.rectify.mock import MockRectifyPipeline
 from id_doc_ocr.tools.failure_log import write_failure_case
 
 
@@ -24,7 +26,9 @@ class DemoPipelineRunner:
         self.failure_dir = failure_dir
         self.ocr = self._build_ocr_backend(ocr_backend)
         self.vlm = self._build_vlm_backend(vlm_backend)
+        self.detector = MockDocumentDetectorAdapter()
         self.region_ocr = MockGOTOCRAdapter()
+        self.rectify = MockRectifyPipeline()
 
     def _build_ocr_backend(self, ocr_backend: str) -> Any:
         if ocr_backend == "rapidocr":
@@ -51,20 +55,25 @@ class DemoPipelineRunner:
     def run(self, plugin_name: str, image: bytes | str | Path, fields: dict | None = None) -> dict[str, Any]:
         plugin = registry.get(plugin_name)
         provided_fields = fields or {}
-        ocr_result = self.ocr.infer(image)
+        detector_result = self.detector.detect(image, preferred_doc_type=plugin_name)
+        rectify_result = self.rectify.process(image, detection=detector_result.primary)
+        rectified_image = rectify_result.image
+        ocr_result = self.ocr.infer(rectified_image)
         parsed_fields = self.parse_plugin_fields(plugin, ocr_result)
         merged_fields = {**parsed_fields, **provided_fields}
-        vlm_result = self.vlm.infer(image)
+        vlm_result = self.vlm.infer(rectified_image)
         result = {
             "plugin": plugin.metadata.name,
             "schema": plugin.get_schema_name(),
             "ocr_backend": self.ocr_backend,
             "vlm_backend": getattr(self.vlm, "info", None).name if getattr(self.vlm, "info", None) else self.vlm_backend,
+            "detector": detector_result.model_dump(),
+            "rectify": rectify_result.model_dump(),
             "ocr": ocr_result,
             "parsed_fields": parsed_fields,
             "merged_fields": merged_fields,
             "vlm": vlm_result,
-            "region_ocr": self.region_ocr.infer(b"" if not isinstance(image, (bytes, bytearray)) else image),
+            "region_ocr": self.region_ocr.infer(b"" if not isinstance(rectified_image, (bytes, bytearray)) else rectified_image),
             "annotation": self.to_internal_annotation(plugin_name, image, ocr_result),
             "validation": plugin.validate_fields(merged_fields),
         }

@@ -24,6 +24,7 @@ def test_infer_success():
     payload = response.json()
     assert payload["filename"] == "sample.jpg"
     assert payload["result"]["plugin"] == "boarding_pass"
+    assert payload["result"]["detector"]["primary"]["doc_type"] == "boarding_pass"
 
 
 def test_infer_rejects_unknown_plugin():

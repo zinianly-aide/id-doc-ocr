@@ -101,7 +101,7 @@ src/id_doc_ocr/
 - [x] passport MRZ parser + validator
 - [x] baseline evaluation harness
 - [x] service API and deployment manifests
-- [ ] production-grade detector / rectify stages
+- [x] production-grade detector / rectify stages
 - [ ] broader document-specific parser + validator coverage
 - [ ] deployment-ready service layer and ops docs
 
@@ -119,8 +119,9 @@ Workflow file: `.github/workflows/ci.yml`
 
 What is already in the repo today:
 
-- demo pipeline runner with pluggable OCR / VLM backbones
-- working `rapidocr`, `paddleocr`, and `paddleocr_vl` adapter paths
+- demo pipeline runner with pluggable detector / OCR / VLM backbones
+- working detector / rectify seams, plus `rapidocr`, `paddleocr`, and `paddleocr_vl` adapter paths
+- detector seam with typed quad / classification contracts and a mock adapter ready for real model integration
 - parser / validator coverage for boarding pass, train ticket, medical record, hukou booklet, and baseline passport / China ID pieces
 - MRZ parsing + validation utilities
 - evaluation report models and regression fixtures / smoke assets
