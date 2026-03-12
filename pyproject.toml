@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Self-hosted OCR pipeline for identity documents"
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "MIT"}
+license = "MIT"
 authors = [{name = "zinianly-aide"}]
 dependencies = [
   "pydantic>=2.0",

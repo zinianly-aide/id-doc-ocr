@@ -105,6 +105,16 @@ src/id_doc_ocr/
 - [ ] broader document-specific parser + validator coverage
 - [ ] deployment-ready service layer and ops docs
 
+## CI
+
+GitHub Actions is wired for:
+
+- `pytest` on push / pull request to `main`
+- Python 3.10 / 3.11 test matrix
+- package build validation via `python -m build`
+
+Workflow file: `.github/workflows/ci.yml`
+
 ## Current status snapshot
 
 What is already in the repo today:
