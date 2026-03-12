@@ -1,0 +1,24 @@
+{
+  "plugin": "china_id",
+  "sample": "synthetic_china_id_front",
+  "ocr_result": {
+    "lines": [
+      {"text": "中华人民共和国居民身份证"},
+      {"text": "姓名张三"},
+      {"text": "性别男 民族汉"},
+      {"text": "出生1990年03月07日"},
+      {"text": "住址北京市东城区东华门街道"},
+      {"text": "1001号"},
+      {"text": "公民身份号码110101199003074514"}
+    ]
+  },
+  "expected_fields": {
+    "document_side": "front",
+    "name": "张三",
+    "gender": "男",
+    "ethnicity": "汉",
+    "birth_date": "1990年03月07日",
+    "address": "北京市东城区东华门街道1001号",
+    "id_number": "110101199003074514"
+  }
+}

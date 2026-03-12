@@ -1,5 +1,7 @@
 from id_doc_ocr.core.contracts import PluginMetadata
 from id_doc_ocr.plugins.base import BaseDocumentPlugin
+from id_doc_ocr.plugins.passport.parser import parse_passport_fields
+from id_doc_ocr.plugins.passport.validator import validate_passport
 
 
 class PassportPlugin(BaseDocumentPlugin):
@@ -12,6 +14,12 @@ class PassportPlugin(BaseDocumentPlugin):
 
     def get_schema_name(self) -> str:
         return 'passport'
+
+    def parse_fields(self, ocr_result: dict) -> dict:
+        return parse_passport_fields(ocr_result)
+
+    def validate_fields(self, fields: dict) -> dict:
+        return validate_passport(fields).model_dump()
 
 
 plugin = PassportPlugin()
