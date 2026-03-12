@@ -12,6 +12,9 @@ license = {text = "MIT"}
 authors = [{name = "zinianly-aide"}]
 dependencies = [
   "pydantic>=2.0",
+  "fastapi>=0.115.0",
+  "uvicorn>=0.30.0",
+  "python-multipart>=0.0.9",
 ]
 
 [project.optional-dependencies]
@@ -33,6 +36,7 @@ paddle = [
 
 [project.scripts]
 id-doc-ocr = "id_doc_ocr.cli.main:main"
+id-doc-ocr-api = "id_doc_ocr.cli.main:main_api"
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -34,6 +34,17 @@ A self-hosted OCR system for identity documents with a production-oriented archi
 
 See [docs/architecture.md](docs/architecture.md).
 
+## Service API
+
+A minimal HTTP service is now available with:
+
+- `GET /health`
+- `POST /infer`
+- local CLI serve entrypoint
+- Dockerfile and `docker-compose.yml`
+
+See [docs/api.md](docs/api.md).
+
 ## Regression track
 
 Public smoke-regression assets and fixture-based parser regression are documented in [docs/regression.md](docs/regression.md).
@@ -89,7 +100,7 @@ src/id_doc_ocr/
 - [x] Chinese resident ID extraction schema
 - [x] passport MRZ parser + validator
 - [x] baseline evaluation harness
-- [ ] service API and deployment manifests
+- [x] service API and deployment manifests
 - [ ] production-grade detector / rectify stages
 - [ ] broader document-specific parser + validator coverage
 - [ ] deployment-ready service layer and ops docs

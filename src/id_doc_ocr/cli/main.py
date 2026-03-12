@@ -43,6 +43,17 @@ def cmd_manifest_split(args: argparse.Namespace) -> None:
     result = split_manifest(payload.get("samples", payload), train_ratio=args.train_ratio)
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
+def cmd_serve(args: argparse.Namespace) -> None:
+    import uvicorn
+
+    uvicorn.run(
+        "id_doc_ocr.service.app:app",
+        host=args.host,
+        port=args.port,
+        reload=args.reload,
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="id-doc-ocr")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -68,6 +79,12 @@ def build_parser() -> argparse.ArgumentParser:
     p5.add_argument("--train-ratio", type=float, default=0.8)
     p5.set_defaults(func=cmd_manifest_split)
 
+    p6 = sub.add_parser("serve")
+    p6.add_argument("--host", default="0.0.0.0")
+    p6.add_argument("--port", type=int, default=8000)
+    p6.add_argument("--reload", action="store_true")
+    p6.set_defaults(func=cmd_serve)
+
     return parser
 
 
@@ -77,6 +94,13 @@ def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
     args.func(args)
+
+
+def main_api() -> None:
+    import sys
+
+    sys.argv = [sys.argv[0], "serve", *sys.argv[1:]]
+    main()
 
 
 if __name__ == "__main__":
