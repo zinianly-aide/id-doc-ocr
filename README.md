@@ -85,11 +85,31 @@ src/id_doc_ocr/
 ## Roadmap
 
 - [x] architecture skeleton
-- [ ] first end-to-end pipeline interfaces
-- [ ] Chinese resident ID extraction schema
-- [ ] passport MRZ parser + validator
-- [ ] baseline evaluation harness
+- [x] first end-to-end pipeline interfaces
+- [x] Chinese resident ID extraction schema
+- [x] passport MRZ parser + validator
+- [x] baseline evaluation harness
 - [ ] service API and deployment manifests
+- [ ] production-grade detector / rectify stages
+- [ ] broader document-specific parser + validator coverage
+- [ ] deployment-ready service layer and ops docs
+
+## Current status snapshot
+
+What is already in the repo today:
+
+- demo pipeline runner with pluggable OCR / VLM backbones
+- working `rapidocr`, `paddleocr`, and `paddleocr_vl` adapter paths
+- parser / validator coverage for boarding pass, train ticket, medical record, hukou booklet, and baseline passport / China ID pieces
+- MRZ parsing + validation utilities
+- evaluation report models and regression fixtures / smoke assets
+- CLI entrypoint and dataset / failure-log helper tools
+
+What is still intentionally incomplete:
+
+- production detector / rectification implementation
+- service API, deployment manifests, and operations workflow
+- full end-to-end extraction coverage for every plugin listed in the repo
 
 ## License
 
