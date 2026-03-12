@@ -2,6 +2,14 @@
 
 This repo keeps a small public regression track under `examples/assets/` and `examples/fixtures/`.
 
+Current parser fixtures intentionally bias toward stable document types and include:
+- `boarding_pass`: public sample image fixture
+- `china_id`: front + back inline OCR fixtures
+- `passport`: TD3 MRZ inline OCR fixture
+- `hukou_booklet`: labeled household member card inline OCR fixture
+- `train_ticket`: inline text fixture
+- `medical_record`: inline text fixture
+
 ## Asset smoke regression
 
 Purpose: catch broad OCR regressions quickly across a mixed public asset set.

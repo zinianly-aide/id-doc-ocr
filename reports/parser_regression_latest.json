@@ -1,17 +1,17 @@
 {
   "schema_version": "0.2.0",
   "report_name": "parser_regression",
-  "generated_at": "2026-03-11T10:05:00+00:00",
+  "generated_at": "2026-03-12T12:38:22.208220+00:00",
   "runner": {
     "pipeline": "DemoPipelineRunner",
     "ocr_backend": "rapidocr"
   },
   "totals": {
-    "num_fixtures": 3,
-    "num_passed": 3,
+    "num_fixtures": 7,
+    "num_passed": 7,
     "num_failed": 0,
-    "num_fields": 24,
-    "num_matched_fields": 24,
+    "num_fields": 55,
+    "num_matched_fields": 55,
     "overall_field_exact_match_rate": 1.0,
     "status": "pass"
   },
@@ -25,14 +25,284 @@
       "num_matched_fields": 8,
       "field_exact_match_rate": 1.0,
       "fields": [
-        {"field": "document_variant", "expected": "boarding_pass", "predicted": "boarding_pass", "matched": true},
-        {"field": "passenger_name", "expected": "ZHANGQIWEI", "predicted": "ZHANGQIWEI", "matched": true},
-        {"field": "flight_number", "expected": "MU2379", "predicted": "MU2379", "matched": true},
-        {"field": "ticket_number", "expected": "7813699238489/1", "predicted": "7813699238489/1", "matched": true},
-        {"field": "departure_date", "expected": "03DEC", "predicted": "03DEC", "matched": true},
-        {"field": "departure_airport", "expected": "TAIYUAN", "predicted": "TAIYUAN", "matched": true},
-        {"field": "arrival_airport", "expected": "FUZHOU", "predicted": "FUZHOU", "matched": true},
-        {"field": "gate", "expected": "G11", "predicted": "G11", "matched": true}
+        {
+          "field": "document_variant",
+          "expected": "boarding_pass",
+          "predicted": "boarding_pass",
+          "matched": true
+        },
+        {
+          "field": "passenger_name",
+          "expected": "ZHANGQIWEI",
+          "predicted": "ZHANGQIWEI",
+          "matched": true
+        },
+        {
+          "field": "flight_number",
+          "expected": "MU2379",
+          "predicted": "MU2379",
+          "matched": true
+        },
+        {
+          "field": "ticket_number",
+          "expected": "7813699238489/1",
+          "predicted": "7813699238489/1",
+          "matched": true
+        },
+        {
+          "field": "departure_date",
+          "expected": "03DEC",
+          "predicted": "03DEC",
+          "matched": true
+        },
+        {
+          "field": "departure_airport",
+          "expected": "TAIYUAN",
+          "predicted": "TAIYUAN",
+          "matched": true
+        },
+        {
+          "field": "arrival_airport",
+          "expected": "FUZHOU",
+          "predicted": "FUZHOU",
+          "matched": true
+        },
+        {
+          "field": "gate",
+          "expected": "G11",
+          "predicted": "G11",
+          "matched": true
+        }
+      ]
+    },
+    {
+      "fixture": "examples/fixtures/china_id/basic_front.expected.json",
+      "sample": "synthetic_china_id_front",
+      "plugin": "china_id",
+      "status": "pass",
+      "num_fields": 7,
+      "num_matched_fields": 7,
+      "field_exact_match_rate": 1.0,
+      "fields": [
+        {
+          "field": "document_side",
+          "expected": "front",
+          "predicted": "front",
+          "matched": true
+        },
+        {
+          "field": "name",
+          "expected": "张三",
+          "predicted": "张三",
+          "matched": true
+        },
+        {
+          "field": "gender",
+          "expected": "男",
+          "predicted": "男",
+          "matched": true
+        },
+        {
+          "field": "ethnicity",
+          "expected": "汉",
+          "predicted": "汉",
+          "matched": true
+        },
+        {
+          "field": "birth_date",
+          "expected": "1990年03月07日",
+          "predicted": "1990年03月07日",
+          "matched": true
+        },
+        {
+          "field": "address",
+          "expected": "北京市东城区东华门街道1001号",
+          "predicted": "北京市东城区东华门街道1001号",
+          "matched": true
+        },
+        {
+          "field": "id_number",
+          "expected": "110101199003074514",
+          "predicted": "110101199003074514",
+          "matched": true
+        }
+      ]
+    },
+    {
+      "fixture": "examples/fixtures/china_id/basic_back.expected.json",
+      "sample": "synthetic_china_id_back",
+      "plugin": "china_id",
+      "status": "pass",
+      "num_fields": 4,
+      "num_matched_fields": 4,
+      "field_exact_match_rate": 1.0,
+      "fields": [
+        {
+          "field": "document_side",
+          "expected": "back",
+          "predicted": "back",
+          "matched": true
+        },
+        {
+          "field": "issuing_authority",
+          "expected": "北京市公安局东城分局",
+          "predicted": "北京市公安局东城分局",
+          "matched": true
+        },
+        {
+          "field": "valid_from",
+          "expected": "2010.01.01",
+          "predicted": "2010.01.01",
+          "matched": true
+        },
+        {
+          "field": "valid_to",
+          "expected": "2030.01.01",
+          "predicted": "2030.01.01",
+          "matched": true
+        }
+      ]
+    },
+    {
+      "fixture": "examples/fixtures/passport/basic_td3_mrz.expected.json",
+      "sample": "synthetic_passport_td3_mrz",
+      "plugin": "passport",
+      "status": "pass",
+      "num_fields": 11,
+      "num_matched_fields": 11,
+      "field_exact_match_rate": 1.0,
+      "fields": [
+        {
+          "field": "document_variant",
+          "expected": "passport",
+          "predicted": "passport",
+          "matched": true
+        },
+        {
+          "field": "document_code",
+          "expected": "P<",
+          "predicted": "P<",
+          "matched": true
+        },
+        {
+          "field": "issuing_country",
+          "expected": "UTO",
+          "predicted": "UTO",
+          "matched": true
+        },
+        {
+          "field": "surname",
+          "expected": "ERIKSSON",
+          "predicted": "ERIKSSON",
+          "matched": true
+        },
+        {
+          "field": "given_names",
+          "expected": "ANNA MARIA",
+          "predicted": "ANNA MARIA",
+          "matched": true
+        },
+        {
+          "field": "passport_number",
+          "expected": "L898902C3",
+          "predicted": "L898902C3",
+          "matched": true
+        },
+        {
+          "field": "nationality",
+          "expected": "UTO",
+          "predicted": "UTO",
+          "matched": true
+        },
+        {
+          "field": "birth_date",
+          "expected": "1974-08-12",
+          "predicted": "1974-08-12",
+          "matched": true
+        },
+        {
+          "field": "sex",
+          "expected": "F",
+          "predicted": "F",
+          "matched": true
+        },
+        {
+          "field": "expiry_date",
+          "expected": "2012-04-15",
+          "predicted": "2012-04-15",
+          "matched": true
+        },
+        {
+          "field": "personal_number",
+          "expected": "ZE184226B",
+          "predicted": "ZE184226B",
+          "matched": true
+        }
+      ]
+    },
+    {
+      "fixture": "examples/fixtures/hukou_booklet/basic_member_card.expected.json",
+      "sample": "synthetic_hukou_booklet_member_card",
+      "plugin": "hukou_booklet",
+      "status": "pass",
+      "num_fields": 9,
+      "num_matched_fields": 9,
+      "field_exact_match_rate": 1.0,
+      "fields": [
+        {
+          "field": "doc_type",
+          "expected": "hukou_booklet",
+          "predicted": "hukou_booklet",
+          "matched": true
+        },
+        {
+          "field": "household_id",
+          "expected": "320101001234",
+          "predicted": "320101001234",
+          "matched": true
+        },
+        {
+          "field": "householder_name",
+          "expected": "王五",
+          "predicted": "王五",
+          "matched": true
+        },
+        {
+          "field": "address",
+          "expected": "南京市玄武区中山路88号",
+          "predicted": "南京市玄武区中山路88号",
+          "matched": true
+        },
+        {
+          "field": "member_name",
+          "expected": "王小五",
+          "predicted": "王小五",
+          "matched": true
+        },
+        {
+          "field": "relation_to_head",
+          "expected": "之女",
+          "predicted": "之女",
+          "matched": true
+        },
+        {
+          "field": "gender",
+          "expected": "女",
+          "predicted": "女",
+          "matched": true
+        },
+        {
+          "field": "birth_date",
+          "expected": "2012-07-09",
+          "predicted": "2012-07-09",
+          "matched": true
+        },
+        {
+          "field": "id_number",
+          "expected": "32010120120709122X",
+          "predicted": "32010120120709122X",
+          "matched": true
+        }
       ]
     },
     {
@@ -44,12 +314,42 @@
       "num_matched_fields": 6,
       "field_exact_match_rate": 1.0,
       "fields": [
-        {"field": "document_variant", "expected": "train_ticket", "predicted": "train_ticket", "matched": true},
-        {"field": "train_number", "expected": "G1234", "predicted": "G1234", "matched": true},
-        {"field": "departure_station", "expected": "SHANGHAI", "predicted": "SHANGHAI", "matched": true},
-        {"field": "arrival_station", "expected": "HANGZHOU", "predicted": "HANGZHOU", "matched": true},
-        {"field": "departure_time", "expected": "2026-03-11", "predicted": "2026-03-11", "matched": true},
-        {"field": "ticket_number", "expected": null, "predicted": null, "matched": true}
+        {
+          "field": "document_variant",
+          "expected": "train_ticket",
+          "predicted": "train_ticket",
+          "matched": true
+        },
+        {
+          "field": "train_number",
+          "expected": "G1234",
+          "predicted": "G1234",
+          "matched": true
+        },
+        {
+          "field": "departure_station",
+          "expected": "SHANGHAI",
+          "predicted": "SHANGHAI",
+          "matched": true
+        },
+        {
+          "field": "arrival_station",
+          "expected": "HANGZHOU",
+          "predicted": "HANGZHOU",
+          "matched": true
+        },
+        {
+          "field": "departure_time",
+          "expected": "2026-03-11",
+          "predicted": "2026-03-11",
+          "matched": true
+        },
+        {
+          "field": "ticket_number",
+          "expected": null,
+          "predicted": null,
+          "matched": true
+        }
       ]
     },
     {
@@ -61,16 +361,78 @@
       "num_matched_fields": 10,
       "field_exact_match_rate": 1.0,
       "fields": [
-        {"field": "doc_type", "expected": "medical_record", "predicted": "medical_record", "matched": true},
-        {"field": "hospital_name", "expected": "杭州市第一人民医院", "predicted": "杭州市第一人民医院", "matched": true},
-        {"field": "patient_name", "expected": "张三", "predicted": "张三", "matched": true},
-        {"field": "gender", "expected": "男", "predicted": "男", "matched": true},
-        {"field": "age", "expected": "34", "predicted": "34", "matched": true},
-        {"field": "visit_date", "expected": "2026-03-11", "predicted": "2026-03-11", "matched": true},
-        {"field": "department", "expected": "呼吸内科", "predicted": "呼吸内科", "matched": true},
-        {"field": "diagnosis", "expected": ["上呼吸道感染", "发热"], "predicted": ["上呼吸道感染", "发热"], "matched": true},
-        {"field": "medications", "expected": ["对乙酰氨基酚", "阿莫西林"], "predicted": ["对乙酰氨基酚", "阿莫西林"], "matched": true},
-        {"field": "notes", "expected": "建议多饮水休息", "predicted": "建议多饮水休息", "matched": true}
+        {
+          "field": "doc_type",
+          "expected": "medical_record",
+          "predicted": "medical_record",
+          "matched": true
+        },
+        {
+          "field": "hospital_name",
+          "expected": "杭州市第一人民医院",
+          "predicted": "杭州市第一人民医院",
+          "matched": true
+        },
+        {
+          "field": "patient_name",
+          "expected": "张三",
+          "predicted": "张三",
+          "matched": true
+        },
+        {
+          "field": "gender",
+          "expected": "男",
+          "predicted": "男",
+          "matched": true
+        },
+        {
+          "field": "age",
+          "expected": "34",
+          "predicted": "34",
+          "matched": true
+        },
+        {
+          "field": "visit_date",
+          "expected": "2026-03-11",
+          "predicted": "2026-03-11",
+          "matched": true
+        },
+        {
+          "field": "department",
+          "expected": "呼吸内科",
+          "predicted": "呼吸内科",
+          "matched": true
+        },
+        {
+          "field": "diagnosis",
+          "expected": [
+            "上呼吸道感染",
+            "发热"
+          ],
+          "predicted": [
+            "上呼吸道感染",
+            "发热"
+          ],
+          "matched": true
+        },
+        {
+          "field": "medications",
+          "expected": [
+            "对乙酰氨基酚",
+            "阿莫西林"
+          ],
+          "predicted": [
+            "对乙酰氨基酚",
+            "阿莫西林"
+          ],
+          "matched": true
+        },
+        {
+          "field": "notes",
+          "expected": "建议多饮水休息",
+          "predicted": "建议多饮水休息",
+          "matched": true
+        }
       ]
     }
   ]

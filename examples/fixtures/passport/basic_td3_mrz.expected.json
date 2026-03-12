@@ -1,0 +1,23 @@
+{
+  "plugin": "passport",
+  "sample": "synthetic_passport_td3_mrz",
+  "ocr_result": {
+    "lines": [
+      {"text": "P<UTO ERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<"},
+      {"text": "L898902C36 UTO7408122F1204159ZE184226B<<<<<10"}
+    ]
+  },
+  "expected_fields": {
+    "document_variant": "passport",
+    "document_code": "P<",
+    "issuing_country": "UTO",
+    "surname": "ERIKSSON",
+    "given_names": "ANNA MARIA",
+    "passport_number": "L898902C3",
+    "nationality": "UTO",
+    "birth_date": "1974-08-12",
+    "sex": "F",
+    "expiry_date": "2012-04-15",
+    "personal_number": "ZE184226B"
+  }
+}

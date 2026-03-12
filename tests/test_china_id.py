@@ -14,6 +14,14 @@ def test_parse_china_id_fields_from_front_fixture():
         assert fields[key] == expected
 
 
+def test_parse_china_id_fields_from_back_fixture():
+    fixture = json.loads(Path("examples/fixtures/china_id/basic_back.expected.json").read_text())
+    fields = parse_china_id_fields(fixture["ocr_result"])
+
+    for key, expected in fixture["expected_fields"].items():
+        assert fields[key] == expected
+
+
 def test_validate_china_id_number_accepts_valid_number_and_lowercase_x():
     assert validate_china_id_number("110101199003074514") == []
     assert validate_china_id_number("11010119900101100x") == []

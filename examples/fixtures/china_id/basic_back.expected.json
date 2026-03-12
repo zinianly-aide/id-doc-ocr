@@ -1,0 +1,17 @@
+{
+  "plugin": "china_id",
+  "sample": "synthetic_china_id_back",
+  "ocr_result": {
+    "lines": [
+      {"text": "中华人民共和国居民身份证"},
+      {"text": "签发机关北京市公安局东城分局"},
+      {"text": "有效期限2010.01.01-2030.01.01"}
+    ]
+  },
+  "expected_fields": {
+    "document_side": "back",
+    "issuing_authority": "北京市公安局东城分局",
+    "valid_from": "2010.01.01",
+    "valid_to": "2030.01.01"
+  }
+}

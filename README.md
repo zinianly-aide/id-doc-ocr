@@ -116,6 +116,7 @@ GitHub Actions is wired for:
 - `pytest` on push / pull request to `main`
 - Python 3.10 / 3.11 test matrix
 - package build validation via `python -m build`
+- Docker image build-only validation via `docker build --tag id-doc-ocr:ci .`
 
 Workflow file: `.github/workflows/ci.yml`
 
@@ -128,6 +129,7 @@ What is already in the repo today:
 - detector seam with typed quad / classification contracts and a mock adapter ready for real model integration
 - parser / validator coverage for boarding pass, train ticket, medical record, plus strengthened China ID / passport / hukou booklet flows
 - MRZ parsing + validation utilities
+- parser regression fixtures now cover boarding_pass, china_id (front/back), passport TD3 MRZ, hukou_booklet, train_ticket, and medical_record
 - evaluation report models and regression fixtures / smoke assets
 - CLI entrypoint and dataset / failure-log helper tools
 

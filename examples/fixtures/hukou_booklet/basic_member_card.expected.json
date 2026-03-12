@@ -1,0 +1,28 @@
+{
+  "plugin": "hukou_booklet",
+  "sample": "synthetic_hukou_booklet_member_card",
+  "ocr_result": {
+    "lines": [
+      {"text": "常住人口登记卡"},
+      {"text": "户号: 320101001234"},
+      {"text": "户主姓名: 王五"},
+      {"text": "住址"},
+      {"text": "南京市玄武区中山路88号"},
+      {"text": "姓名: 王小五"},
+      {"text": "与户主关系: 之女"},
+      {"text": "性别: Female"},
+      {"text": "身份证号: 32010120120709122X"}
+    ]
+  },
+  "expected_fields": {
+    "doc_type": "hukou_booklet",
+    "household_id": "320101001234",
+    "householder_name": "王五",
+    "address": "南京市玄武区中山路88号",
+    "member_name": "王小五",
+    "relation_to_head": "之女",
+    "gender": "女",
+    "birth_date": "2012-07-09",
+    "id_number": "32010120120709122X"
+  }
+}

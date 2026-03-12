@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 from id_doc_ocr.plugins.hukou_booklet.parser import parse_hukou_booklet_fields
 
 
@@ -52,3 +55,11 @@ def test_parse_hukou_booklet_normalizes_inline_birth_date_and_gender():
     assert fields["gender"] == "女"
     assert fields["birth_date"] == "2012-07-09"
     assert fields["id_number"] == "32010120120709122X"
+
+
+def test_parse_hukou_booklet_fields_from_regression_fixture():
+    fixture = json.loads(Path("examples/fixtures/hukou_booklet/basic_member_card.expected.json").read_text())
+    fields = parse_hukou_booklet_fields(fixture["ocr_result"])
+
+    for key, expected in fixture["expected_fields"].items():
+        assert fields[key] == expected

@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 from id_doc_ocr.plugins.passport.parser import extract_td3_mrz_lines, parse_passport_fields
 from id_doc_ocr.plugins.passport.plugin import plugin
 from id_doc_ocr.plugins.passport.validator import validate_passport
@@ -38,6 +41,14 @@ def test_validate_passport_detects_cross_field_mismatch():
 
     assert report.accepted is False
     assert any(issue.code == "passport_number_mismatch" for issue in report.issues)
+
+
+def test_parse_passport_fields_from_regression_fixture():
+    fixture = json.loads(Path("examples/fixtures/passport/basic_td3_mrz.expected.json").read_text())
+    fields = parse_passport_fields(fixture["ocr_result"])
+
+    for key, expected in fixture["expected_fields"].items():
+        assert fields[key] == expected
 
 
 def test_passport_plugin_exposes_parser_and_validator():
