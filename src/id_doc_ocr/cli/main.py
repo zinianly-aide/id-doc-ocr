@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 
 from id_doc_ocr.core.registry import registry
 from id_doc_ocr.tools.dataset_quality import summarize_dataset
@@ -46,6 +47,9 @@ def cmd_manifest_split(args: argparse.Namespace) -> None:
 def cmd_serve(args: argparse.Namespace) -> None:
     import uvicorn
 
+    if args.failure_dir:
+        os.environ["ID_DOC_OCR_FAILURE_DIR"] = args.failure_dir
+
     uvicorn.run(
         "id_doc_ocr.service.app:app",
         host=args.host,
@@ -83,6 +87,7 @@ def build_parser() -> argparse.ArgumentParser:
     p6.add_argument("--host", default="0.0.0.0")
     p6.add_argument("--port", type=int, default=8000)
     p6.add_argument("--reload", action="store_true")
+    p6.add_argument("--failure-dir")
     p6.set_defaults(func=cmd_serve)
 
     return parser

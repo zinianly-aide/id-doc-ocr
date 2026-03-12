@@ -2,6 +2,8 @@
 
 The repo now exposes a minimal HTTP service for local development and container deployment.
 
+For deployment and operational guidance beyond the endpoint examples here, see [deployment.md](deployment.md).
+
 ## Endpoints
 
 ### `GET /health`
@@ -53,5 +55,9 @@ docker run --rm -p 8000:8000 id-doc-ocr
 ## Run with docker compose
 
 ```bash
-docker compose up --build
+cp .env.example .env
+docker compose --env-file .env up --build -d
+curl http://127.0.0.1:8000/health
 ```
+
+For the production-leaning compose flow, healthcheck, and supported runtime knobs, see [docs/deployment.md](deployment.md).

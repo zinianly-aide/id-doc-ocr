@@ -34,7 +34,7 @@ A self-hosted OCR system for identity documents with a production-oriented archi
 
 See [docs/architecture.md](docs/architecture.md).
 
-## Service API
+## Service API and deployment
 
 A minimal HTTP service is now available with:
 
@@ -42,8 +42,12 @@ A minimal HTTP service is now available with:
 - `POST /infer`
 - local CLI serve entrypoint
 - Dockerfile and `docker-compose.yml`
+- `.env.example` and `Makefile` for repeatable compose-based startup
 
-See [docs/api.md](docs/api.md).
+Docs:
+
+- API quickstart: [docs/api.md](docs/api.md)
+- deployment / ops runbook: [docs/deployment.md](docs/deployment.md)
 
 ## Regression track
 
@@ -103,7 +107,7 @@ src/id_doc_ocr/
 - [x] service API and deployment manifests
 - [x] production-grade detector / rectify stages
 - [x] broader document-specific parser + validator coverage
-- [ ] deployment-ready service layer and ops docs
+- [x] minimal deployment / ops docs for local, Docker, compose, and CI mapping
 
 ## CI
 
@@ -130,7 +134,7 @@ What is already in the repo today:
 What is still intentionally incomplete:
 
 - production detector / rectification implementation
-- service API, deployment manifests, and operations workflow
+- deployment-hardening beyond the current minimal service/Docker/compose runbook
 - full end-to-end extraction coverage for every plugin listed in the repo
 
 ## License

@@ -1,8 +1,32 @@
-version: "3.9"
-
 services:
   id-doc-ocr:
-    build: .
+    build:
+      context: .
+    restart: unless-stopped
     ports:
-      - "8000:8000"
-    command: ["id-doc-ocr-api", "--host", "0.0.0.0", "--port", "8000"]
+      - "${ID_DOC_OCR_PORT:-8000}:8000"
+    environment:
+      ID_DOC_OCR_LOG_LEVEL: ${ID_DOC_OCR_LOG_LEVEL:-info}
+      ID_DOC_OCR_FAILURE_DIR: /data/failures
+    volumes:
+      - ${ID_DOC_OCR_FAILURE_DIR:-./data/failures}:/data/failures
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).read()",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    command:
+      [
+        "id-doc-ocr-api",
+        "--host",
+        "${ID_DOC_OCR_HOST:-0.0.0.0}",
+        "--port",
+        "${ID_DOC_OCR_API_PORT:-8000}",
+      ]
