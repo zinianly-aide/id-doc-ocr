@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 from id_doc_ocr.plugins.train_ticket.parser import parse_train_ticket_fields
 
 
@@ -22,3 +25,11 @@ def test_parse_train_ticket_fields_from_known_lines():
     assert fields["departure_station"] == "TAIYUAN"
     assert fields["arrival_station"] == "FUZHOU"
     assert fields["passenger_name"] == "ZHANGQIWEI"
+
+
+def test_parse_train_ticket_fields_prefers_name_near_anchor_fixture():
+    fixture = json.loads(Path("examples/fixtures/train_ticket/name_anchor_priority.expected.json").read_text())
+    fields = parse_train_ticket_fields(fixture["ocr_result"])
+
+    for key, expected in fixture["expected_fields"].items():
+        assert fields[key] == expected

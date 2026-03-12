@@ -1,17 +1,17 @@
 {
   "schema_version": "0.2.0",
   "report_name": "parser_regression",
-  "generated_at": "2026-03-12T12:38:22.208220+00:00",
+  "generated_at": "2026-03-12T17:00:44.506149+00:00",
   "runner": {
     "pipeline": "DemoPipelineRunner",
     "ocr_backend": "rapidocr"
   },
   "totals": {
-    "num_fixtures": 7,
-    "num_passed": 7,
+    "num_fixtures": 11,
+    "num_passed": 11,
     "num_failed": 0,
-    "num_fields": 55,
-    "num_matched_fields": 55,
+    "num_fields": 89,
+    "num_matched_fields": 89,
     "overall_field_exact_match_rate": 1.0,
     "status": "pass"
   },
@@ -164,6 +164,59 @@
       ]
     },
     {
+      "fixture": "examples/fixtures/china_id/multiline_address_lowercase_x.expected.json",
+      "sample": "synthetic_china_id_front_multiline_address_lowercase_x",
+      "plugin": "china_id",
+      "status": "pass",
+      "num_fields": 7,
+      "num_matched_fields": 7,
+      "field_exact_match_rate": 1.0,
+      "fields": [
+        {
+          "field": "document_side",
+          "expected": "front",
+          "predicted": "front",
+          "matched": true
+        },
+        {
+          "field": "name",
+          "expected": "李四",
+          "predicted": "李四",
+          "matched": true
+        },
+        {
+          "field": "gender",
+          "expected": "女",
+          "predicted": "女",
+          "matched": true
+        },
+        {
+          "field": "ethnicity",
+          "expected": "满",
+          "predicted": "满",
+          "matched": true
+        },
+        {
+          "field": "birth_date",
+          "expected": "1988年12月01日",
+          "predicted": "1988年12月01日",
+          "matched": true
+        },
+        {
+          "field": "address",
+          "expected": "上海市浦东新区世纪大道2000弄88号1602室",
+          "predicted": "上海市浦东新区世纪大道2000弄88号1602室",
+          "matched": true
+        },
+        {
+          "field": "id_number",
+          "expected": "31010119881201242X",
+          "predicted": "31010119881201242X",
+          "matched": true
+        }
+      ]
+    },
+    {
       "fixture": "examples/fixtures/passport/basic_td3_mrz.expected.json",
       "sample": "synthetic_passport_td3_mrz",
       "plugin": "passport",
@@ -224,6 +277,83 @@
           "field": "sex",
           "expected": "F",
           "predicted": "F",
+          "matched": true
+        },
+        {
+          "field": "expiry_date",
+          "expected": "2012-04-15",
+          "predicted": "2012-04-15",
+          "matched": true
+        },
+        {
+          "field": "personal_number",
+          "expected": "ZE184226B",
+          "predicted": "ZE184226B",
+          "matched": true
+        }
+      ]
+    },
+    {
+      "fixture": "examples/fixtures/passport/text_fallback_unspecified_sex.expected.json",
+      "sample": "synthetic_passport_td3_text_fallback_unspecified_sex",
+      "plugin": "passport",
+      "status": "pass",
+      "num_fields": 11,
+      "num_matched_fields": 11,
+      "field_exact_match_rate": 1.0,
+      "fields": [
+        {
+          "field": "document_variant",
+          "expected": "passport",
+          "predicted": "passport",
+          "matched": true
+        },
+        {
+          "field": "document_code",
+          "expected": "P<",
+          "predicted": "P<",
+          "matched": true
+        },
+        {
+          "field": "issuing_country",
+          "expected": "UTO",
+          "predicted": "UTO",
+          "matched": true
+        },
+        {
+          "field": "surname",
+          "expected": "ERIKSSON",
+          "predicted": "ERIKSSON",
+          "matched": true
+        },
+        {
+          "field": "given_names",
+          "expected": "ANNA MARIA",
+          "predicted": "ANNA MARIA",
+          "matched": true
+        },
+        {
+          "field": "passport_number",
+          "expected": "L898902C3",
+          "predicted": "L898902C3",
+          "matched": true
+        },
+        {
+          "field": "nationality",
+          "expected": "UTO",
+          "predicted": "UTO",
+          "matched": true
+        },
+        {
+          "field": "birth_date",
+          "expected": "1974-08-12",
+          "predicted": "1974-08-12",
+          "matched": true
+        },
+        {
+          "field": "sex",
+          "expected": null,
+          "predicted": null,
           "matched": true
         },
         {
@@ -306,6 +436,71 @@
       ]
     },
     {
+      "fixture": "examples/fixtures/hukou_booklet/standalone_labels_infer_birth.expected.json",
+      "sample": "synthetic_hukou_booklet_standalone_labels_infer_birth",
+      "plugin": "hukou_booklet",
+      "status": "pass",
+      "num_fields": 9,
+      "num_matched_fields": 9,
+      "field_exact_match_rate": 1.0,
+      "fields": [
+        {
+          "field": "doc_type",
+          "expected": "hukou_booklet",
+          "predicted": "hukou_booklet",
+          "matched": true
+        },
+        {
+          "field": "household_id",
+          "expected": "330106000321",
+          "predicted": "330106000321",
+          "matched": true
+        },
+        {
+          "field": "householder_name",
+          "expected": "赵六",
+          "predicted": "赵六",
+          "matched": true
+        },
+        {
+          "field": "address",
+          "expected": "杭州市西湖区学院路77号",
+          "predicted": "杭州市西湖区学院路77号",
+          "matched": true
+        },
+        {
+          "field": "member_name",
+          "expected": "赵小六",
+          "predicted": "赵小六",
+          "matched": true
+        },
+        {
+          "field": "relation_to_head",
+          "expected": "之子",
+          "predicted": "之子",
+          "matched": true
+        },
+        {
+          "field": "gender",
+          "expected": "男",
+          "predicted": "男",
+          "matched": true
+        },
+        {
+          "field": "birth_date",
+          "expected": "2014-02-02",
+          "predicted": "2014-02-02",
+          "matched": true
+        },
+        {
+          "field": "id_number",
+          "expected": "330106201402023211",
+          "predicted": "330106201402023211",
+          "matched": true
+        }
+      ]
+    },
+    {
       "fixture": "examples/fixtures/train_ticket/basic_text_ticket.expected.json",
       "sample": "<inline_ocr_result>",
       "plugin": "train_ticket",
@@ -348,6 +543,59 @@
           "field": "ticket_number",
           "expected": null,
           "predicted": null,
+          "matched": true
+        }
+      ]
+    },
+    {
+      "fixture": "examples/fixtures/train_ticket/name_anchor_priority.expected.json",
+      "sample": "synthetic_train_ticket_name_anchor_priority",
+      "plugin": "train_ticket",
+      "status": "pass",
+      "num_fields": 7,
+      "num_matched_fields": 7,
+      "field_exact_match_rate": 1.0,
+      "fields": [
+        {
+          "field": "document_variant",
+          "expected": "train_ticket",
+          "predicted": "train_ticket",
+          "matched": true
+        },
+        {
+          "field": "train_number",
+          "expected": "G87",
+          "predicted": "G87",
+          "matched": true
+        },
+        {
+          "field": "departure_station",
+          "expected": "BEIJING",
+          "predicted": "BEIJING",
+          "matched": true
+        },
+        {
+          "field": "arrival_station",
+          "expected": "SUZHOU",
+          "predicted": "SUZHOU",
+          "matched": true
+        },
+        {
+          "field": "departure_time",
+          "expected": "2026-03-12",
+          "predicted": "2026-03-12",
+          "matched": true
+        },
+        {
+          "field": "ticket_number",
+          "expected": "1234567890123/1",
+          "predicted": "1234567890123/1",
+          "matched": true
+        },
+        {
+          "field": "passenger_name",
+          "expected": "LI LEI",
+          "predicted": "LI LEI",
           "matched": true
         }
       ]

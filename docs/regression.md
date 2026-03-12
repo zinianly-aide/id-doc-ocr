@@ -4,10 +4,10 @@ This repo keeps a small public regression track under `examples/assets/` and `ex
 
 Current parser fixtures intentionally bias toward stable document types and include:
 - `boarding_pass`: public sample image fixture
-- `china_id`: front + back inline OCR fixtures
-- `passport`: TD3 MRZ inline OCR fixture
-- `hukou_booklet`: labeled household member card inline OCR fixture
-- `train_ticket`: inline text fixture
+- `china_id`: front/back inline OCR fixtures plus a multiline-address + lowercase-`x` boundary fixture
+- `passport`: TD3 MRZ inline OCR fixtures, including a text-fallback + `«` normalization + unspecified-sex boundary fixture
+- `hukou_booklet`: labeled household member card fixture plus a standalone-labels + inferred-birth boundary fixture
+- `train_ticket`: inline OCR fixtures, including a NAME-anchor proximity boundary fixture
 - `medical_record`: inline text fixture
 
 ## Asset smoke regression

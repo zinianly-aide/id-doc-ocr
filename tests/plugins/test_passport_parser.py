@@ -51,6 +51,20 @@ def test_parse_passport_fields_from_regression_fixture():
         assert fields[key] == expected
 
 
+def test_parse_passport_fields_from_text_fallback_fixture():
+    fixture = json.loads(Path("examples/fixtures/passport/text_fallback_unspecified_sex.expected.json").read_text())
+    fields = parse_passport_fields(fixture["ocr_result"])
+
+    for key, expected in fixture["expected_fields"].items():
+        assert fields[key] == expected
+
+    assert fields["mrz_lines"] == [
+        MRZ_LINE_1,
+        "L898902C36UTO7408122<1204159ZE184226B<<<<<10",
+    ]
+    assert fields["mrz_fields"]["sex"] is None
+
+
 def test_passport_plugin_exposes_parser_and_validator():
     parsed = plugin.parse_fields({"lines": [{"text": MRZ_LINE_1}, {"text": MRZ_LINE_2}]})
     report = plugin.validate_fields(parsed)

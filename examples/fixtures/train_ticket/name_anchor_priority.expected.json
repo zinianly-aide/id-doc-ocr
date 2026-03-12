@@ -1,0 +1,26 @@
+{
+  "plugin": "train_ticket",
+  "sample": "synthetic_train_ticket_name_anchor_priority",
+  "ocr_result": {
+    "lines": [
+      {"text": "中国铁路客票", "score": 0.99, "box": [[0, 0], [120, 0], [120, 20], [0, 20]]},
+      {"text": "G87", "score": 0.99, "box": [[0, 30], [40, 30], [40, 50], [0, 50]]},
+      {"text": "2026-03-12 07:45", "score": 0.98, "box": [[50, 30], [170, 30], [170, 50], [50, 50]]},
+      {"text": "BEIJING", "score": 0.97, "box": [[0, 60], [80, 60], [80, 80], [0, 80]]},
+      {"text": "SUZHOU", "score": 0.97, "box": [[90, 60], [160, 60], [160, 80], [90, 80]]},
+      {"text": "姓名 NAME", "score": 0.98, "box": [[0, 90], [80, 90], [80, 110], [0, 110]]},
+      {"text": "LI LEI", "score": 0.96, "box": [[90, 90], [150, 90], [150, 110], [90, 110]]},
+      {"text": "WANG WU", "score": 0.99, "box": [[220, 150], [300, 150], [300, 170], [220, 170]]},
+      {"text": "ETKT 1234567890123/1", "score": 0.95, "box": [[0, 120], [180, 120], [180, 140], [0, 140]]}
+    ]
+  },
+  "expected_fields": {
+    "document_variant": "train_ticket",
+    "train_number": "G87",
+    "departure_station": "BEIJING",
+    "arrival_station": "SUZHOU",
+    "departure_time": "2026-03-12",
+    "ticket_number": "1234567890123/1",
+    "passenger_name": "LI LEI"
+  }
+}

@@ -5,9 +5,13 @@ FIXTURES = {
     "examples/fixtures/boarding_pass/public_sample_00006737.expected.json": "boarding_pass",
     "examples/fixtures/china_id/basic_front.expected.json": "china_id",
     "examples/fixtures/china_id/basic_back.expected.json": "china_id",
+    "examples/fixtures/china_id/multiline_address_lowercase_x.expected.json": "china_id",
     "examples/fixtures/passport/basic_td3_mrz.expected.json": "passport",
+    "examples/fixtures/passport/text_fallback_unspecified_sex.expected.json": "passport",
     "examples/fixtures/hukou_booklet/basic_member_card.expected.json": "hukou_booklet",
+    "examples/fixtures/hukou_booklet/standalone_labels_infer_birth.expected.json": "hukou_booklet",
     "examples/fixtures/train_ticket/basic_text_ticket.expected.json": "train_ticket",
+    "examples/fixtures/train_ticket/name_anchor_priority.expected.json": "train_ticket",
     "examples/fixtures/medical_record/basic_outpatient_note.expected.json": "medical_record",
 }
 

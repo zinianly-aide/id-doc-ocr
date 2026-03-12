@@ -63,3 +63,11 @@ def test_parse_hukou_booklet_fields_from_regression_fixture():
 
     for key, expected in fixture["expected_fields"].items():
         assert fields[key] == expected
+
+
+def test_parse_hukou_booklet_fields_from_standalone_labels_fixture():
+    fixture = json.loads(Path("examples/fixtures/hukou_booklet/standalone_labels_infer_birth.expected.json").read_text())
+    fields = parse_hukou_booklet_fields(fixture["ocr_result"])
+
+    for key, expected in fixture["expected_fields"].items():
+        assert fields[key] == expected

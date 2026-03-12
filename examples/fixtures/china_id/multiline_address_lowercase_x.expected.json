@@ -1,0 +1,25 @@
+{
+  "plugin": "china_id",
+  "sample": "synthetic_china_id_front_multiline_address_lowercase_x",
+  "ocr_result": {
+    "lines": [
+      {"text": "中华人民共和国居民身份证"},
+      {"text": "姓名 李四"},
+      {"text": "性别 女 民族 满"},
+      {"text": "出生 1988年12月01日"},
+      {"text": "住址 上海市浦东新区"},
+      {"text": "世纪大道2000弄"},
+      {"text": "88号1602室"},
+      {"text": "身份证号码 31010119881201242x"}
+    ]
+  },
+  "expected_fields": {
+    "document_side": "front",
+    "name": "李四",
+    "gender": "女",
+    "ethnicity": "满",
+    "birth_date": "1988年12月01日",
+    "address": "上海市浦东新区世纪大道2000弄88号1602室",
+    "id_number": "31010119881201242X"
+  }
+}
