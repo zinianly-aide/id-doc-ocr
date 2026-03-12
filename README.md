@@ -1,5 +1,7 @@
 # id-doc-ocr
 
+[English](README.md) | [简体中文](docs/zh/README.zh-CN.md)
+
 A self-hosted OCR system for identity documents with a production-oriented architecture:
 
 - document detection and classification
@@ -22,6 +24,11 @@ A self-hosted OCR system for identity documents with a production-oriented archi
 - **Complex document / weak-template enhancement**: PaddleOCR-VL
 - **Region fallback OCR**: GOT-OCR 2.0
 - **Validation**: rule engine for dates, document numbers, MRZ, cross-field consistency
+
+## Quick start by language
+
+- **English project guide**: this page
+- **Chinese project guide**: [docs/zh/README.zh-CN.md](docs/zh/README.zh-CN.md)
 
 ## Architecture
 
