@@ -53,6 +53,33 @@ Docs:
 
 Public smoke-regression assets and fixture-based parser regression are documented in [docs/regression.md](docs/regression.md).
 
+Current checked-in regression inventory:
+
+- public assets: `31` samples in `examples/assets/manifest.json`
+- parser fixtures: `11` fixtures across `boarding_pass`, `china_id`, `passport`, `hukou_booklet`, `train_ticket`, and `medical_record`
+- latest parser regression report: `reports/parser_regression_latest.json`
+  - `11/11` fixtures passed
+  - `89/89` expected fields matched
+  - overall field exact-match rate: `1.00`
+
+### Browser-based recognition spot-check (manual)
+
+To complement fixture-based parser regression, we also did a small browser-driven visual spot-check against mixed public images. A first seed asset set for this track is now checked into `examples/assets/browser_visual/` and indexed in `examples/assets/manifest.json` with `benchmark_track="browser_visual_spotcheck"`.
+
+| Sample type | Example | What the recognizer got right | Observed limitation |
+| --- | --- | --- | --- |
+| Receipt / OCR text | Walmart receipt | Merchant, timestamp, subtotal / tax / total, most item lines | Long IDs / approval codes remain higher-risk for small OCR slips |
+| Natural image | Cat portrait | Main object, scene type, coarse visual attributes | Good for captioning / understanding, not structured extraction |
+| Chart / diagram | Stacked bar chart | Chart type, title, legend, x-axis categories, most bar labels | Precise numeric extraction is less stable than pure OCR documents |
+| UI screenshot | GitHub login page | Page purpose, key controls, field labels, CTA buttons | Layout understanding is good, but pixel-accurate validation should still rely on DOM / a11y data |
+
+Takeaway:
+
+- strongest on text-heavy screenshots and clean documents
+- reliable for general object / scene recognition
+- usable for chart understanding, but not yet a substitute for dedicated chart-to-table extraction
+- best used as a qualitative benchmark supplement, not as the primary parser regression signal
+
 ## PaddleOCR-VL track
 
 The repository now includes a concrete PaddleOCR-VL integration path with:

@@ -10,6 +10,11 @@ Current parser fixtures intentionally bias toward stable document types and incl
 - `train_ticket`: inline OCR fixtures, including a NAME-anchor proximity boundary fixture
 - `medical_record`: inline text fixture
 
+Current checked-in inventory snapshot:
+- `examples/assets/manifest.json`: `31` public assets
+- `examples/fixtures/`: `11` parser fixtures
+- latest parser regression report (`reports/parser_regression_latest.json`): `11/11` fixtures passed, `89/89` expected fields matched
+
 ## Asset smoke regression
 
 Purpose: catch broad OCR regressions quickly across a mixed public asset set.
@@ -58,6 +63,53 @@ When adding a public sample:
 3. rerun asset smoke regression
 4. if the sample is useful for a plugin, add an expected fixture under `examples/fixtures/`
 5. rerun parser regression
+
+## Browser-based visual spot-check
+
+Purpose: supplement fixture-based parser regression with a small manual benchmark that exercises browser-captured images outside the main parser path.
+
+This check is intentionally qualitative. It is useful for validating broad recognition behavior, but it should not replace field-level parser fixtures.
+
+Current manual spot-check buckets:
+- `receipt / OCR text`
+- `natural image`
+- `chart / diagram`
+- `UI screenshot`
+
+A first seed asset set for this track is now checked in under `examples/assets/browser_visual/` and indexed in `examples/assets/manifest.json` via `benchmark_track="browser_visual_spotcheck"`.
+
+Observed results from the latest spot-check:
+
+| Bucket | Example | Strength | Limitation |
+| --- | --- | --- | --- |
+| Receipt / OCR text | Walmart receipt | Strong on merchant / totals / timestamps / line items | Dense long numbers remain error-prone |
+| Natural image | Cat portrait | Stable object / scene understanding | Not a structured extraction benchmark |
+| Chart / diagram | Stacked penguin bar chart | Good title / legend / category understanding | Exact numeric extraction is weaker than document OCR |
+| UI screenshot | GitHub login page | Strong page-purpose and control recognition | For automation-grade validation, DOM / accessibility data is still preferred |
+
+Recommended use:
+1. keep parser regression as the hard gate for structured extraction
+2. use browser spot-checks as a soft signal for general visual robustness
+3. if a browser sample reveals a stable failure mode, convert it into either:
+   - a public asset in `examples/assets/`, or
+   - a parser fixture in `examples/fixtures/` when it maps cleanly to a plugin
+
+## Suggested benchmark expansion
+
+If the repo grows a broader benchmark track, prefer adding samples in buckets like:
+- clean receipts / invoices
+- noisy mobile document photos
+- tables with merged cells
+- charts with dense labels
+- multilingual forms
+- login / settings / dashboard screenshots
+- handwritten or low-contrast text
+
+For each added sample, record:
+- provenance URL
+- license
+- checksum
+- expected benchmark focus (OCR, layout, chart reading, UI semantics, etc.)
 
 ## Notes
 

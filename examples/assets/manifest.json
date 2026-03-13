@@ -3,7 +3,7 @@
   "version": "0.2.0",
   "source": "PaddleOCR public repository examples",
   "schema_version": "0.2.0",
-  "num_samples": 27,
+  "num_samples": 31,
   "samples": [
     {
       "sample_id": "boarding-00006737",
@@ -301,6 +301,54 @@
       "size_bytes": 193959,
       "sha256": "4b3df71b0b5ab8d37490e284ab76695939a2a5d61a37a3a8ae598545a5956cf3",
       "license": "Apache-2.0"
+    },
+    {
+      "sample_id": "browser-visual-receipt-walmart",
+      "category": "browser_visual",
+      "path": "examples/assets/browser_visual/receipt/walmart_receipt_ocr_space.jpg",
+      "kind": "receipt",
+      "source_path": "receipt-ocr-original.jpg",
+      "source_url": "https://ocr.space/Content/Images/receipt-ocr-original.jpg",
+      "size_bytes": 47231,
+      "sha256": "5891c3eaa29f736a07636fc38021efde32a9d1e71f3051f2620888c4709d710e",
+      "license": "See source site / demo sample",
+      "benchmark_track": "browser_visual_spotcheck"
+    },
+    {
+      "sample_id": "browser-visual-natural-cat03",
+      "category": "browser_visual",
+      "path": "examples/assets/browser_visual/natural/wikimedia_cat03.jpg",
+      "kind": "natural_image",
+      "source_path": "commons/3/3a/Cat03.jpg",
+      "source_url": "https://upload.wikimedia.org/wikipedia/commons/3/3a/Cat03.jpg",
+      "size_bytes": 279603,
+      "sha256": "ec8ff0a6954a5f54e4ad246f0a788d076f675e457bca16a04248718cca3fe631",
+      "license": "See source site / Wikimedia Commons asset",
+      "benchmark_track": "browser_visual_spotcheck"
+    },
+    {
+      "sample_id": "browser-visual-chart-bar-label",
+      "category": "browser_visual",
+      "path": "examples/assets/browser_visual/chart/matplotlib_bar_label_demo.png",
+      "kind": "chart",
+      "source_path": "stable/_images/sphx_glr_bar_label_demo_001.png",
+      "source_url": "https://matplotlib.org/stable/_images/sphx_glr_bar_label_demo_001.png",
+      "size_bytes": 14567,
+      "sha256": "84c6c7110f3af966957fab44466d4baf34a032129aebe8986e37e84b049ddb1b",
+      "license": "See source site / Matplotlib docs asset",
+      "benchmark_track": "browser_visual_spotcheck"
+    },
+    {
+      "sample_id": "browser-visual-ui-github-login-20260313",
+      "category": "browser_visual",
+      "path": "examples/assets/browser_visual/ui/github_login_20260313.png",
+      "kind": "ui_screenshot",
+      "source_path": "captured/github_login_20260313.png",
+      "source_url": "https://github.com/login",
+      "size_bytes": 42633,
+      "sha256": "4ff65b43941bda3ca9d938df23d794d11a9ec1eac766b30ba2d5359040c74224",
+      "license": "Captured for internal benchmark / see source site terms",
+      "benchmark_track": "browser_visual_spotcheck"
     }
   ]
 }

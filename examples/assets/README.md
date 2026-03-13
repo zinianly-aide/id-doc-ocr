@@ -10,6 +10,7 @@ These assets are pulled from public example files in the PaddleOCR repository an
 
 ## Categories
 - `boarding_pass/` - boarding-pass / ticket-like samples
+- `browser_visual/` - browser-captured or browser-sourced mixed visual spot-check samples
 - `captcha/` - captcha-like OCR samples
 - `char_rec/` - tiny single-character recognition sample
 - `doc/` - generic document-style samples
@@ -36,6 +37,8 @@ Each sample records:
 - `license`
 
 This makes the checked-in assets easier to audit and refresh.
+
+For `browser_visual/` samples, the manifest may also include `benchmark_track` to distinguish manual browser-oriented spot-check assets from the original PaddleOCR-sourced smoke-regression pool.
 
 ## Reports
 - `python examples/run_asset_smoke_regression.py`
