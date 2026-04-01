@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+import platform
+import sys
 from dataclasses import asdict, dataclass
 from typing import Any
 
@@ -37,7 +39,22 @@ BACKBONE_SPECS = {
 }
 
 
-def build_capabilities(settings: ServiceSettings) -> dict[str, Any]:
+def _runtime_info() -> dict[str, Any]:
+    return {
+        "python": {
+            "version": platform.python_version(),
+            "implementation": platform.python_implementation(),
+            "executable": sys.executable,
+        },
+        "platform": {
+            "system": platform.system(),
+            "release": platform.release(),
+            "machine": platform.machine(),
+        },
+    }
+
+
+def _build_plugin_inventory() -> list[dict[str, Any]]:
     plugins: list[dict[str, Any]] = []
     for plugin_name in registry.list_plugins():
         plugin = registry.get(plugin_name)
@@ -51,7 +68,10 @@ def build_capabilities(settings: ServiceSettings) -> dict[str, Any]:
                 "tags": plugin.metadata.tags,
             }
         )
+    return plugins
 
+
+def _build_backbone_inventory() -> dict[str, list[dict[str, Any]]]:
     backbones: dict[str, list[dict[str, Any]]] = {}
     for kind, classes in BACKBONE_SPECS.items():
         backbones[kind] = []
@@ -67,12 +87,48 @@ def build_capabilities(settings: ServiceSettings) -> dict[str, Any]:
                     "name": info.name if info else backbone_cls.__name__,
                     "kind": info.kind if info else kind,
                     "description": info.description if info else "",
+                    "available": bool(availability.get("available", False)),
                     "availability": availability,
                 }
             )
+    return backbones
 
+
+def _build_summary(plugins: list[dict[str, Any]], backbones: dict[str, list[dict[str, Any]]]) -> dict[str, Any]:
+    backbone_totals: dict[str, dict[str, int]] = {}
+    available_total = 0
+    total = 0
+    for kind, items in backbones.items():
+        kind_total = len(items)
+        kind_available = sum(1 for item in items if item["available"])
+        backbone_totals[kind] = {
+            "total": kind_total,
+            "available": kind_available,
+            "unavailable": kind_total - kind_available,
+        }
+        available_total += kind_available
+        total += kind_total
     return {
+        "plugin_count": len(plugins),
+        "backbone_count": total,
+        "available_backbone_count": available_total,
+        "backbones": backbone_totals,
+    }
+
+
+def build_capabilities(settings: ServiceSettings) -> dict[str, Any]:
+    plugins = _build_plugin_inventory()
+    backbones = _build_backbone_inventory()
+    summary = _build_summary(plugins, backbones)
+    return {
+        "ok": True,
         "service": asdict(settings),
+        "runtime": _runtime_info(),
+        "summary": summary,
+        "availability": {
+            "plugins": {"total": len(plugins)},
+            "backbones": summary["backbones"],
+        },
         "plugins": plugins,
         "backbones": backbones,
     }
@@ -85,11 +141,19 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
 
     @app.get("/health")
     def health() -> dict[str, object]:
+        capabilities_payload = build_capabilities(service_settings)
         return {
             "ok": True,
+            "status": "ok",
             "service": service_settings.service_name,
             "version": service_settings.service_version,
+            "service_info": capabilities_payload["service"],
+            "runtime": capabilities_payload["runtime"],
+            "summary": capabilities_payload["summary"],
+            "availability": capabilities_payload["availability"],
             "plugins": registry.list_plugins(),
+            "plugin_names": registry.list_plugins(),
+            "backbones": capabilities_payload["backbones"],
             "default_failure_dir": service_settings.default_failure_dir,
         }
 

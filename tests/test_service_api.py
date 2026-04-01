@@ -10,26 +10,39 @@ def build_client(tmp_path: Path | None = None) -> TestClient:
     return TestClient(create_app(settings))
 
 
-def test_health():
+def test_health_exposes_runtime_and_capability_summary():
     client = build_client()
     response = client.get("/health")
     assert response.status_code == 200
     payload = response.json()
     assert payload["ok"] is True
+    assert payload["status"] == "ok"
     assert payload["service"] == "id-doc-ocr"
     assert payload["version"] == "0.1.0"
+    assert payload["service_info"]["service_name"] == "id-doc-ocr"
+    assert payload["summary"]["plugin_count"] >= 1
+    assert payload["summary"]["backbones"]["ocr"]["total"] >= 1
+    assert payload["availability"]["plugins"]["total"] == payload["summary"]["plugin_count"]
+    assert payload["runtime"]["python"]["version"]
+    assert payload["runtime"]["platform"]["system"]
     assert "boarding_pass" in payload["plugins"]
+    assert payload["plugin_names"] == payload["plugins"]
+    assert any(backbone["name"] == "rapidocr" for backbone in payload["backbones"]["ocr"])
 
 
-def test_capabilities_exposes_plugins_and_backbones():
+def test_capabilities_exposes_plugins_backbones_runtime_and_availability():
     client = build_client()
     response = client.get("/capabilities")
     assert response.status_code == 200
     payload = response.json()
+    assert payload["ok"] is True
     assert payload["service"]["service_name"] == "id-doc-ocr"
+    assert payload["summary"]["plugin_count"] == len(payload["plugins"])
+    assert payload["availability"]["plugins"]["total"] == len(payload["plugins"])
+    assert payload["runtime"]["python"]["implementation"]
     assert any(plugin["name"] == "boarding_pass" for plugin in payload["plugins"])
-    assert any(backbone["name"] == "rapidocr" for backbone in payload["backbones"]["ocr"])
-    assert any(backbone["name"] == "paddleocr_vl" for backbone in payload["backbones"]["vlm"])
+    assert any(backbone["name"] == "rapidocr" and "available" in backbone for backbone in payload["backbones"]["ocr"])
+    assert any(backbone["name"] == "paddleocr_vl" and "availability" in backbone for backbone in payload["backbones"]["vlm"])
 
 
 def test_infer_success():
