@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -78,8 +79,15 @@ def test_infer_uses_default_failure_dir_for_invalid_result(tmp_path: Path):
         files={"file": ("sample.jpg", b"fake-image-bytes", "image/jpeg")},
     )
     assert response.status_code == 200
-    failure_log = tmp_path / "in_memory_sample.json"
+    failure_log = tmp_path / "sample.json"
     assert failure_log.exists()
+    payload = json.loads(failure_log.read_text())
+    assert payload["sample_id"] == "sample"
+    assert payload["plugin"] == "passport"
+    assert payload["backend"] == {"ocr": "mock", "vlm": "paddleocr_vl"}
+    assert payload["validation"]["accepted"] is False
+    assert payload["source"] == {"kind": "path", "name": "sample.jpg"}
+    assert payload["result"]["sample_id"] == "sample"
 
 
 def test_infer_rejects_missing_plugin_name():

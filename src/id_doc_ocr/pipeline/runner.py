@@ -52,8 +52,19 @@ class DemoPipelineRunner:
                 return adapter
         return MockPaddleOCRVLAdapter()
 
-    def run(self, plugin_name: str, image: bytes | str | Path, fields: dict | None = None) -> dict[str, Any]:
+    def run(
+        self,
+        plugin_name: str,
+        image: bytes | str | Path,
+        fields: dict | None = None,
+        sample_id: str | None = None,
+        source_name: str | None = None,
+        source_kind: str | None = None,
+    ) -> dict[str, Any]:
         plugin = registry.get(plugin_name)
+        resolved_sample_id = sample_id or self._resolve_sample_id(image)
+        resolved_source_name = source_name or (str(image) if isinstance(image, (str, Path)) else None)
+        resolved_source_kind = source_kind or ("path" if isinstance(image, (str, Path)) else "in_memory")
         provided_fields = fields or {}
         detector_result = self.detector.detect(image, preferred_doc_type=plugin_name)
         rectify_result = self.rectify.process(image, detection=detector_result.primary)
@@ -62,11 +73,13 @@ class DemoPipelineRunner:
         parsed_fields = self.parse_plugin_fields(plugin, ocr_result)
         merged_fields = {**parsed_fields, **provided_fields}
         vlm_result = self.vlm.infer(rectified_image)
+        vlm_backend_name = getattr(self.vlm, "info", None).name if getattr(self.vlm, "info", None) else self.vlm_backend
         result = {
+            "sample_id": resolved_sample_id,
             "plugin": plugin.metadata.name,
             "schema": plugin.get_schema_name(),
             "ocr_backend": self.ocr_backend,
-            "vlm_backend": getattr(self.vlm, "info", None).name if getattr(self.vlm, "info", None) else self.vlm_backend,
+            "vlm_backend": vlm_backend_name,
             "detector": detector_result.model_dump(),
             "rectify": rectify_result.model_dump(),
             "ocr": ocr_result,
@@ -74,12 +87,23 @@ class DemoPipelineRunner:
             "merged_fields": merged_fields,
             "vlm": vlm_result,
             "region_ocr": self.region_ocr.infer(b"" if not isinstance(rectified_image, (bytes, bytearray)) else rectified_image),
-            "annotation": self.to_internal_annotation(plugin_name, image, ocr_result),
+            "annotation": self.to_internal_annotation(plugin_name, image, ocr_result, sample_id=resolved_sample_id),
             "validation": plugin.validate_fields(merged_fields),
         }
         if self.failure_dir and not result["validation"].get("accepted", False):
-            sample_id = Path(str(image)).stem if isinstance(image, (str, Path)) else "in_memory_sample"
-            write_failure_case(self.failure_dir, result, sample_id)
+            write_failure_case(
+                self.failure_dir,
+                result,
+                resolved_sample_id,
+                metadata={
+                    "sample_id": resolved_sample_id,
+                    "plugin": plugin.metadata.name,
+                    "ocr_backend": self.ocr_backend,
+                    "vlm_backend": vlm_backend_name,
+                    "source_kind": resolved_source_kind,
+                    "source_name": resolved_source_name,
+                },
+            )
         return result
 
     def parse_plugin_fields(self, plugin: Any, ocr_result: dict[str, Any]) -> dict[str, Any]:
@@ -88,10 +112,17 @@ class DemoPipelineRunner:
             return parse_fn(ocr_result)
         return {}
 
+    def _resolve_sample_id(self, image: bytes | str | Path) -> str:
+        return Path(str(image)).stem if isinstance(image, (str, Path)) else "in_memory_sample"
+
     def to_internal_annotation(
-        self, plugin_name: str, image: bytes | str | Path, ocr_result: dict[str, Any]
+        self,
+        plugin_name: str,
+        image: bytes | str | Path,
+        ocr_result: dict[str, Any],
+        sample_id: str | None = None,
     ) -> dict[str, Any]:
-        sample_id = Path(str(image)).stem if isinstance(image, (str, Path)) else "in_memory_sample"
+        resolved_sample_id = sample_id or self._resolve_sample_id(image)
         regions: list[RegionAnnotation] = []
         fields: list[FieldAnnotation] = []
         for idx, line in enumerate(ocr_result.get("lines", [])):
@@ -122,5 +153,5 @@ class DemoPipelineRunner:
                     confidence=line.get("score"),
                 )
             )
-        annotation = InternalAnnotation(sample_id=sample_id, doc_type=plugin_name, regions=regions, fields=fields)
+        annotation = InternalAnnotation(sample_id=resolved_sample_id, doc_type=plugin_name, regions=regions, fields=fields)
         return annotation.model_dump()

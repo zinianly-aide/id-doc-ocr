@@ -187,7 +187,13 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
             failure_dir=effective_failure_dir,
         )
         try:
-            result = runner.run(plugin_name=selected_plugin, image=payload)
+            result = runner.run(
+                plugin_name=selected_plugin,
+                image=payload,
+                sample_id=os.path.splitext(file.filename or "in_memory_sample")[0],
+                source_name=file.filename,
+                source_kind="path",
+            )
         except RuntimeError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         except Exception as exc:  # pragma: no cover
