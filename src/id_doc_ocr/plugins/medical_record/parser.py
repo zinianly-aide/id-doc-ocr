@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from id_doc_ocr.plugins.medical_record.sick_note import assess_sick_note_characteristics
+
 DATE_RE = re.compile(r"\b\d{4}[-/.年]\d{1,2}[-/.月]\d{1,2}日?\b")
 AGE_RE = re.compile(r"(\d{1,3})\s*岁")
 GENDER_TOKENS = {"男": "男", "女": "女", "MALE": "男", "FEMALE": "女"}
@@ -123,7 +125,7 @@ def parse_medical_record_fields(ocr_result: dict[str, Any]) -> dict[str, Any]:
     medications = _split_items(_collect_labeled_value(rows, "medications"))
     notes = _collect_labeled_value(rows, "notes")
 
-    return {
+    fields = {
         "doc_type": "medical_record",
         "hospital_name": hospital_name,
         "patient_name": patient_name,
@@ -135,3 +137,5 @@ def parse_medical_record_fields(ocr_result: dict[str, Any]) -> dict[str, Any]:
         "medications": medications,
         "notes": notes,
     }
+    fields["sick_note_check"] = assess_sick_note_characteristics(ocr_result, parsed_fields=fields)
+    return fields

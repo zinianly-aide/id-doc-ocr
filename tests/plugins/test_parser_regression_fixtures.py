@@ -13,6 +13,7 @@ FIXTURES = [
     Path("examples/fixtures/train_ticket/basic_text_ticket.expected.json"),
     Path("examples/fixtures/train_ticket/name_anchor_priority.expected.json"),
     Path("examples/fixtures/medical_record/basic_outpatient_note.expected.json"),
+    Path("examples/fixtures/medical_record/sick_note_like.expected.json"),
 ]
 
 

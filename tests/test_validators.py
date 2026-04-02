@@ -14,6 +14,19 @@ def test_medical_record_requires_patient_name():
     assert report.accepted is False
 
 
+def test_medical_record_warns_when_not_sick_note_like():
+    report = validate_medical_record(
+        {
+            "patient_name": "张三",
+            "visit_date": "2026-03-11",
+            "sick_note_check": {"is_sick_note_like": False, "score": 0.25},
+        }
+    )
+    assert report.accepted is True
+    assert {issue.code for issue in report.issues} >= {"not_sick_note_like", "weak_sick_note_signal"}
+    assert report.score == 0.625
+
+
 def test_hukou_booklet_accepts_warning_only_result():
     report = validate_hukou_booklet(
         {

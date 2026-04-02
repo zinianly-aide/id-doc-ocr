@@ -28,3 +28,25 @@ def test_runner_emits_review_ready_decision_warning_and_evidence():
     assert result["evidence"]["summary"]["ocr_line_count"] == len(result["evidence"]["ocr_lines"])
     assert result["evidence"]["summary"]["field_count"] == len(result["evidence"]["fields"])
     assert any(field["field_name"] == "ticket_number" for field in result["evidence"]["fields"])
+
+
+def test_runner_includes_medical_record_sick_note_check_in_review_evidence():
+    runner = DemoPipelineRunner()
+    result = runner.run(
+        "medical_record",
+        b"demo",
+        fields={
+            "patient_name": "张三",
+            "visit_date": "2026-03-11",
+            "sick_note_check": {
+                "is_sick_note_like": True,
+                "score": 0.88,
+                "confidence": "high",
+                "matched_features": ["医院抬头", "病休/病假标题"],
+                "missing_features": [],
+            },
+        },
+    )
+
+    assert result["merged_fields"]["sick_note_check"]["is_sick_note_like"] is True
+    assert any(field["field_name"] == "sick_note_check" for field in result["evidence"]["fields"])

@@ -13,3 +13,4 @@ class MedicalRecordDocument(BaseModel):
     diagnosis: list[str] = Field(default_factory=list)
     medications: list[str] = Field(default_factory=list)
     notes: str | None = None
+    sick_note_check: dict = Field(default_factory=dict)

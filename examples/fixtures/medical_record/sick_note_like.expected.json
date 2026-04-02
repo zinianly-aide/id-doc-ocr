@@ -1,0 +1,27 @@
+{
+  "plugin": "medical_record",
+  "ocr_result": {
+    "lines": [
+      {"text": "上海市第一人民医院", "score": 0.99},
+      {"text": "医务病休证明书", "score": 0.99},
+      {"text": "姓名: 王小明", "score": 0.98},
+      {"text": "诊断: 急性上呼吸道感染", "score": 0.97},
+      {"text": "建议休息三天", "score": 0.97},
+      {"text": "自2026年03月11日至2026年03月13日", "score": 0.96},
+      {"text": "医师: 李医生", "score": 0.96},
+      {"text": "病假专用章", "score": 0.95},
+      {"text": "日期: 2026年03月11日", "score": 0.94}
+    ]
+  },
+  "expected_fields": {
+    "doc_type": "medical_record",
+    "hospital_name": "上海市第一人民医院",
+    "patient_name": "王小明",
+    "visit_date": "2026-03-11",
+    "diagnosis": ["急性上呼吸道感染"],
+    "sick_note_check": {
+      "is_sick_note_like": true,
+      "confidence": "high"
+    }
+  }
+}
