@@ -2,6 +2,7 @@ from id_doc_ocr.plugins.birth_certificate.validator import validate_birth_certif
 from id_doc_ocr.plugins.hukou_booklet.validator import validate_hukou_booklet
 from id_doc_ocr.plugins.medical_record.validator import validate_medical_record
 from id_doc_ocr.plugins.only_child_certificate.validator import validate_only_child_certificate
+from id_doc_ocr.plugins.custody_relationship_certificate.validator import validate_custody_relationship_certificate
 from id_doc_ocr.plugins.train_ticket.validator import validate_train_ticket
 
 
@@ -112,6 +113,33 @@ def test_only_child_certificate_warns_when_not_east_china_style():
             "father_name": "李强",
             "mother_name": "张敏",
             "issuing_authority": "成都市某街道办事处",
+        }
+    )
+    assert report.accepted is True
+    assert any(issue.code == "not_east_china_style" for issue in report.issues)
+
+
+def test_custody_relationship_certificate_requires_core_fields():
+    report = validate_custody_relationship_certificate({"relation": "抚养关系"})
+    assert report.accepted is False
+    assert {issue.code for issue in report.issues} >= {
+        "missing_child_name",
+        "missing_guardian_name",
+        "missing_issuing_authority",
+    }
+
+
+def test_custody_relationship_certificate_warns_when_not_east_china_style():
+    report = validate_custody_relationship_certificate(
+        {
+            "certificate_title": "抚养关系证明",
+            "child_name": "安小宁",
+            "guardian_name": "张敏",
+            "relation": "抚养关系",
+            "relation_statement": "安小宁现由张敏负责实际抚养。",
+            "issuing_authority": "成都市双流区东升街道办事处",
+            "authority_features": ["subdistrict_office"],
+            "issue_date": "2026-03-18",
         }
     )
     assert report.accepted is True

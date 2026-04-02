@@ -1,0 +1,25 @@
+{
+  "plugin": "custody_relationship_certificate",
+  "sample": "de-identified shanghai custody relationship proof text fixture",
+  "ocr_result": {
+    "text": "抚养关系证明\n兹证明：张敏，女，身份证号 310101198905062248，系未成年人安小宁之母。安小宁，2018年6月12日出生，身份证号 310115201806120017。自2021年起一直随张敏共同生活，现由张敏在上海市浦东新区负责实际抚养照料。\n现居住地址：上海市浦东新区川沙新镇晨光路88号\n本证明用于子女入学及相关事项办理。\n出具单位：上海市浦东新区川沙新镇晨光居民委员会\n2026年03月18日"
+  },
+  "expected_fields": {
+    "doc_type": "custody_relationship_certificate",
+    "certificate_title": "抚养关系证明",
+    "child_name": "安小宁",
+    "guardian_name": "张敏",
+    "relation": "抚养关系",
+    "relation_statement": "兹证明：张敏，女，身份证号 310101198905062248，系未成年人安小宁之母",
+    "child_birth_date": "2018-06-12",
+    "child_id_number": "310115201806120017",
+    "guardian_id_number": "310101198905062248",
+    "subject_address": "上海市浦东新区川沙新镇晨光路88号",
+    "purpose": "本证明用于子女入学及相关事项办理。",
+    "issuing_authority": "上海市浦东新区川沙新镇晨光居民委员会",
+    "issue_date": "2026-03-18",
+    "authority_features": [
+      "residents_committee"
+    ]
+  }
+}
