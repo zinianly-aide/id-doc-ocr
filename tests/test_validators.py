@@ -1,6 +1,7 @@
 from id_doc_ocr.plugins.birth_certificate.validator import validate_birth_certificate
 from id_doc_ocr.plugins.hukou_booklet.validator import validate_hukou_booklet
 from id_doc_ocr.plugins.medical_record.validator import validate_medical_record
+from id_doc_ocr.plugins.only_child_certificate.validator import validate_only_child_certificate
 from id_doc_ocr.plugins.train_ticket.validator import validate_train_ticket
 
 
@@ -88,3 +89,30 @@ def test_birth_certificate_warns_when_not_shanghai_style():
     )
     assert report.accepted is True
     assert any(issue.code == "not_shanghai_style" for issue in report.issues)
+
+
+def test_only_child_certificate_requires_core_fields():
+    report = validate_only_child_certificate({"child_gender": "男"})
+    assert report.accepted is False
+    assert {issue.code for issue in report.issues} >= {
+        "missing_child_name",
+        "missing_child_birth_date",
+        "missing_father_name",
+        "missing_mother_name",
+    }
+
+
+def test_only_child_certificate_warns_when_not_east_china_style():
+    report = validate_only_child_certificate(
+        {
+            "certificate_title": "独生子女父母光荣证",
+            "child_name": "安小宁",
+            "child_gender": "女",
+            "child_birth_date": "2020-06-18",
+            "father_name": "李强",
+            "mother_name": "张敏",
+            "issuing_authority": "成都市某街道办事处",
+        }
+    )
+    assert report.accepted is True
+    assert any(issue.code == "not_east_china_style" for issue in report.issues)

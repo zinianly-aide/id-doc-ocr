@@ -1,0 +1,21 @@
+{
+  "plugin": "only_child_certificate",
+  "sample": "de-identified shanghai only-child certificate text fixture",
+  "ocr_result": {
+    "text": "独生子女父母光荣证\n证号：沪A2024030168\n子女姓名：安小宁\n性别：男\n出生日期：2020年06月18日\n父亲姓名：李强\n母亲姓名：张敏\n家庭住址：上海市浦东新区丁香路88号\n发证机关：上海市浦东新区卫生健康委员会\n发证日期：2024年03月20日\n备注：信息已脱敏，仅用于解析回归测试"
+  },
+  "expected_fields": {
+    "doc_type": "only_child_certificate",
+    "certificate_title": "独生子女父母光荣证",
+    "certificate_number": "沪A2024030168",
+    "child_name": "安小宁",
+    "child_gender": "男",
+    "child_birth_date": "2020-06-18",
+    "father_name": "李强",
+    "mother_name": "张敏",
+    "issue_date": "2024-03-20",
+    "issuing_authority": "上海市浦东新区卫生健康委员会",
+    "holder_address": "上海市浦东新区丁香路88号",
+    "remarks": "信息已脱敏，仅用于解析回归测试"
+  }
+}

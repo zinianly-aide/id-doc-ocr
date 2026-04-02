@@ -1,17 +1,17 @@
 {
   "schema_version": "0.2.0",
   "report_name": "parser_regression",
-  "generated_at": "2026-03-12T17:00:44.506149+00:00",
+  "generated_at": "2026-04-02T13:07:20.937357+00:00",
   "runner": {
     "pipeline": "DemoPipelineRunner",
     "ocr_backend": "rapidocr"
   },
   "totals": {
-    "num_fixtures": 11,
-    "num_passed": 11,
+    "num_fixtures": 12,
+    "num_passed": 12,
     "num_failed": 0,
-    "num_fields": 89,
-    "num_matched_fields": 89,
+    "num_fields": 101,
+    "num_matched_fields": 101,
     "overall_field_exact_match_rate": 1.0,
     "status": "pass"
   },
@@ -679,6 +679,89 @@
           "field": "notes",
           "expected": "建议多饮水休息",
           "predicted": "建议多饮水休息",
+          "matched": true
+        }
+      ]
+    },
+    {
+      "fixture": "examples/fixtures/only_child_certificate/shanghai_only_child_certificate_text.expected.json",
+      "sample": "de-identified shanghai only-child certificate text fixture",
+      "plugin": "only_child_certificate",
+      "status": "pass",
+      "num_fields": 12,
+      "num_matched_fields": 12,
+      "field_exact_match_rate": 1.0,
+      "fields": [
+        {
+          "field": "doc_type",
+          "expected": "only_child_certificate",
+          "predicted": "only_child_certificate",
+          "matched": true
+        },
+        {
+          "field": "certificate_title",
+          "expected": "独生子女父母光荣证",
+          "predicted": "独生子女父母光荣证",
+          "matched": true
+        },
+        {
+          "field": "certificate_number",
+          "expected": "沪A2024030168",
+          "predicted": "沪A2024030168",
+          "matched": true
+        },
+        {
+          "field": "child_name",
+          "expected": "安小宁",
+          "predicted": "安小宁",
+          "matched": true
+        },
+        {
+          "field": "child_gender",
+          "expected": "男",
+          "predicted": "男",
+          "matched": true
+        },
+        {
+          "field": "child_birth_date",
+          "expected": "2020-06-18",
+          "predicted": "2020-06-18",
+          "matched": true
+        },
+        {
+          "field": "father_name",
+          "expected": "李强",
+          "predicted": "李强",
+          "matched": true
+        },
+        {
+          "field": "mother_name",
+          "expected": "张敏",
+          "predicted": "张敏",
+          "matched": true
+        },
+        {
+          "field": "issue_date",
+          "expected": "2024-03-20",
+          "predicted": "2024-03-20",
+          "matched": true
+        },
+        {
+          "field": "issuing_authority",
+          "expected": "上海市浦东新区卫生健康委员会",
+          "predicted": "上海市浦东新区卫生健康委员会",
+          "matched": true
+        },
+        {
+          "field": "holder_address",
+          "expected": "上海市浦东新区丁香路88号",
+          "predicted": "上海市浦东新区丁香路88号",
+          "matched": true
+        },
+        {
+          "field": "remarks",
+          "expected": "信息已脱敏，仅用于解析回归测试",
+          "predicted": "信息已脱敏，仅用于解析回归测试",
           "matched": true
         }
       ]
