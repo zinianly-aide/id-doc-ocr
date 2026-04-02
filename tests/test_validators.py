@@ -1,3 +1,4 @@
+from id_doc_ocr.plugins.birth_certificate.validator import validate_birth_certificate
 from id_doc_ocr.plugins.hukou_booklet.validator import validate_hukou_booklet
 from id_doc_ocr.plugins.medical_record.validator import validate_medical_record
 from id_doc_ocr.plugins.train_ticket.validator import validate_train_ticket
@@ -61,3 +62,29 @@ def test_hukou_booklet_warns_when_birth_date_mismatches_id_number():
         }
     )
     assert any(issue.code == "birth_date_mismatch" for issue in report.issues)
+
+
+def test_birth_certificate_requires_core_fields():
+    report = validate_birth_certificate({"sex": "男"})
+    assert report.accepted is False
+    assert {issue.code for issue in report.issues} >= {
+        "missing_child_name",
+        "missing_date_of_birth",
+        "missing_birth_place",
+        "missing_mother_name",
+    }
+
+
+def test_birth_certificate_warns_when_not_shanghai_style():
+    report = validate_birth_certificate(
+        {
+            "child_name": "Baby A",
+            "sex": "女",
+            "date_of_birth": "2024-03-16",
+            "birth_place": "杭州市妇产科医院",
+            "mother_name": "王芳",
+            "certificate_number": "T310123456",
+        }
+    )
+    assert report.accepted is True
+    assert any(issue.code == "not_shanghai_style" for issue in report.issues)

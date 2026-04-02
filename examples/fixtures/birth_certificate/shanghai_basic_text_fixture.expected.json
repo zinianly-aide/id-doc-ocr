@@ -1,0 +1,23 @@
+{
+  "plugin": "birth_certificate",
+  "sample": "de-identified shanghai birth certificate text fixture",
+  "ocr_result": {
+    "text": "上海市出生医学证明\n新生儿姓名：安小宁\n性别：男\n出生日期：2024年03月16日\n出生时间：08:36\n孕周：39周\n出生体重：3250克\n出生地点：上海市第一妇婴保健院\n出生医学证明编号：T310123456\n母亲姓名：张敏\n母亲年龄：31岁\n父亲姓名：李强\n签发机构：上海市第一妇婴保健院\n签发日期：2024年03月20日"
+  },
+  "expected_fields": {
+    "doc_type": "birth_certificate",
+    "child_name": "安小宁",
+    "sex": "男",
+    "date_of_birth": "2024-03-16",
+    "time_of_birth": "08:36",
+    "gestational_weeks": 39,
+    "birth_weight_grams": 3250,
+    "birth_place": "上海市第一妇婴保健院",
+    "issuing_unit": "上海市第一妇婴保健院",
+    "certificate_number": "T310123456",
+    "mother_name": "张敏",
+    "mother_age": 31,
+    "father_name": "李强",
+    "issue_date": "2024-03-20"
+  }
+}
