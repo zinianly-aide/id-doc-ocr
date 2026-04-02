@@ -8,6 +8,8 @@ from id_doc_ocr.rectify.base import (
 from id_doc_ocr.rectify.contracts import (
     OrientationDecision,
     PerspectiveTransform,
+    QualityFlag,
+    QualitySummary,
     RectifyArtifact,
     RectifyResult,
 )
@@ -26,6 +28,8 @@ __all__ = [
     "RectifyPipelineStage",
     "OrientationDecision",
     "PerspectiveTransform",
+    "QualityFlag",
+    "QualitySummary",
     "RectifyArtifact",
     "RectifyResult",
     "MockOrientationCorrector",

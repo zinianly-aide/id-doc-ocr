@@ -28,10 +28,31 @@ class RectifyArtifact(BaseModel):
     payload: dict[str, Any] = Field(default_factory=dict)
 
 
+class QualityFlag(BaseModel):
+    code: str
+    severity: Literal["info", "warning", "error"]
+    message: str
+    source: Literal["detector", "perspective", "orientation", "quality"]
+    metric: str | None = None
+    value: float | bool | str | None = None
+    threshold: float | bool | str | None = None
+
+
+class QualitySummary(BaseModel):
+    passed: bool = True
+    review_recommended: bool = False
+    routing_hint: Literal["normal", "review", "reject"] = "normal"
+    risk_score: float = 0.0
+    reasons: list[str] = Field(default_factory=list)
+    flags: list[QualityFlag] = Field(default_factory=list)
+    metrics: dict[str, float | bool | str | None] = Field(default_factory=dict)
+
+
 class RectifyResult(BaseModel):
     image: bytes | str
     perspective: PerspectiveTransform
     orientation: OrientationDecision
     quality: QualityReport
+    quality_summary: QualitySummary = Field(default_factory=QualitySummary)
     artifacts: list[RectifyArtifact] = Field(default_factory=list)
     meta: dict[str, Any] = Field(default_factory=dict)

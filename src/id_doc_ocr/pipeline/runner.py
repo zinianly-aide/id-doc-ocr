@@ -82,6 +82,14 @@ class DemoPipelineRunner:
             "vlm_backend": vlm_backend_name,
             "detector": detector_result.model_dump(),
             "rectify": rectify_result.model_dump(),
+            "quality": {
+                "summary": rectify_result.quality_summary.model_dump(),
+                "flags": [flag.model_dump() for flag in rectify_result.quality_summary.flags],
+                "routing": {
+                    "hint": rectify_result.quality_summary.routing_hint,
+                    "review_recommended": rectify_result.quality_summary.review_recommended,
+                },
+            },
             "ocr": ocr_result,
             "parsed_fields": parsed_fields,
             "merged_fields": merged_fields,
