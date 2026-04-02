@@ -59,7 +59,13 @@ def test_infer_success():
     assert payload["result"]["plugin"] == "boarding_pass"
     assert payload["result"]["detector"]["primary"]["doc_type"] == "boarding_pass"
     assert payload["result"]["quality"]["summary"]["routing_hint"] == "review"
+    assert payload["result"]["decision"]["action"] == "review"
+    assert payload["result"]["review"]["decision"] == payload["result"]["decision"]
+    assert payload["result"]["review"]["warnings"] == payload["result"]["warnings"]
+    assert payload["result"]["review"]["evidence"] == payload["result"]["evidence"]
     assert any(flag["code"] == "weak_perspective_confidence" for flag in payload["result"]["quality"]["flags"])
+    assert any(warning["stage"] == "validation" for warning in payload["result"]["warnings"])
+    assert payload["result"]["evidence"]["summary"]["validator_issue_count"] >= 1
 
 
 def test_infer_accepts_plugin_alias_field():
