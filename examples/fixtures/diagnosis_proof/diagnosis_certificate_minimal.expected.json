@@ -1,0 +1,26 @@
+{
+  "plugin": "diagnosis_proof",
+  "sample": "desensitized minimal diagnosis certificate text fixture",
+  "ocr_result": {
+    "text": "\n杭州市某医院\n疾病诊断证明书\n姓名：李四\n科室：呼吸内科\n临床诊断：急性上呼吸道感染\n处理意见：建议门诊治疗并休息3天\n接诊医师：王宁\n出具日期：2026/03/18\n"
+  },
+  "expected_fields": {
+    "doc_type": "diagnosis_proof",
+    "hospital_name": "杭州市某医院",
+    "certificate_title": "疾病诊断证明书",
+    "patient_name": "李四",
+    "gender": null,
+    "age": null,
+    "department": "呼吸内科",
+    "diagnosis": ["急性上呼吸道感染"],
+    "advice": ["建议门诊治疗并休息3天"],
+    "issue_date": "2026-03-18",
+    "rest_start_date": null,
+    "rest_end_date": null,
+    "rest_days": 3,
+    "physician_name": "王宁",
+    "physician_department": "呼吸内科",
+    "seal_present": false,
+    "seal_text": null
+  }
+}

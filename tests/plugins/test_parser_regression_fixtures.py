@@ -14,6 +14,8 @@ FIXTURES = [
     Path("examples/fixtures/train_ticket/name_anchor_priority.expected.json"),
     Path("examples/fixtures/medical_record/basic_outpatient_note.expected.json"),
     Path("examples/fixtures/medical_record/sick_note_like.expected.json"),
+    Path("examples/fixtures/diagnosis_proof/diagnosis_certificate_text.expected.json"),
+    Path("examples/fixtures/diagnosis_proof/diagnosis_certificate_minimal.expected.json"),
     Path("examples/fixtures/birth_certificate/shanghai_basic_text_fixture.expected.json"),
     Path("examples/fixtures/custody_relationship_certificate/shanghai_guardianship_text.expected.json"),
 ]

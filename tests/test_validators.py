@@ -1,4 +1,5 @@
 from id_doc_ocr.plugins.birth_certificate.validator import validate_birth_certificate
+from id_doc_ocr.plugins.diagnosis_proof.validator import validate_diagnosis_proof
 from id_doc_ocr.plugins.hukou_booklet.validator import validate_hukou_booklet
 from id_doc_ocr.plugins.medical_record.validator import validate_medical_record
 from id_doc_ocr.plugins.only_child_certificate.validator import validate_only_child_certificate
@@ -28,6 +29,16 @@ def test_medical_record_warns_when_not_sick_note_like():
     assert report.accepted is True
     assert {issue.code for issue in report.issues} >= {"not_sick_note_like", "weak_sick_note_signal"}
     assert report.score == 0.625
+
+
+def test_diagnosis_proof_requires_core_fields():
+    report = validate_diagnosis_proof({"certificate_title": "诊断证明书"})
+    assert report.accepted is False
+    assert {issue.code for issue in report.issues} >= {
+        "missing_hospital_name",
+        "missing_diagnosis",
+        "missing_issue_date",
+    }
 
 
 def test_hukou_booklet_accepts_warning_only_result():

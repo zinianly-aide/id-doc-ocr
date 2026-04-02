@@ -1,0 +1,39 @@
+{
+  "plugin": "diagnosis_proof",
+  "sample": "desensitized diagnosis certificate text fixture",
+  "ocr_result": {
+    "lines": [
+      {"text": "上海市第八人民医院", "score": 0.99},
+      {"text": "门诊诊断证明书", "score": 0.99},
+      {"text": "姓名：张三", "score": 0.98},
+      {"text": "性别：男", "score": 0.98},
+      {"text": "年龄：35岁", "score": 0.98},
+      {"text": "科室：骨科门诊", "score": 0.97},
+      {"text": "诊断：腰椎间盘突出；腰肌劳损", "score": 0.97},
+      {"text": "建议：建议休息7天，必要时继续理疗治疗", "score": 0.97},
+      {"text": "建议自2026年03月10日至2026年03月16日休息", "score": 0.96},
+      {"text": "医师：李明", "score": 0.95},
+      {"text": "日期：2026年03月10日", "score": 0.96},
+      {"text": "上海市第八人民医院诊断证明章", "score": 0.94}
+    ]
+  },
+  "expected_fields": {
+    "doc_type": "diagnosis_proof",
+    "hospital_name": "上海市第八人民医院",
+    "certificate_title": "门诊诊断证明书",
+    "patient_name": "张三",
+    "gender": "男",
+    "age": "35",
+    "department": "骨科门诊",
+    "diagnosis": ["腰椎间盘突出", "腰肌劳损"],
+    "advice": ["建议休息7天", "必要时继续理疗治疗"],
+    "issue_date": "2026-03-10",
+    "rest_start_date": "2026-03-10",
+    "rest_end_date": "2026-03-16",
+    "rest_days": 7,
+    "physician_name": "李明",
+    "physician_department": "骨科门诊",
+    "seal_present": true,
+    "seal_text": "上海市第八人民医院诊断证明章"
+  }
+}
