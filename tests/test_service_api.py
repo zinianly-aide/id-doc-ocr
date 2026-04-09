@@ -127,3 +127,18 @@ def test_infer_rejects_empty_file():
         files={"file": ("empty.jpg", b"", "image/jpeg")},
     )
     assert response.status_code == 400
+
+
+def test_infer_returns_422_when_runner_init_raises_runtime_error(monkeypatch):
+    def _boom(*args, **kwargs):
+        raise RuntimeError("backend init failed")
+
+    monkeypatch.setattr("id_doc_ocr.service.app.DemoPipelineRunner", _boom)
+    client = build_client()
+    response = client.post(
+        "/infer",
+        data={"plugin_name": "boarding_pass", "ocr_backend": "paddleocr", "vlm_backend": "mock"},
+        files={"file": ("sample.jpg", b"fake-image-bytes", "image/jpeg")},
+    )
+    assert response.status_code == 422
+    assert response.json()["detail"] == "backend init failed"

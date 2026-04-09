@@ -191,12 +191,12 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
             raise HTTPException(status_code=400, detail="Uploaded file is empty")
 
         effective_failure_dir = failure_dir or service_settings.default_failure_dir
-        runner = DemoPipelineRunner(
-            ocr_backend=ocr_backend,
-            vlm_backend=vlm_backend,
-            failure_dir=effective_failure_dir,
-        )
         try:
+            runner = DemoPipelineRunner(
+                ocr_backend=ocr_backend,
+                vlm_backend=vlm_backend,
+                failure_dir=effective_failure_dir,
+            )
             result = runner.run(
                 plugin_name=selected_plugin,
                 image=payload,
