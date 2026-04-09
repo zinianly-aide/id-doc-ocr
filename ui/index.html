@@ -191,22 +191,95 @@
       const resultEl = document.getElementById("result");
       const emptyEl = document.getElementById("empty");
 
-      function addOptions(select, values, preferred) {
+      function setSelectOptions(select, items, preferred, options = {}) {
+        const { emptyLabel = "No options available" } = options;
         select.innerHTML = "";
-        values.forEach((value) => {
+
+        if (!items.length) {
           const option = document.createElement("option");
-          option.value = value;
-          option.textContent = value;
-          if (value === preferred) option.selected = true;
+          option.value = "";
+          option.textContent = emptyLabel;
+          option.disabled = true;
+          option.selected = true;
+          select.appendChild(option);
+          select.disabled = true;
+          return null;
+        }
+
+        let selectedValue = null;
+        items.forEach((item, index) => {
+          const option = document.createElement("option");
+          option.value = item.value;
+          option.textContent = item.label;
+          if (item.disabled) option.disabled = true;
+          if (!selectedValue && !item.disabled && (item.value === preferred || preferred == null)) {
+            option.selected = true;
+            selectedValue = item.value;
+          }
+          if (!selectedValue && !item.disabled && index === items.length - 1) {
+            option.selected = true;
+            selectedValue = item.value;
+          }
           select.appendChild(option);
         });
+
+        if (!selectedValue) {
+          const firstEnabled = items.find((item) => !item.disabled);
+          if (firstEnabled) {
+            select.value = firstEnabled.value;
+            selectedValue = firstEnabled.value;
+          }
+        }
+
+        select.disabled = !items.some((item) => !item.disabled);
+        return selectedValue;
+      }
+
+      function renderBackendOptions(select, items, preferred, kind) {
+        const availableItems = items.filter((item) => item.available);
+        const optionItems = availableItems.map((item) => ({
+          value: item.name,
+          label: item.name,
+          disabled: false,
+        }));
+        const selected = setSelectOptions(select, optionItems, preferred, {
+          emptyLabel: `No available ${kind} backends`,
+        });
+
+        const unavailableNames = items.filter((item) => !item.available).map((item) => item.name);
+        if (unavailableNames.length) {
+          select.title = `Unavailable: ${unavailableNames.join(", ")}`;
+        } else {
+          select.removeAttribute("title");
+        }
+        return selected;
       }
 
       function renderCapabilities(data) {
         capsEl.textContent = `${data.summary.plugin_count} plugins, ${data.summary.available_backbone_count}/${data.summary.backbone_count} backbones available.`;
-        addOptions(pluginSelect, data.plugins.map((item) => item.name), data.plugins[0]?.name);
-        addOptions(ocrSelect, data.backbones.ocr.map((item) => item.name), "mock");
-        addOptions(vlmSelect, ["auto", ...data.backbones.vlm.map((item) => item.name)], "auto");
+        setSelectOptions(
+          pluginSelect,
+          data.plugins.map((item) => ({ value: item.name, label: item.name })),
+          data.plugins[0]?.name,
+          { emptyLabel: "No plugins available" }
+        );
+
+        const preferredOcr = data.backbones.ocr.find((item) => item.name === "mock" && item.available)?.name ?? data.backbones.ocr.find((item) => item.available)?.name ?? null;
+        renderBackendOptions(ocrSelect, data.backbones.ocr, preferredOcr, "OCR");
+
+        const availableVlm = data.backbones.vlm.filter((item) => item.available);
+        const preferredVlm = availableVlm.find((item) => item.name === "paddleocr_vl")?.name ?? availableVlm.find((item) => item.name === "mock")?.name ?? availableVlm[0]?.name ?? null;
+        const autoAvailable = data.backbones.vlm.some((item) => item.available && item.name !== "mock");
+        const vlmItems = [];
+        if (autoAvailable) {
+          vlmItems.push({ value: "auto", label: "auto" });
+        }
+        availableVlm.forEach((item) => {
+          vlmItems.push({ value: item.name, label: item.name });
+        });
+        setSelectOptions(vlmSelect, vlmItems, autoAvailable ? "auto" : preferredVlm, {
+          emptyLabel: "No available VLM backends",
+        });
       }
 
       function renderResult(payload) {
@@ -292,9 +365,17 @@
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
           const data = await response.json();
           renderCapabilities(data);
+          if (ocrSelect.disabled || vlmSelect.disabled || pluginSelect.disabled) {
+            submitBtn.disabled = true;
+            statusEl.textContent = "Inference unavailable until at least one plugin, OCR backend, and VLM backend are available.";
+          } else {
+            submitBtn.disabled = false;
+            statusEl.textContent = "";
+          }
         } catch (error) {
           capsEl.textContent = `Failed to load capabilities: ${error.message}`;
           statusEl.textContent = `API unavailable: ${error.message}`;
+          submitBtn.disabled = true;
         }
       }
 

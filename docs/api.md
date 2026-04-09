@@ -37,6 +37,11 @@ Fields:
 - `vlm_backend` (optional, default: `auto`)
 - `failure_dir` (optional)
 
+Status codes:
+
+- `200 OK`: inference completed and returns `{ filename, content_type, result }`
+- `422 Unprocessable Entity`: invalid request or selected backend is not available, for example backend init/runtime checks fail and the service returns the backend error message in `detail`
+
 Example:
 
 ```bash
