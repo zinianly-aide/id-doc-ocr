@@ -12,6 +12,8 @@ This repo now includes a concrete `PaddleOCRAdapter` integration layer, but it s
 
 ## Local install options
 
+For Docker / Compose, the repo now builds an image with `paddleocr` + `paddlepaddle` by default. If you need a lighter image or your target platform cannot resolve Paddle wheels, set `ID_DOC_OCR_INSTALL_PADDLE=0` during build and use `rapidocr` or `mock` instead.
+
 Requirements observed on this machine:
 
 - Python `>=3.10` (the project metadata already requires this; a Python 3.9 venv will not satisfy the package)

@@ -45,6 +45,7 @@ A minimal HTTP service and UI lab are now available with:
 - a minimal browser UI for upload + backbone comparison
 - Dockerfile and `docker-compose.yml`
 - `.env.example` and `Makefile` for repeatable compose-based startup
+- Docker image now installs PaddleOCR runtime by default, with a documented fallback switch for lighter builds
 
 What the service now exposes beyond a bare liveness probe:
 
@@ -63,6 +64,8 @@ Default local addresses when using Compose:
 
 - API: `http://127.0.0.1:8000`
 - UI lab: `http://127.0.0.1:8080`
+
+For Docker-specific PaddleOCR notes, Apple Silicon caveats, and the `ID_DOC_OCR_INSTALL_PADDLE` fallback switch, see [docs/deployment.md](docs/deployment.md).
 
 ## Regression track
 

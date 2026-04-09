@@ -2,6 +2,8 @@ services:
   api:
     build:
       context: .
+      args:
+        ID_DOC_OCR_INSTALL_PADDLE: ${ID_DOC_OCR_INSTALL_PADDLE:-1}
     restart: unless-stopped
     ports:
       - "${ID_DOC_OCR_PORT:-8000}:8000"
@@ -34,6 +36,8 @@ services:
   ui:
     build:
       context: .
+      args:
+        ID_DOC_OCR_INSTALL_PADDLE: ${ID_DOC_OCR_INSTALL_PADDLE:-1}
     restart: unless-stopped
     depends_on:
       api:

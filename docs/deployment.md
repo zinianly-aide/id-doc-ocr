@@ -22,7 +22,7 @@ make ui-health
 curl http://127.0.0.1:${ID_DOC_OCR_PORT:-8000}/capabilities
 curl -X POST http://127.0.0.1:${ID_DOC_OCR_PORT:-8000}/infer \
   -F plugin_name=boarding_pass \
-  -F ocr_backend=mock \
+  -F ocr_backend=paddleocr \
   -F vlm_backend=mock \
   -F file=@examples/assets/paddle_sample_doc_00006737.jpg
 ```
@@ -35,6 +35,22 @@ Addresses after startup:
 ## Runtime data
 
 Failed samples or diagnostics can be written to the mounted host directory configured by `ID_DOC_OCR_FAILURE_DIR`.
+
+## Docker OCR runtime notes
+
+The image now installs `rapidocr`, `paddleocr`, and `paddlepaddle` by default, so `/capabilities` should report `paddleocr` as available inside the API container.
+
+Useful knobs:
+
+- `ID_DOC_OCR_INSTALL_PADDLE=1` (default): build the full image with PaddleOCR enabled
+- `ID_DOC_OCR_INSTALL_PADDLE=0`: build a lighter `rapidocr` / `mock` image when Paddle wheels are not available or you want faster builds
+
+Apple Silicon / ARM notes:
+
+- Docker Desktop on Apple Silicon builds `linux/arm64` images by default; current Paddle wheels worked in local validation on that target
+- the first real PaddleOCR request may download model assets, so expect the first `/infer?ocr_backend=paddleocr` call to be slower than later calls
+- if your host / mirror cannot resolve compatible Paddle wheels, rebuild with `ID_DOC_OCR_INSTALL_PADDLE=0` and use `rapidocr` or `mock` as the OCR backend
+- if you specifically need x86 wheels on Apple Silicon, run compose with emulation, for example `DOCKER_DEFAULT_PLATFORM=linux/amd64 docker compose up --build`
 
 ## Useful commands
 

@@ -94,6 +94,8 @@ docker build -t id-doc-ocr .
 docker run --rm -p 8000:8000 id-doc-ocr
 ```
 
+The default image now installs PaddleOCR runtime dependencies too, so `GET /capabilities` should expose `paddleocr` as available. If you need a smaller image or Paddle wheels are unavailable for your target platform, build with `--build-arg ID_DOC_OCR_INSTALL_PADDLE=0` and stick to `rapidocr` / `mock`.
+
 ## Run with docker compose
 
 ```bash
@@ -103,7 +105,7 @@ curl http://127.0.0.1:8000/health
 curl http://127.0.0.1:8000/capabilities
 curl -X POST http://127.0.0.1:8000/infer \
   -F plugin_name=birth_certificate \
-  -F ocr_backend=mock \
+  -F ocr_backend=paddleocr \
   -F file=@examples/assets/paddle_sample_doc_00006737.jpg
 open http://127.0.0.1:8080
 ```
@@ -114,5 +116,7 @@ Compose now starts two services together:
 - UI lab: `http://127.0.0.1:8080`
 
 The UI is a static page that calls the API directly, and the API enables cross-origin requests for local comparison use.
+
+On Apple Silicon, Compose normally builds a `linux/arm64` image. If Paddle wheel resolution fails on your network or mirror, either set `ID_DOC_OCR_INSTALL_PADDLE=0` for a lighter image, or force x86 emulation with `DOCKER_DEFAULT_PLATFORM=linux/amd64`.
 
 For the production-leaning compose flow, healthcheck, and supported runtime knobs, see [docs/deployment.md](deployment.md).
