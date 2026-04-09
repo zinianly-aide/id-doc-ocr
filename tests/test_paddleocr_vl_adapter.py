@@ -1,4 +1,3 @@
-from id_doc_ocr.backbones.mock import MockPaddleOCRVLAdapter
 from id_doc_ocr.backbones.paddleocr_vl import PaddleOCRVLAdapter
 from id_doc_ocr.pipeline.runner import DemoPipelineRunner
 
@@ -35,9 +34,8 @@ def test_paddleocr_vl_adapter_reports_unavailable_without_runtime():
     assert result["engine"] == "paddleocr_vl"
 
 
-def test_demo_runner_auto_vlm_falls_back_to_mock_when_runtime_missing():
+def test_demo_runner_auto_vlm_uses_requested_backend_without_mock_fallback():
     runner = DemoPipelineRunner(vlm_backend="auto")
-    if PaddleOCRVLAdapter.is_runtime_available():
-        assert runner.vlm.info.name == "paddleocr_vl"
-    else:
-        assert isinstance(runner.vlm, MockPaddleOCRVLAdapter)
+    assert runner.vlm.info.name == "paddleocr_vl"
+    if not PaddleOCRVLAdapter.is_runtime_available():
+        assert runner.vlm.infer("dummy.png")["status"] == "unavailable"

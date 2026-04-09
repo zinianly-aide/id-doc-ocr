@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from id_doc_ocr.service.app import ServiceSettings, create_app
@@ -130,10 +131,15 @@ def test_infer_rejects_empty_file():
 
 
 def test_infer_returns_422_when_runner_init_raises_runtime_error(monkeypatch):
-    def _boom(*args, **kwargs):
-        raise RuntimeError("backend init failed")
+    class _BoomRunner:
+        @staticmethod
+        def validate_backend_selection(**kwargs):
+            return None
 
-    monkeypatch.setattr("id_doc_ocr.service.app.DemoPipelineRunner", _boom)
+        def __init__(self, *args, **kwargs):
+            raise RuntimeError("backend init failed")
+
+    monkeypatch.setattr("id_doc_ocr.service.app.DemoPipelineRunner", _BoomRunner)
     client = build_client()
     response = client.post(
         "/infer",
@@ -142,3 +148,50 @@ def test_infer_returns_422_when_runner_init_raises_runtime_error(monkeypatch):
     )
     assert response.status_code == 422
     assert response.json()["detail"] == "backend init failed"
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "expected_detail"),
+    [
+        ("ocr_backend", "missing_ocr", "Unknown OCR backend: missing_ocr. Supported values: mock, paddleocr, rapidocr"),
+        ("vlm_backend", "missing_vlm", "Unknown VLM backend: missing_vlm. Supported values: auto, mock, paddleocr_vl"),
+    ],
+)
+def test_infer_rejects_unknown_backend(field: str, value: str, expected_detail: str):
+    client = build_client()
+    payload = {"plugin_name": "boarding_pass", "ocr_backend": "mock", "vlm_backend": "mock"}
+    payload[field] = value
+    response = client.post(
+        "/infer",
+        data=payload,
+        files={"file": ("sample.jpg", b"fake-image-bytes", "image/jpeg")},
+    )
+    assert response.status_code == 422
+    assert response.json()["detail"] == expected_detail
+
+
+def test_infer_rejects_unavailable_paddleocr_backend(monkeypatch):
+    monkeypatch.setattr("id_doc_ocr.pipeline.runner.PaddleOCRAdapter.is_available", classmethod(lambda cls: False))
+    client = build_client()
+    response = client.post(
+        "/infer",
+        data={"plugin_name": "boarding_pass", "ocr_backend": "paddleocr", "vlm_backend": "mock"},
+        files={"file": ("sample.jpg", b"fake-image-bytes", "image/jpeg")},
+    )
+    assert response.status_code == 422
+    assert response.json()["detail"] == "OCR backend 'paddleocr' is unavailable. See docs/paddleocr-setup.md for local setup instructions."
+
+
+@pytest.mark.parametrize("vlm_backend", ["paddleocr_vl", "auto"])
+def test_infer_rejects_unavailable_vlm_backend(monkeypatch, vlm_backend: str):
+    monkeypatch.setattr("id_doc_ocr.pipeline.runner.PaddleOCRVLAdapter.is_runtime_available", classmethod(lambda cls: False))
+    client = build_client()
+    response = client.post(
+        "/infer",
+        data={"plugin_name": "boarding_pass", "ocr_backend": "mock", "vlm_backend": vlm_backend},
+        files={"file": ("sample.jpg", b"fake-image-bytes", "image/jpeg")},
+    )
+    assert response.status_code == 422
+    assert response.json()["detail"] == (
+        f"VLM backend '{vlm_backend}' is unavailable. Install optional PaddleOCR-VL runtime dependencies first."
+    )

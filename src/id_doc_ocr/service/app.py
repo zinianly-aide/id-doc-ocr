@@ -18,7 +18,7 @@ from id_doc_ocr.backbones.paddleocr import PaddleOCRAdapter
 from id_doc_ocr.backbones.paddleocr_vl import PaddleOCRVLAdapter
 from id_doc_ocr.backbones.rapidocr import RapidOCRAdapter
 from id_doc_ocr.core.registry import registry
-from id_doc_ocr.pipeline.runner import DemoPipelineRunner
+from id_doc_ocr.pipeline.runner import BackendSelectionError, DemoPipelineRunner
 
 
 @dataclass(slots=True)
@@ -192,6 +192,10 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
 
         effective_failure_dir = failure_dir or service_settings.default_failure_dir
         try:
+            DemoPipelineRunner.validate_backend_selection(
+                ocr_backend=ocr_backend,
+                vlm_backend=vlm_backend,
+            )
             runner = DemoPipelineRunner(
                 ocr_backend=ocr_backend,
                 vlm_backend=vlm_backend,
@@ -204,6 +208,8 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
                 source_name=file.filename,
                 source_kind="path",
             )
+        except BackendSelectionError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
         except RuntimeError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         except Exception as exc:  # pragma: no cover

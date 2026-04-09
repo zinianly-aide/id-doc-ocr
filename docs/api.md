@@ -40,7 +40,9 @@ Fields:
 Status codes:
 
 - `200 OK`: inference completed and returns `{ filename, content_type, result }`
-- `422 Unprocessable Entity`: invalid request or selected backend is not available, for example backend init/runtime checks fail and the service returns the backend error message in `detail`
+- `400 Bad Request`: uploaded file is empty
+- `404 Not Found`: requested `plugin_name` does not exist
+- `422 Unprocessable Entity`: request validation failed, or the selected `ocr_backend` / `vlm_backend` is unknown or currently unavailable. The service now rejects these cases explicitly and returns the backend validation error message in `detail`; it no longer silently falls back to `mock` during `/infer`.
 
 Example:
 

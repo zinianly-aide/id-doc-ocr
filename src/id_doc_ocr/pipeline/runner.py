@@ -17,7 +17,22 @@ from id_doc_ocr.review import ReviewDecision, ReviewEvidence, ReviewEvidenceItem
 from id_doc_ocr.tools.failure_log import write_failure_case
 
 
+class BackendSelectionError(RuntimeError):
+    pass
+
+
 class DemoPipelineRunner:
+    OCR_BACKENDS = {
+        "mock": lambda: MockPaddleOCRAdapter(),
+        "rapidocr": lambda: __import__("id_doc_ocr.backbones.rapidocr", fromlist=["RapidOCRAdapter"]).RapidOCRAdapter(),
+        "paddleocr": lambda: PaddleOCRAdapter(),
+    }
+    VLM_BACKENDS = {
+        "mock": lambda: MockPaddleOCRVLAdapter(),
+        "paddleocr_vl": lambda: PaddleOCRVLAdapter(auto_init=True),
+        "auto": lambda: PaddleOCRVLAdapter(auto_init=True),
+    }
+
     def __init__(
         self,
         ocr_backend: str = "mock",
@@ -33,27 +48,38 @@ class DemoPipelineRunner:
         self.region_ocr = MockGOTOCRAdapter()
         self.rectify = MockRectifyPipeline()
 
+    @classmethod
+    def validate_backend_selection(cls, *, ocr_backend: str, vlm_backend: str) -> None:
+        cls._validate_ocr_backend(ocr_backend)
+        cls._validate_vlm_backend(vlm_backend)
+
+    @classmethod
+    def _validate_ocr_backend(cls, ocr_backend: str) -> None:
+        if ocr_backend not in cls.OCR_BACKENDS:
+            raise BackendSelectionError(
+                f"Unknown OCR backend: {ocr_backend}. Supported values: {', '.join(sorted(cls.OCR_BACKENDS))}"
+            )
+        if ocr_backend == "paddleocr" and not PaddleOCRAdapter.is_available():
+            raise BackendSelectionError(
+                "OCR backend 'paddleocr' is unavailable. See docs/paddleocr-setup.md for local setup instructions."
+            )
+
+    @classmethod
+    def _validate_vlm_backend(cls, vlm_backend: str) -> None:
+        if vlm_backend not in cls.VLM_BACKENDS:
+            raise BackendSelectionError(
+                f"Unknown VLM backend: {vlm_backend}. Supported values: {', '.join(sorted(cls.VLM_BACKENDS))}"
+            )
+        if vlm_backend in {"paddleocr_vl", "auto"} and not PaddleOCRVLAdapter.is_runtime_available():
+            raise BackendSelectionError(
+                f"VLM backend '{vlm_backend}' is unavailable. Install optional PaddleOCR-VL runtime dependencies first."
+            )
+
     def _build_ocr_backend(self, ocr_backend: str) -> Any:
-        if ocr_backend == "rapidocr":
-            from id_doc_ocr.backbones.rapidocr import RapidOCRAdapter
-
-            return RapidOCRAdapter()
-        if ocr_backend == "paddleocr":
-            from id_doc_ocr.backbones.paddleocr import PaddleOCRAdapter
-
-            return PaddleOCRAdapter()
-        return MockPaddleOCRAdapter()
+        return self.OCR_BACKENDS[ocr_backend]()
 
     def _build_vlm_backend(self, vlm_backend: str) -> Any:
-        if vlm_backend == "mock":
-            return MockPaddleOCRVLAdapter()
-        if vlm_backend in {"paddleocr_vl", "auto"}:
-            adapter = PaddleOCRVLAdapter(auto_init=vlm_backend != "mock")
-            if vlm_backend == "paddleocr_vl":
-                return adapter
-            if adapter.is_runtime_available():
-                return adapter
-        return MockPaddleOCRVLAdapter()
+        return self.VLM_BACKENDS[vlm_backend]()
 
     def run(
         self,
