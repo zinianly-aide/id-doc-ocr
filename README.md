@@ -76,6 +76,10 @@ Current checked-in regression inventory:
   - `17/17` fixtures passed
   - `140/140` expected fields matched
   - overall field exact-match rate: `1.00`
+- minimal backbone benchmark template: `examples/backbone_benchmark_manifest.json`
+  - runnable via `python examples/run_backbone_benchmark.py`
+  - outputs `reports/backbone_benchmark_latest.json` and `.md`
+  - tracks success rate, validator accepted, warning count, key-field hits, and decision distribution per backend
 
 ### Browser-based recognition spot-check (manual)
 

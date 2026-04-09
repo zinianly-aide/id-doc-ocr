@@ -1,0 +1,1692 @@
+{
+  "schema_version": "0.1.0",
+  "report_name": "backbone_benchmark",
+  "generated_at": "2026-04-09T14:21:14.795782+00:00",
+  "manifest": {
+    "name": "backbone-benchmark-seed",
+    "version": "0.1.0",
+    "description": "Minimal fixed benchmark set for OCR backbone comparison. Mixes one live image-backed case with several parser/validator control fixtures.",
+    "num_cases": 4
+  },
+  "backends": [
+    {
+      "ocr_backend": "mock",
+      "vlm_backend": "mock",
+      "label": "ocr=mock,vlm=mock"
+    },
+    {
+      "ocr_backend": "rapidocr",
+      "vlm_backend": "mock",
+      "label": "ocr=rapidocr,vlm=mock"
+    },
+    {
+      "ocr_backend": "paddleocr",
+      "vlm_backend": "mock",
+      "label": "ocr=paddleocr,vlm=mock"
+    }
+  ],
+  "summary": {
+    "totals": {
+      "num_results": 12,
+      "num_errors": 0,
+      "status": "pass"
+    },
+    "by_backend": {
+      "ocr=mock,vlm=mock": {
+        "num_cases": 4,
+        "num_errors": 0,
+        "success_rate": 1.0,
+        "validator_accept_rate": 0.5,
+        "avg_warning_count": 3.0,
+        "avg_validator_issue_count": 2.0,
+        "key_field_hits": 19,
+        "key_field_total": 30,
+        "key_field_hit_rate": 0.6333,
+        "decision_distribution": {
+          "review": 4
+        }
+      },
+      "ocr=paddleocr,vlm=mock": {
+        "num_cases": 4,
+        "num_errors": 0,
+        "success_rate": 1.0,
+        "validator_accept_rate": 0.75,
+        "avg_warning_count": 1.75,
+        "avg_validator_issue_count": 0.75,
+        "key_field_hits": 26,
+        "key_field_total": 30,
+        "key_field_hit_rate": 0.8667,
+        "decision_distribution": {
+          "review": 4
+        }
+      },
+      "ocr=rapidocr,vlm=mock": {
+        "num_cases": 4,
+        "num_errors": 0,
+        "success_rate": 1.0,
+        "validator_accept_rate": 0.75,
+        "avg_warning_count": 1.75,
+        "avg_validator_issue_count": 0.75,
+        "key_field_hits": 26,
+        "key_field_total": 30,
+        "key_field_hit_rate": 0.8667,
+        "decision_distribution": {
+          "review": 4
+        }
+      }
+    },
+    "by_track": {
+      "live_image": {
+        "ocr=mock,vlm=mock": {
+          "num_cases": 1,
+          "num_errors": 0,
+          "success_rate": 1.0,
+          "validator_accept_rate": 0.0,
+          "avg_warning_count": 6.0,
+          "avg_validator_issue_count": 5.0,
+          "key_field_hits": 1,
+          "key_field_total": 8,
+          "key_field_hit_rate": 0.125,
+          "decision_distribution": {
+            "review": 1
+          }
+        },
+        "ocr=paddleocr,vlm=mock": {
+          "num_cases": 1,
+          "num_errors": 0,
+          "success_rate": 1.0,
+          "validator_accept_rate": 1.0,
+          "avg_warning_count": 1.0,
+          "avg_validator_issue_count": 0.0,
+          "key_field_hits": 8,
+          "key_field_total": 8,
+          "key_field_hit_rate": 1.0,
+          "decision_distribution": {
+            "review": 1
+          }
+        },
+        "ocr=rapidocr,vlm=mock": {
+          "num_cases": 1,
+          "num_errors": 0,
+          "success_rate": 1.0,
+          "validator_accept_rate": 1.0,
+          "avg_warning_count": 1.0,
+          "avg_validator_issue_count": 0.0,
+          "key_field_hits": 8,
+          "key_field_total": 8,
+          "key_field_hit_rate": 1.0,
+          "decision_distribution": {
+            "review": 1
+          }
+        }
+      },
+      "synthetic_control": {
+        "ocr=mock,vlm=mock": {
+          "num_cases": 3,
+          "num_errors": 0,
+          "success_rate": 1.0,
+          "validator_accept_rate": 0.6667,
+          "avg_warning_count": 2.0,
+          "avg_validator_issue_count": 1.0,
+          "key_field_hits": 18,
+          "key_field_total": 22,
+          "key_field_hit_rate": 0.8182,
+          "decision_distribution": {
+            "review": 3
+          }
+        },
+        "ocr=paddleocr,vlm=mock": {
+          "num_cases": 3,
+          "num_errors": 0,
+          "success_rate": 1.0,
+          "validator_accept_rate": 0.6667,
+          "avg_warning_count": 2.0,
+          "avg_validator_issue_count": 1.0,
+          "key_field_hits": 18,
+          "key_field_total": 22,
+          "key_field_hit_rate": 0.8182,
+          "decision_distribution": {
+            "review": 3
+          }
+        },
+        "ocr=rapidocr,vlm=mock": {
+          "num_cases": 3,
+          "num_errors": 0,
+          "success_rate": 1.0,
+          "validator_accept_rate": 0.6667,
+          "avg_warning_count": 2.0,
+          "avg_validator_issue_count": 1.0,
+          "key_field_hits": 18,
+          "key_field_total": 22,
+          "key_field_hit_rate": 0.8182,
+          "decision_distribution": {
+            "review": 3
+          }
+        }
+      }
+    }
+  },
+  "results": [
+    {
+      "backend": "ocr=mock,vlm=mock",
+      "ocr_backend": "mock",
+      "vlm_backend": "mock",
+      "case_id": "boarding_pass_live_public_00006737",
+      "case_name": "Public boarding pass image",
+      "plugin": "boarding_pass",
+      "track": "live_image",
+      "input_mode": "image",
+      "sample": "examples/assets/paddle_sample_doc_00006737.jpg",
+      "success": true,
+      "validator_accepted": false,
+      "warning_count": 6,
+      "validator_issue_count": 5,
+      "decision": "review",
+      "decision_reason_codes": [
+        "weak_perspective_confidence",
+        "missing_flight_number",
+        "missing_ticket_number",
+        "missing_departure_date",
+        "missing_departure_airport",
+        "missing_arrival_airport"
+      ],
+      "key_field_total": 8,
+      "key_field_hits": 1,
+      "key_field_hit_rate": 0.125,
+      "field_hits": [
+        {
+          "field": "document_variant",
+          "expected": "boarding_pass",
+          "actual": "boarding_pass",
+          "matched": true
+        },
+        {
+          "field": "passenger_name",
+          "expected": "ZHANGQIWEI",
+          "actual": null,
+          "matched": false
+        },
+        {
+          "field": "flight_number",
+          "expected": "MU2379",
+          "actual": null,
+          "matched": false
+        },
+        {
+          "field": "ticket_number",
+          "expected": "7813699238489/1",
+          "actual": null,
+          "matched": false
+        },
+        {
+          "field": "departure_date",
+          "expected": "03DEC",
+          "actual": null,
+          "matched": false
+        },
+        {
+          "field": "departure_airport",
+          "expected": "TAIYUAN",
+          "actual": null,
+          "matched": false
+        },
+        {
+          "field": "arrival_airport",
+          "expected": "FUZHOU",
+          "actual": null,
+          "matched": false
+        },
+        {
+          "field": "gate",
+          "expected": "G11",
+          "actual": null,
+          "matched": false
+        }
+      ],
+      "parsed_fields": {
+        "document_variant": "boarding_pass",
+        "passenger_name": null,
+        "flight_number": null,
+        "ticket_number": null,
+        "departure_date": null,
+        "departure_airport": null,
+        "arrival_airport": null,
+        "gate": null,
+        "seat_no": null
+      },
+      "quality_summary": {
+        "passed": true,
+        "review_recommended": true,
+        "routing_hint": "review",
+        "risk_score": 0.25,
+        "reasons": [
+          "weak_perspective_confidence"
+        ],
+        "flags": [
+          {
+            "code": "weak_perspective_confidence",
+            "severity": "warning",
+            "message": "Perspective correction confidence is weak; warped crops may need review.",
+            "source": "perspective",
+            "metric": "perspective_confidence",
+            "value": 0.5,
+            "threshold": 0.7
+          }
+        ],
+        "metrics": {
+          "detector_confidence": 0.96,
+          "perspective_confidence": 0.5,
+          "perspective_applied": false,
+          "orientation_confidence": 0.9,
+          "orientation_angle": 0.0,
+          "orientation_applied": false,
+          "blur_score": 0.95,
+          "glare_score": 0.95,
+          "occlusion_score": 0.95,
+          "quality_passed": true
+        }
+      }
+    },
+    {
+      "backend": "ocr=mock,vlm=mock",
+      "ocr_backend": "mock",
+      "vlm_backend": "mock",
+      "case_id": "china_id_front_control",
+      "case_name": "China ID parser control",
+      "plugin": "china_id",
+      "track": "synthetic_control",
+      "input_mode": "ocr_result",
+      "sample": null,
+      "success": true,
+      "validator_accepted": true,
+      "warning_count": 1,
+      "validator_issue_count": 0,
+      "decision": "review",
+      "decision_reason_codes": [
+        "weak_perspective_confidence"
+      ],
+      "key_field_total": 7,
+      "key_field_hits": 7,
+      "key_field_hit_rate": 1.0,
+      "field_hits": [
+        {
+          "field": "document_side",
+          "expected": "front",
+          "actual": "front",
+          "matched": true
+        },
+        {
+          "field": "name",
+          "expected": "张三",
+          "actual": "张三",
+          "matched": true
+        },
+        {
+          "field": "gender",
+          "expected": "男",
+          "actual": "男",
+          "matched": true
+        },
+        {
+          "field": "ethnicity",
+          "expected": "汉",
+          "actual": "汉",
+          "matched": true
+        },
+        {
+          "field": "birth_date",
+          "expected": "1990年03月07日",
+          "actual": "1990年03月07日",
+          "matched": true
+        },
+        {
+          "field": "address",
+          "expected": "北京市东城区东华门街道1001号",
+          "actual": "北京市东城区东华门街道1001号",
+          "matched": true
+        },
+        {
+          "field": "id_number",
+          "expected": "110101199003074514",
+          "actual": "110101199003074514",
+          "matched": true
+        }
+      ],
+      "parsed_fields": {
+        "document_side": "front",
+        "name": "张三",
+        "gender": "男",
+        "ethnicity": "汉",
+        "birth_date": "1990年03月07日",
+        "address": "北京市东城区东华门街道1001号",
+        "id_number": "110101199003074514",
+        "issuing_authority": null,
+        "valid_from": null,
+        "valid_to": null
+      },
+      "quality_summary": {
+        "passed": true,
+        "review_recommended": true,
+        "routing_hint": "review",
+        "risk_score": 0.25,
+        "reasons": [
+          "weak_perspective_confidence"
+        ],
+        "flags": [
+          {
+            "code": "weak_perspective_confidence",
+            "severity": "warning",
+            "message": "Perspective correction confidence is weak; warped crops may need review.",
+            "source": "perspective",
+            "metric": "perspective_confidence",
+            "value": 0.5,
+            "threshold": 0.7
+          }
+        ],
+        "metrics": {
+          "detector_confidence": 0.96,
+          "perspective_confidence": 0.5,
+          "perspective_applied": false,
+          "orientation_confidence": 0.9,
+          "orientation_angle": 0.0,
+          "orientation_applied": false,
+          "blur_score": 0.95,
+          "glare_score": 0.95,
+          "occlusion_score": 0.95,
+          "quality_passed": true
+        }
+      }
+    },
+    {
+      "backend": "ocr=mock,vlm=mock",
+      "ocr_backend": "mock",
+      "vlm_backend": "mock",
+      "case_id": "passport_td3_control",
+      "case_name": "Passport MRZ parser control",
+      "plugin": "passport",
+      "track": "synthetic_control",
+      "input_mode": "ocr_result",
+      "sample": null,
+      "success": true,
+      "validator_accepted": true,
+      "warning_count": 1,
+      "validator_issue_count": 0,
+      "decision": "review",
+      "decision_reason_codes": [
+        "weak_perspective_confidence"
+      ],
+      "key_field_total": 10,
+      "key_field_hits": 10,
+      "key_field_hit_rate": 1.0,
+      "field_hits": [
+        {
+          "field": "document_variant",
+          "expected": "passport",
+          "actual": "passport",
+          "matched": true
+        },
+        {
+          "field": "document_code",
+          "expected": "P<",
+          "actual": "P<",
+          "matched": true
+        },
+        {
+          "field": "issuing_country",
+          "expected": "UTO",
+          "actual": "UTO",
+          "matched": true
+        },
+        {
+          "field": "surname",
+          "expected": "ERIKSSON",
+          "actual": "ERIKSSON",
+          "matched": true
+        },
+        {
+          "field": "given_names",
+          "expected": "ANNA MARIA",
+          "actual": "ANNA MARIA",
+          "matched": true
+        },
+        {
+          "field": "passport_number",
+          "expected": "L898902C3",
+          "actual": "L898902C3",
+          "matched": true
+        },
+        {
+          "field": "nationality",
+          "expected": "UTO",
+          "actual": "UTO",
+          "matched": true
+        },
+        {
+          "field": "birth_date",
+          "expected": "1974-08-12",
+          "actual": "1974-08-12",
+          "matched": true
+        },
+        {
+          "field": "sex",
+          "expected": "F",
+          "actual": "F",
+          "matched": true
+        },
+        {
+          "field": "expiry_date",
+          "expected": "2012-04-15",
+          "actual": "2012-04-15",
+          "matched": true
+        }
+      ],
+      "parsed_fields": {
+        "document_variant": "passport",
+        "mrz_lines": [
+          "P<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<",
+          "L898902C36UTO7408122F1204159ZE184226B<<<<<10"
+        ],
+        "mrz_fields": {
+          "document_code": "P<",
+          "issuing_country": "UTO",
+          "surname": "ERIKSSON",
+          "given_names": "ANNA MARIA",
+          "passport_number": "L898902C3",
+          "nationality": "UTO",
+          "birth_date": "1974-08-12",
+          "sex": "F",
+          "expiry_date": "2012-04-15",
+          "personal_number": "ZE184226B"
+        },
+        "document_code": "P<",
+        "issuing_country": "UTO",
+        "surname": "ERIKSSON",
+        "given_names": "ANNA MARIA",
+        "passport_number": "L898902C3",
+        "nationality": "UTO",
+        "birth_date": "1974-08-12",
+        "sex": "F",
+        "expiry_date": "2012-04-15",
+        "personal_number": "ZE184226B"
+      },
+      "quality_summary": {
+        "passed": true,
+        "review_recommended": true,
+        "routing_hint": "review",
+        "risk_score": 0.25,
+        "reasons": [
+          "weak_perspective_confidence"
+        ],
+        "flags": [
+          {
+            "code": "weak_perspective_confidence",
+            "severity": "warning",
+            "message": "Perspective correction confidence is weak; warped crops may need review.",
+            "source": "perspective",
+            "metric": "perspective_confidence",
+            "value": 0.5,
+            "threshold": 0.7
+          }
+        ],
+        "metrics": {
+          "detector_confidence": 0.96,
+          "perspective_confidence": 0.5,
+          "perspective_applied": false,
+          "orientation_confidence": 0.9,
+          "orientation_angle": 0.0,
+          "orientation_applied": false,
+          "blur_score": 0.95,
+          "glare_score": 0.95,
+          "occlusion_score": 0.95,
+          "quality_passed": true
+        }
+      }
+    },
+    {
+      "backend": "ocr=mock,vlm=mock",
+      "ocr_backend": "mock",
+      "vlm_backend": "mock",
+      "case_id": "medical_record_control",
+      "case_name": "Medical record parser control",
+      "plugin": "medical_record",
+      "track": "synthetic_control",
+      "input_mode": "ocr_result",
+      "sample": null,
+      "success": true,
+      "validator_accepted": false,
+      "warning_count": 4,
+      "validator_issue_count": 3,
+      "decision": "review",
+      "decision_reason_codes": [
+        "weak_perspective_confidence",
+        "missing_patient_name",
+        "missing_visit_date",
+        "not_sick_note_like"
+      ],
+      "key_field_total": 5,
+      "key_field_hits": 1,
+      "key_field_hit_rate": 0.2,
+      "field_hits": [
+        {
+          "field": "doc_type",
+          "expected": "medical_record",
+          "actual": "medical_record",
+          "matched": true
+        },
+        {
+          "field": "patient_name",
+          "expected": "张三",
+          "actual": null,
+          "matched": false
+        },
+        {
+          "field": "visit_date",
+          "expected": "2026-03-11",
+          "actual": null,
+          "matched": false
+        },
+        {
+          "field": "notes",
+          "expected": "发热咳嗽2天",
+          "actual": null,
+          "matched": false
+        },
+        {
+          "field": "diagnosis",
+          "expected": [
+            "上呼吸道感染"
+          ],
+          "actual": [],
+          "matched": false
+        }
+      ],
+      "parsed_fields": {
+        "doc_type": "medical_record",
+        "hospital_name": "医院上海市第一人民医院",
+        "patient_name": null,
+        "gender": null,
+        "age": null,
+        "visit_date": null,
+        "department": null,
+        "diagnosis": [],
+        "medications": [],
+        "notes": null,
+        "sick_note_check": {
+          "is_sick_note_like": false,
+          "score": 0.449,
+          "confidence": "low",
+          "matched_features": [
+            "医院抬头",
+            "病休/休息建议",
+            "诊断信息"
+          ],
+          "missing_features": [
+            "病休/病假标题",
+            "日期区间/天数",
+            "医生/医师签名",
+            "盖章/印章"
+          ],
+          "feature_hits": {
+            "hospital_header": true,
+            "sick_leave_title": false,
+            "rest_advice": true,
+            "date_range": false,
+            "diagnosis": true,
+            "physician_signature": false,
+            "seal_or_stamp": false
+          },
+          "evidence": {
+            "title": null,
+            "date_mentions": [
+              "2026-03-11"
+            ],
+            "line_count": 7
+          }
+        }
+      },
+      "quality_summary": {
+        "passed": true,
+        "review_recommended": true,
+        "routing_hint": "review",
+        "risk_score": 0.25,
+        "reasons": [
+          "weak_perspective_confidence"
+        ],
+        "flags": [
+          {
+            "code": "weak_perspective_confidence",
+            "severity": "warning",
+            "message": "Perspective correction confidence is weak; warped crops may need review.",
+            "source": "perspective",
+            "metric": "perspective_confidence",
+            "value": 0.5,
+            "threshold": 0.7
+          }
+        ],
+        "metrics": {
+          "detector_confidence": 0.96,
+          "perspective_confidence": 0.5,
+          "perspective_applied": false,
+          "orientation_confidence": 0.9,
+          "orientation_angle": 0.0,
+          "orientation_applied": false,
+          "blur_score": 0.95,
+          "glare_score": 0.95,
+          "occlusion_score": 0.95,
+          "quality_passed": true
+        }
+      }
+    },
+    {
+      "backend": "ocr=rapidocr,vlm=mock",
+      "ocr_backend": "rapidocr",
+      "vlm_backend": "mock",
+      "case_id": "boarding_pass_live_public_00006737",
+      "case_name": "Public boarding pass image",
+      "plugin": "boarding_pass",
+      "track": "live_image",
+      "input_mode": "image",
+      "sample": "examples/assets/paddle_sample_doc_00006737.jpg",
+      "success": true,
+      "validator_accepted": true,
+      "warning_count": 1,
+      "validator_issue_count": 0,
+      "decision": "review",
+      "decision_reason_codes": [
+        "weak_perspective_confidence"
+      ],
+      "key_field_total": 8,
+      "key_field_hits": 8,
+      "key_field_hit_rate": 1.0,
+      "field_hits": [
+        {
+          "field": "document_variant",
+          "expected": "boarding_pass",
+          "actual": "boarding_pass",
+          "matched": true
+        },
+        {
+          "field": "passenger_name",
+          "expected": "ZHANGQIWEI",
+          "actual": "ZHANGQIWEI",
+          "matched": true
+        },
+        {
+          "field": "flight_number",
+          "expected": "MU2379",
+          "actual": "MU2379",
+          "matched": true
+        },
+        {
+          "field": "ticket_number",
+          "expected": "7813699238489/1",
+          "actual": "7813699238489/1",
+          "matched": true
+        },
+        {
+          "field": "departure_date",
+          "expected": "03DEC",
+          "actual": "03DEC",
+          "matched": true
+        },
+        {
+          "field": "departure_airport",
+          "expected": "TAIYUAN",
+          "actual": "TAIYUAN",
+          "matched": true
+        },
+        {
+          "field": "arrival_airport",
+          "expected": "FUZHOU",
+          "actual": "FUZHOU",
+          "matched": true
+        },
+        {
+          "field": "gate",
+          "expected": "G11",
+          "actual": "G11",
+          "matched": true
+        }
+      ],
+      "parsed_fields": {
+        "document_variant": "boarding_pass",
+        "passenger_name": "ZHANGQIWEI",
+        "flight_number": "MU2379",
+        "ticket_number": "7813699238489/1",
+        "departure_date": "03DEC",
+        "departure_airport": "TAIYUAN",
+        "arrival_airport": "FUZHOU",
+        "gate": "G11",
+        "seat_no": null
+      },
+      "quality_summary": {
+        "passed": true,
+        "review_recommended": true,
+        "routing_hint": "review",
+        "risk_score": 0.25,
+        "reasons": [
+          "weak_perspective_confidence"
+        ],
+        "flags": [
+          {
+            "code": "weak_perspective_confidence",
+            "severity": "warning",
+            "message": "Perspective correction confidence is weak; warped crops may need review.",
+            "source": "perspective",
+            "metric": "perspective_confidence",
+            "value": 0.5,
+            "threshold": 0.7
+          }
+        ],
+        "metrics": {
+          "detector_confidence": 0.96,
+          "perspective_confidence": 0.5,
+          "perspective_applied": false,
+          "orientation_confidence": 0.9,
+          "orientation_angle": 0.0,
+          "orientation_applied": false,
+          "blur_score": 0.95,
+          "glare_score": 0.95,
+          "occlusion_score": 0.95,
+          "quality_passed": true
+        }
+      }
+    },
+    {
+      "backend": "ocr=rapidocr,vlm=mock",
+      "ocr_backend": "rapidocr",
+      "vlm_backend": "mock",
+      "case_id": "china_id_front_control",
+      "case_name": "China ID parser control",
+      "plugin": "china_id",
+      "track": "synthetic_control",
+      "input_mode": "ocr_result",
+      "sample": null,
+      "success": true,
+      "validator_accepted": true,
+      "warning_count": 1,
+      "validator_issue_count": 0,
+      "decision": "review",
+      "decision_reason_codes": [
+        "weak_perspective_confidence"
+      ],
+      "key_field_total": 7,
+      "key_field_hits": 7,
+      "key_field_hit_rate": 1.0,
+      "field_hits": [
+        {
+          "field": "document_side",
+          "expected": "front",
+          "actual": "front",
+          "matched": true
+        },
+        {
+          "field": "name",
+          "expected": "张三",
+          "actual": "张三",
+          "matched": true
+        },
+        {
+          "field": "gender",
+          "expected": "男",
+          "actual": "男",
+          "matched": true
+        },
+        {
+          "field": "ethnicity",
+          "expected": "汉",
+          "actual": "汉",
+          "matched": true
+        },
+        {
+          "field": "birth_date",
+          "expected": "1990年03月07日",
+          "actual": "1990年03月07日",
+          "matched": true
+        },
+        {
+          "field": "address",
+          "expected": "北京市东城区东华门街道1001号",
+          "actual": "北京市东城区东华门街道1001号",
+          "matched": true
+        },
+        {
+          "field": "id_number",
+          "expected": "110101199003074514",
+          "actual": "110101199003074514",
+          "matched": true
+        }
+      ],
+      "parsed_fields": {
+        "document_side": "front",
+        "name": "张三",
+        "gender": "男",
+        "ethnicity": "汉",
+        "birth_date": "1990年03月07日",
+        "address": "北京市东城区东华门街道1001号",
+        "id_number": "110101199003074514",
+        "issuing_authority": null,
+        "valid_from": null,
+        "valid_to": null
+      },
+      "quality_summary": {
+        "passed": true,
+        "review_recommended": true,
+        "routing_hint": "review",
+        "risk_score": 0.25,
+        "reasons": [
+          "weak_perspective_confidence"
+        ],
+        "flags": [
+          {
+            "code": "weak_perspective_confidence",
+            "severity": "warning",
+            "message": "Perspective correction confidence is weak; warped crops may need review.",
+            "source": "perspective",
+            "metric": "perspective_confidence",
+            "value": 0.5,
+            "threshold": 0.7
+          }
+        ],
+        "metrics": {
+          "detector_confidence": 0.96,
+          "perspective_confidence": 0.5,
+          "perspective_applied": false,
+          "orientation_confidence": 0.9,
+          "orientation_angle": 0.0,
+          "orientation_applied": false,
+          "blur_score": 0.95,
+          "glare_score": 0.95,
+          "occlusion_score": 0.95,
+          "quality_passed": true
+        }
+      }
+    },
+    {
+      "backend": "ocr=rapidocr,vlm=mock",
+      "ocr_backend": "rapidocr",
+      "vlm_backend": "mock",
+      "case_id": "passport_td3_control",
+      "case_name": "Passport MRZ parser control",
+      "plugin": "passport",
+      "track": "synthetic_control",
+      "input_mode": "ocr_result",
+      "sample": null,
+      "success": true,
+      "validator_accepted": true,
+      "warning_count": 1,
+      "validator_issue_count": 0,
+      "decision": "review",
+      "decision_reason_codes": [
+        "weak_perspective_confidence"
+      ],
+      "key_field_total": 10,
+      "key_field_hits": 10,
+      "key_field_hit_rate": 1.0,
+      "field_hits": [
+        {
+          "field": "document_variant",
+          "expected": "passport",
+          "actual": "passport",
+          "matched": true
+        },
+        {
+          "field": "document_code",
+          "expected": "P<",
+          "actual": "P<",
+          "matched": true
+        },
+        {
+          "field": "issuing_country",
+          "expected": "UTO",
+          "actual": "UTO",
+          "matched": true
+        },
+        {
+          "field": "surname",
+          "expected": "ERIKSSON",
+          "actual": "ERIKSSON",
+          "matched": true
+        },
+        {
+          "field": "given_names",
+          "expected": "ANNA MARIA",
+          "actual": "ANNA MARIA",
+          "matched": true
+        },
+        {
+          "field": "passport_number",
+          "expected": "L898902C3",
+          "actual": "L898902C3",
+          "matched": true
+        },
+        {
+          "field": "nationality",
+          "expected": "UTO",
+          "actual": "UTO",
+          "matched": true
+        },
+        {
+          "field": "birth_date",
+          "expected": "1974-08-12",
+          "actual": "1974-08-12",
+          "matched": true
+        },
+        {
+          "field": "sex",
+          "expected": "F",
+          "actual": "F",
+          "matched": true
+        },
+        {
+          "field": "expiry_date",
+          "expected": "2012-04-15",
+          "actual": "2012-04-15",
+          "matched": true
+        }
+      ],
+      "parsed_fields": {
+        "document_variant": "passport",
+        "mrz_lines": [
+          "P<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<",
+          "L898902C36UTO7408122F1204159ZE184226B<<<<<10"
+        ],
+        "mrz_fields": {
+          "document_code": "P<",
+          "issuing_country": "UTO",
+          "surname": "ERIKSSON",
+          "given_names": "ANNA MARIA",
+          "passport_number": "L898902C3",
+          "nationality": "UTO",
+          "birth_date": "1974-08-12",
+          "sex": "F",
+          "expiry_date": "2012-04-15",
+          "personal_number": "ZE184226B"
+        },
+        "document_code": "P<",
+        "issuing_country": "UTO",
+        "surname": "ERIKSSON",
+        "given_names": "ANNA MARIA",
+        "passport_number": "L898902C3",
+        "nationality": "UTO",
+        "birth_date": "1974-08-12",
+        "sex": "F",
+        "expiry_date": "2012-04-15",
+        "personal_number": "ZE184226B"
+      },
+      "quality_summary": {
+        "passed": true,
+        "review_recommended": true,
+        "routing_hint": "review",
+        "risk_score": 0.25,
+        "reasons": [
+          "weak_perspective_confidence"
+        ],
+        "flags": [
+          {
+            "code": "weak_perspective_confidence",
+            "severity": "warning",
+            "message": "Perspective correction confidence is weak; warped crops may need review.",
+            "source": "perspective",
+            "metric": "perspective_confidence",
+            "value": 0.5,
+            "threshold": 0.7
+          }
+        ],
+        "metrics": {
+          "detector_confidence": 0.96,
+          "perspective_confidence": 0.5,
+          "perspective_applied": false,
+          "orientation_confidence": 0.9,
+          "orientation_angle": 0.0,
+          "orientation_applied": false,
+          "blur_score": 0.95,
+          "glare_score": 0.95,
+          "occlusion_score": 0.95,
+          "quality_passed": true
+        }
+      }
+    },
+    {
+      "backend": "ocr=rapidocr,vlm=mock",
+      "ocr_backend": "rapidocr",
+      "vlm_backend": "mock",
+      "case_id": "medical_record_control",
+      "case_name": "Medical record parser control",
+      "plugin": "medical_record",
+      "track": "synthetic_control",
+      "input_mode": "ocr_result",
+      "sample": null,
+      "success": true,
+      "validator_accepted": false,
+      "warning_count": 4,
+      "validator_issue_count": 3,
+      "decision": "review",
+      "decision_reason_codes": [
+        "weak_perspective_confidence",
+        "missing_patient_name",
+        "missing_visit_date",
+        "not_sick_note_like"
+      ],
+      "key_field_total": 5,
+      "key_field_hits": 1,
+      "key_field_hit_rate": 0.2,
+      "field_hits": [
+        {
+          "field": "doc_type",
+          "expected": "medical_record",
+          "actual": "medical_record",
+          "matched": true
+        },
+        {
+          "field": "patient_name",
+          "expected": "张三",
+          "actual": null,
+          "matched": false
+        },
+        {
+          "field": "visit_date",
+          "expected": "2026-03-11",
+          "actual": null,
+          "matched": false
+        },
+        {
+          "field": "notes",
+          "expected": "发热咳嗽2天",
+          "actual": null,
+          "matched": false
+        },
+        {
+          "field": "diagnosis",
+          "expected": [
+            "上呼吸道感染"
+          ],
+          "actual": [],
+          "matched": false
+        }
+      ],
+      "parsed_fields": {
+        "doc_type": "medical_record",
+        "hospital_name": "医院上海市第一人民医院",
+        "patient_name": null,
+        "gender": null,
+        "age": null,
+        "visit_date": null,
+        "department": null,
+        "diagnosis": [],
+        "medications": [],
+        "notes": null,
+        "sick_note_check": {
+          "is_sick_note_like": false,
+          "score": 0.449,
+          "confidence": "low",
+          "matched_features": [
+            "医院抬头",
+            "病休/休息建议",
+            "诊断信息"
+          ],
+          "missing_features": [
+            "病休/病假标题",
+            "日期区间/天数",
+            "医生/医师签名",
+            "盖章/印章"
+          ],
+          "feature_hits": {
+            "hospital_header": true,
+            "sick_leave_title": false,
+            "rest_advice": true,
+            "date_range": false,
+            "diagnosis": true,
+            "physician_signature": false,
+            "seal_or_stamp": false
+          },
+          "evidence": {
+            "title": null,
+            "date_mentions": [
+              "2026-03-11"
+            ],
+            "line_count": 7
+          }
+        }
+      },
+      "quality_summary": {
+        "passed": true,
+        "review_recommended": true,
+        "routing_hint": "review",
+        "risk_score": 0.25,
+        "reasons": [
+          "weak_perspective_confidence"
+        ],
+        "flags": [
+          {
+            "code": "weak_perspective_confidence",
+            "severity": "warning",
+            "message": "Perspective correction confidence is weak; warped crops may need review.",
+            "source": "perspective",
+            "metric": "perspective_confidence",
+            "value": 0.5,
+            "threshold": 0.7
+          }
+        ],
+        "metrics": {
+          "detector_confidence": 0.96,
+          "perspective_confidence": 0.5,
+          "perspective_applied": false,
+          "orientation_confidence": 0.9,
+          "orientation_angle": 0.0,
+          "orientation_applied": false,
+          "blur_score": 0.95,
+          "glare_score": 0.95,
+          "occlusion_score": 0.95,
+          "quality_passed": true
+        }
+      }
+    },
+    {
+      "backend": "ocr=paddleocr,vlm=mock",
+      "ocr_backend": "paddleocr",
+      "vlm_backend": "mock",
+      "case_id": "boarding_pass_live_public_00006737",
+      "case_name": "Public boarding pass image",
+      "plugin": "boarding_pass",
+      "track": "live_image",
+      "input_mode": "image",
+      "sample": "examples/assets/paddle_sample_doc_00006737.jpg",
+      "success": true,
+      "validator_accepted": true,
+      "warning_count": 1,
+      "validator_issue_count": 0,
+      "decision": "review",
+      "decision_reason_codes": [
+        "weak_perspective_confidence"
+      ],
+      "key_field_total": 8,
+      "key_field_hits": 8,
+      "key_field_hit_rate": 1.0,
+      "field_hits": [
+        {
+          "field": "document_variant",
+          "expected": "boarding_pass",
+          "actual": "boarding_pass",
+          "matched": true
+        },
+        {
+          "field": "passenger_name",
+          "expected": "ZHANGQIWEI",
+          "actual": "ZHANGQIWEI",
+          "matched": true
+        },
+        {
+          "field": "flight_number",
+          "expected": "MU2379",
+          "actual": "MU2379",
+          "matched": true
+        },
+        {
+          "field": "ticket_number",
+          "expected": "7813699238489/1",
+          "actual": "7813699238489/1",
+          "matched": true
+        },
+        {
+          "field": "departure_date",
+          "expected": "03DEC",
+          "actual": "03DEC",
+          "matched": true
+        },
+        {
+          "field": "departure_airport",
+          "expected": "TAIYUAN",
+          "actual": "TAIYUAN",
+          "matched": true
+        },
+        {
+          "field": "arrival_airport",
+          "expected": "FUZHOU",
+          "actual": "FUZHOU",
+          "matched": true
+        },
+        {
+          "field": "gate",
+          "expected": "G11",
+          "actual": "G11",
+          "matched": true
+        }
+      ],
+      "parsed_fields": {
+        "document_variant": "boarding_pass",
+        "passenger_name": "ZHANGQIWEI",
+        "flight_number": "MU2379",
+        "ticket_number": "7813699238489/1",
+        "departure_date": "03DEC",
+        "departure_airport": "TAIYUAN",
+        "arrival_airport": "FUZHOU",
+        "gate": "G11",
+        "seat_no": null
+      },
+      "quality_summary": {
+        "passed": true,
+        "review_recommended": true,
+        "routing_hint": "review",
+        "risk_score": 0.25,
+        "reasons": [
+          "weak_perspective_confidence"
+        ],
+        "flags": [
+          {
+            "code": "weak_perspective_confidence",
+            "severity": "warning",
+            "message": "Perspective correction confidence is weak; warped crops may need review.",
+            "source": "perspective",
+            "metric": "perspective_confidence",
+            "value": 0.5,
+            "threshold": 0.7
+          }
+        ],
+        "metrics": {
+          "detector_confidence": 0.96,
+          "perspective_confidence": 0.5,
+          "perspective_applied": false,
+          "orientation_confidence": 0.9,
+          "orientation_angle": 0.0,
+          "orientation_applied": false,
+          "blur_score": 0.95,
+          "glare_score": 0.95,
+          "occlusion_score": 0.95,
+          "quality_passed": true
+        }
+      }
+    },
+    {
+      "backend": "ocr=paddleocr,vlm=mock",
+      "ocr_backend": "paddleocr",
+      "vlm_backend": "mock",
+      "case_id": "china_id_front_control",
+      "case_name": "China ID parser control",
+      "plugin": "china_id",
+      "track": "synthetic_control",
+      "input_mode": "ocr_result",
+      "sample": null,
+      "success": true,
+      "validator_accepted": true,
+      "warning_count": 1,
+      "validator_issue_count": 0,
+      "decision": "review",
+      "decision_reason_codes": [
+        "weak_perspective_confidence"
+      ],
+      "key_field_total": 7,
+      "key_field_hits": 7,
+      "key_field_hit_rate": 1.0,
+      "field_hits": [
+        {
+          "field": "document_side",
+          "expected": "front",
+          "actual": "front",
+          "matched": true
+        },
+        {
+          "field": "name",
+          "expected": "张三",
+          "actual": "张三",
+          "matched": true
+        },
+        {
+          "field": "gender",
+          "expected": "男",
+          "actual": "男",
+          "matched": true
+        },
+        {
+          "field": "ethnicity",
+          "expected": "汉",
+          "actual": "汉",
+          "matched": true
+        },
+        {
+          "field": "birth_date",
+          "expected": "1990年03月07日",
+          "actual": "1990年03月07日",
+          "matched": true
+        },
+        {
+          "field": "address",
+          "expected": "北京市东城区东华门街道1001号",
+          "actual": "北京市东城区东华门街道1001号",
+          "matched": true
+        },
+        {
+          "field": "id_number",
+          "expected": "110101199003074514",
+          "actual": "110101199003074514",
+          "matched": true
+        }
+      ],
+      "parsed_fields": {
+        "document_side": "front",
+        "name": "张三",
+        "gender": "男",
+        "ethnicity": "汉",
+        "birth_date": "1990年03月07日",
+        "address": "北京市东城区东华门街道1001号",
+        "id_number": "110101199003074514",
+        "issuing_authority": null,
+        "valid_from": null,
+        "valid_to": null
+      },
+      "quality_summary": {
+        "passed": true,
+        "review_recommended": true,
+        "routing_hint": "review",
+        "risk_score": 0.25,
+        "reasons": [
+          "weak_perspective_confidence"
+        ],
+        "flags": [
+          {
+            "code": "weak_perspective_confidence",
+            "severity": "warning",
+            "message": "Perspective correction confidence is weak; warped crops may need review.",
+            "source": "perspective",
+            "metric": "perspective_confidence",
+            "value": 0.5,
+            "threshold": 0.7
+          }
+        ],
+        "metrics": {
+          "detector_confidence": 0.96,
+          "perspective_confidence": 0.5,
+          "perspective_applied": false,
+          "orientation_confidence": 0.9,
+          "orientation_angle": 0.0,
+          "orientation_applied": false,
+          "blur_score": 0.95,
+          "glare_score": 0.95,
+          "occlusion_score": 0.95,
+          "quality_passed": true
+        }
+      }
+    },
+    {
+      "backend": "ocr=paddleocr,vlm=mock",
+      "ocr_backend": "paddleocr",
+      "vlm_backend": "mock",
+      "case_id": "passport_td3_control",
+      "case_name": "Passport MRZ parser control",
+      "plugin": "passport",
+      "track": "synthetic_control",
+      "input_mode": "ocr_result",
+      "sample": null,
+      "success": true,
+      "validator_accepted": true,
+      "warning_count": 1,
+      "validator_issue_count": 0,
+      "decision": "review",
+      "decision_reason_codes": [
+        "weak_perspective_confidence"
+      ],
+      "key_field_total": 10,
+      "key_field_hits": 10,
+      "key_field_hit_rate": 1.0,
+      "field_hits": [
+        {
+          "field": "document_variant",
+          "expected": "passport",
+          "actual": "passport",
+          "matched": true
+        },
+        {
+          "field": "document_code",
+          "expected": "P<",
+          "actual": "P<",
+          "matched": true
+        },
+        {
+          "field": "issuing_country",
+          "expected": "UTO",
+          "actual": "UTO",
+          "matched": true
+        },
+        {
+          "field": "surname",
+          "expected": "ERIKSSON",
+          "actual": "ERIKSSON",
+          "matched": true
+        },
+        {
+          "field": "given_names",
+          "expected": "ANNA MARIA",
+          "actual": "ANNA MARIA",
+          "matched": true
+        },
+        {
+          "field": "passport_number",
+          "expected": "L898902C3",
+          "actual": "L898902C3",
+          "matched": true
+        },
+        {
+          "field": "nationality",
+          "expected": "UTO",
+          "actual": "UTO",
+          "matched": true
+        },
+        {
+          "field": "birth_date",
+          "expected": "1974-08-12",
+          "actual": "1974-08-12",
+          "matched": true
+        },
+        {
+          "field": "sex",
+          "expected": "F",
+          "actual": "F",
+          "matched": true
+        },
+        {
+          "field": "expiry_date",
+          "expected": "2012-04-15",
+          "actual": "2012-04-15",
+          "matched": true
+        }
+      ],
+      "parsed_fields": {
+        "document_variant": "passport",
+        "mrz_lines": [
+          "P<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<",
+          "L898902C36UTO7408122F1204159ZE184226B<<<<<10"
+        ],
+        "mrz_fields": {
+          "document_code": "P<",
+          "issuing_country": "UTO",
+          "surname": "ERIKSSON",
+          "given_names": "ANNA MARIA",
+          "passport_number": "L898902C3",
+          "nationality": "UTO",
+          "birth_date": "1974-08-12",
+          "sex": "F",
+          "expiry_date": "2012-04-15",
+          "personal_number": "ZE184226B"
+        },
+        "document_code": "P<",
+        "issuing_country": "UTO",
+        "surname": "ERIKSSON",
+        "given_names": "ANNA MARIA",
+        "passport_number": "L898902C3",
+        "nationality": "UTO",
+        "birth_date": "1974-08-12",
+        "sex": "F",
+        "expiry_date": "2012-04-15",
+        "personal_number": "ZE184226B"
+      },
+      "quality_summary": {
+        "passed": true,
+        "review_recommended": true,
+        "routing_hint": "review",
+        "risk_score": 0.25,
+        "reasons": [
+          "weak_perspective_confidence"
+        ],
+        "flags": [
+          {
+            "code": "weak_perspective_confidence",
+            "severity": "warning",
+            "message": "Perspective correction confidence is weak; warped crops may need review.",
+            "source": "perspective",
+            "metric": "perspective_confidence",
+            "value": 0.5,
+            "threshold": 0.7
+          }
+        ],
+        "metrics": {
+          "detector_confidence": 0.96,
+          "perspective_confidence": 0.5,
+          "perspective_applied": false,
+          "orientation_confidence": 0.9,
+          "orientation_angle": 0.0,
+          "orientation_applied": false,
+          "blur_score": 0.95,
+          "glare_score": 0.95,
+          "occlusion_score": 0.95,
+          "quality_passed": true
+        }
+      }
+    },
+    {
+      "backend": "ocr=paddleocr,vlm=mock",
+      "ocr_backend": "paddleocr",
+      "vlm_backend": "mock",
+      "case_id": "medical_record_control",
+      "case_name": "Medical record parser control",
+      "plugin": "medical_record",
+      "track": "synthetic_control",
+      "input_mode": "ocr_result",
+      "sample": null,
+      "success": true,
+      "validator_accepted": false,
+      "warning_count": 4,
+      "validator_issue_count": 3,
+      "decision": "review",
+      "decision_reason_codes": [
+        "weak_perspective_confidence",
+        "missing_patient_name",
+        "missing_visit_date",
+        "not_sick_note_like"
+      ],
+      "key_field_total": 5,
+      "key_field_hits": 1,
+      "key_field_hit_rate": 0.2,
+      "field_hits": [
+        {
+          "field": "doc_type",
+          "expected": "medical_record",
+          "actual": "medical_record",
+          "matched": true
+        },
+        {
+          "field": "patient_name",
+          "expected": "张三",
+          "actual": null,
+          "matched": false
+        },
+        {
+          "field": "visit_date",
+          "expected": "2026-03-11",
+          "actual": null,
+          "matched": false
+        },
+        {
+          "field": "notes",
+          "expected": "发热咳嗽2天",
+          "actual": null,
+          "matched": false
+        },
+        {
+          "field": "diagnosis",
+          "expected": [
+            "上呼吸道感染"
+          ],
+          "actual": [],
+          "matched": false
+        }
+      ],
+      "parsed_fields": {
+        "doc_type": "medical_record",
+        "hospital_name": "医院上海市第一人民医院",
+        "patient_name": null,
+        "gender": null,
+        "age": null,
+        "visit_date": null,
+        "department": null,
+        "diagnosis": [],
+        "medications": [],
+        "notes": null,
+        "sick_note_check": {
+          "is_sick_note_like": false,
+          "score": 0.449,
+          "confidence": "low",
+          "matched_features": [
+            "医院抬头",
+            "病休/休息建议",
+            "诊断信息"
+          ],
+          "missing_features": [
+            "病休/病假标题",
+            "日期区间/天数",
+            "医生/医师签名",
+            "盖章/印章"
+          ],
+          "feature_hits": {
+            "hospital_header": true,
+            "sick_leave_title": false,
+            "rest_advice": true,
+            "date_range": false,
+            "diagnosis": true,
+            "physician_signature": false,
+            "seal_or_stamp": false
+          },
+          "evidence": {
+            "title": null,
+            "date_mentions": [
+              "2026-03-11"
+            ],
+            "line_count": 7
+          }
+        }
+      },
+      "quality_summary": {
+        "passed": true,
+        "review_recommended": true,
+        "routing_hint": "review",
+        "risk_score": 0.25,
+        "reasons": [
+          "weak_perspective_confidence"
+        ],
+        "flags": [
+          {
+            "code": "weak_perspective_confidence",
+            "severity": "warning",
+            "message": "Perspective correction confidence is weak; warped crops may need review.",
+            "source": "perspective",
+            "metric": "perspective_confidence",
+            "value": 0.5,
+            "threshold": 0.7
+          }
+        ],
+        "metrics": {
+          "detector_confidence": 0.96,
+          "perspective_confidence": 0.5,
+          "perspective_applied": false,
+          "orientation_confidence": 0.9,
+          "orientation_angle": 0.0,
+          "orientation_applied": false,
+          "blur_score": 0.95,
+          "glare_score": 0.95,
+          "occlusion_score": 0.95,
+          "quality_passed": true
+        }
+      }
+    }
+  ],
+  "errors": []
+}

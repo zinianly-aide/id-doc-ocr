@@ -1,0 +1,99 @@
+{
+  "name": "backbone-benchmark-seed",
+  "version": "0.1.0",
+  "schema_version": "0.1.0",
+  "description": "Minimal fixed benchmark set for OCR backbone comparison. Mixes one live image-backed case with several parser/validator control fixtures.",
+  "cases": [
+    {
+      "case_id": "boarding_pass_live_public_00006737",
+      "case_name": "Public boarding pass image",
+      "plugin": "boarding_pass",
+      "track": "live_image",
+      "sample": "examples/assets/paddle_sample_doc_00006737.jpg",
+      "expected_fields": {
+        "document_variant": "boarding_pass",
+        "passenger_name": "ZHANGQIWEI",
+        "flight_number": "MU2379",
+        "ticket_number": "7813699238489/1",
+        "departure_date": "03DEC",
+        "departure_airport": "TAIYUAN",
+        "arrival_airport": "FUZHOU",
+        "gate": "G11"
+      }
+    },
+    {
+      "case_id": "china_id_front_control",
+      "case_name": "China ID parser control",
+      "plugin": "china_id",
+      "track": "synthetic_control",
+      "ocr_result": {
+        "lines": [
+          {"text": "中华人民共和国居民身份证"},
+          {"text": "姓名张三"},
+          {"text": "性别男 民族汉"},
+          {"text": "出生1990年03月07日"},
+          {"text": "住址北京市东城区东华门街道"},
+          {"text": "1001号"},
+          {"text": "公民身份号码110101199003074514"}
+        ]
+      },
+      "expected_fields": {
+        "document_side": "front",
+        "name": "张三",
+        "gender": "男",
+        "ethnicity": "汉",
+        "birth_date": "1990年03月07日",
+        "address": "北京市东城区东华门街道1001号",
+        "id_number": "110101199003074514"
+      }
+    },
+    {
+      "case_id": "passport_td3_control",
+      "case_name": "Passport MRZ parser control",
+      "plugin": "passport",
+      "track": "synthetic_control",
+      "ocr_result": {
+        "lines": [
+          {"text": "P<UTO ERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<"},
+          {"text": "L898902C36 UTO7408122F1204159ZE184226B<<<<<10"}
+        ]
+      },
+      "expected_fields": {
+        "document_variant": "passport",
+        "document_code": "P<",
+        "issuing_country": "UTO",
+        "surname": "ERIKSSON",
+        "given_names": "ANNA MARIA",
+        "passport_number": "L898902C3",
+        "nationality": "UTO",
+        "birth_date": "1974-08-12",
+        "sex": "F",
+        "expiry_date": "2012-04-15"
+      }
+    },
+    {
+      "case_id": "medical_record_control",
+      "case_name": "Medical record parser control",
+      "plugin": "medical_record",
+      "track": "synthetic_control",
+      "ocr_result": {
+        "lines": [
+          {"text": "门诊病历"},
+          {"text": "医院上海市第一人民医院"},
+          {"text": "患者姓名张三"},
+          {"text": "就诊日期2026-03-11"},
+          {"text": "主诉发热咳嗽2天"},
+          {"text": "诊断上呼吸道感染"},
+          {"text": "建议休息三天"}
+        ]
+      },
+      "expected_fields": {
+        "doc_type": "medical_record",
+        "patient_name": "张三",
+        "visit_date": "2026-03-11",
+        "notes": "发热咳嗽2天",
+        "diagnosis": ["上呼吸道感染"]
+      }
+    }
+  ]
+}

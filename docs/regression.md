@@ -63,6 +63,50 @@ Current report structure includes:
 
 This makes parser regression suitable both as a hard gate for stable template parsers and as a sanity check that newly added plugin families remain wired into the public regression story.
 
+## Backbone benchmark template
+
+Purpose: compare OCR/VLM backend combinations with a fixed, human-readable case list and a stable report format.
+
+Seed manifest: `examples/backbone_benchmark_manifest.json`
+
+Current seed design:
+- `live_image`: one real image-backed boarding-pass case from `examples/assets/`
+- `synthetic_control`: parser/validator control cases with inline `ocr_result`, used to verify downstream logic stays stable while OCR backbones change
+
+Run:
+
+```bash
+PYTHONPATH=src ./.venv/bin/python examples/run_backbone_benchmark.py
+```
+
+Custom backend matrix example:
+
+```bash
+PYTHONPATH=src ./.venv/bin/python examples/run_backbone_benchmark.py \
+  --backend mock:mock \
+  --backend rapidocr:mock \
+  --backend paddleocr:mock
+```
+
+Reports:
+- JSON: `reports/backbone_benchmark_latest.json`
+- Markdown: `reports/backbone_benchmark_latest.md`
+
+Current benchmark summary fields:
+- success rate
+- validator accepted rate
+- average warning count
+- average validator issue count
+- key-field hits / total / hit rate
+- decision distribution
+- per-case details for later diffing
+
+Interpretation notes:
+- `live_image` is the real backend comparison slice
+- `synthetic_control` is backend-agnostic by design and acts as a parser/validator control group
+- if a synthetic control regresses, the issue is probably downstream of OCR
+- if only `live_image` regresses, the issue is more likely in OCR backbone behavior or OCR-to-parser coupling
+
 ## Updating the asset set
 
 When adding a public sample:

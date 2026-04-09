@@ -43,5 +43,6 @@ For `browser_visual/` samples, the manifest may also include `benchmark_track` t
 ## Reports
 - `python examples/run_asset_smoke_regression.py`
 - `python examples/run_parser_regression.py`
+- `python examples/run_backbone_benchmark.py`
 
-Both write JSON reports into `reports/`.
+The backbone benchmark uses `examples/backbone_benchmark_manifest.json` and writes both JSON and Markdown reports into `reports/`.

@@ -2,7 +2,7 @@ COMPOSE ?= docker compose
 ENV_FILE ?= .env
 SERVICE ?= api
 
-.PHONY: compose-config up down logs ps health ui-health test
+.PHONY: compose-config up down logs ps health ui-health test regression benchmark
 
 compose-config:
 	$(COMPOSE) --env-file $(ENV_FILE) config
@@ -28,3 +28,10 @@ ui-health:
 
 test:
 	pytest -q
+
+regression:
+	PYTHONPATH=src ./.venv/bin/python examples/run_asset_smoke_regression.py
+	PYTHONPATH=src ./.venv/bin/python examples/run_parser_regression.py
+
+benchmark:
+	PYTHONPATH=src ./.venv/bin/python examples/run_backbone_benchmark.py
