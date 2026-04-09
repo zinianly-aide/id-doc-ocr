@@ -7,10 +7,14 @@ from id_doc_ocr.core.registry import registry
 from id_doc_ocr.pipeline.runner import DemoPipelineRunner
 
 FIXTURES = [
+    Path("examples/fixtures/birth_certificate/shanghai_basic_text_fixture.expected.json"),
     Path("examples/fixtures/boarding_pass/public_sample_00006737.expected.json"),
     Path("examples/fixtures/china_id/basic_front.expected.json"),
     Path("examples/fixtures/china_id/basic_back.expected.json"),
     Path("examples/fixtures/china_id/multiline_address_lowercase_x.expected.json"),
+    Path("examples/fixtures/custody_relationship_certificate/shanghai_guardianship_text.expected.json"),
+    Path("examples/fixtures/diagnosis_proof/diagnosis_certificate_text.expected.json"),
+    Path("examples/fixtures/diagnosis_proof/diagnosis_certificate_minimal.expected.json"),
     Path("examples/fixtures/passport/basic_td3_mrz.expected.json"),
     Path("examples/fixtures/passport/text_fallback_unspecified_sex.expected.json"),
     Path("examples/fixtures/hukou_booklet/basic_member_card.expected.json"),
@@ -18,6 +22,7 @@ FIXTURES = [
     Path("examples/fixtures/train_ticket/basic_text_ticket.expected.json"),
     Path("examples/fixtures/train_ticket/name_anchor_priority.expected.json"),
     Path("examples/fixtures/medical_record/basic_outpatient_note.expected.json"),
+    Path("examples/fixtures/medical_record/sick_note_like.expected.json"),
     Path("examples/fixtures/only_child_certificate/shanghai_only_child_certificate_text.expected.json"),
 ]
 REPORT_PATH = Path("reports/parser_regression_latest.json")

@@ -39,10 +39,19 @@ See [docs/architecture.md](docs/architecture.md).
 A minimal HTTP service is now available with:
 
 - `GET /health`
+- `GET /capabilities`
 - `POST /infer`
 - local CLI serve entrypoint
 - Dockerfile and `docker-compose.yml`
 - `.env.example` and `Makefile` for repeatable compose-based startup
+
+What the service now exposes beyond a bare liveness probe:
+
+- plugin inventory for all registered document types
+- OCR / VLM backbone availability details
+- normalized quality / routing summary (`quality.summary`, `quality.flags`)
+- review-oriented decision output (`decision`, `review`, `warnings`, `evidence`)
+- optional failure-case persistence via `failure_dir`
 
 Docs:
 
@@ -55,11 +64,11 @@ Public smoke-regression assets and fixture-based parser regression are documente
 
 Current checked-in regression inventory:
 
-- public assets: `31` samples in `examples/assets/manifest.json`
-- parser fixtures: `11` fixtures across `boarding_pass`, `china_id`, `passport`, `hukou_booklet`, `train_ticket`, and `medical_record`
+- public assets: `35` samples in `examples/assets/manifest.json`
+- parser fixtures: `17` fixtures across `birth_certificate`, `boarding_pass`, `china_id`, `custody_relationship_certificate`, `diagnosis_proof`, `hukou_booklet`, `medical_record`, `only_child_certificate`, `passport`, and `train_ticket`
 - latest parser regression report: `reports/parser_regression_latest.json`
-  - `11/11` fixtures passed
-  - `89/89` expected fields matched
+  - `17/17` fixtures passed
+  - `140/140` expected fields matched
   - overall field exact-match rate: `1.00`
 
 ### Browser-based recognition spot-check (manual)
@@ -72,6 +81,10 @@ To complement fixture-based parser regression, we also did a small browser-drive
 | Natural image | Cat portrait | Main object, scene type, coarse visual attributes | Good for captioning / understanding, not structured extraction |
 | Chart / diagram | Stacked bar chart | Chart type, title, legend, x-axis categories, most bar labels | Precise numeric extraction is less stable than pure OCR documents |
 | UI screenshot | GitHub login page | Page purpose, key controls, field labels, CTA buttons | Layout understanding is good, but pixel-accurate validation should still rely on DOM / a11y data |
+| Handwritten / formula-like | Paddle formula sample | Useful for testing non-standard glyph grouping and symbol reading | Not a clean proxy for true free-form handwriting |
+| Dense table | TableBank sample | Good stress case for grid-heavy layouts and cell structure | Requires dedicated table extraction to go beyond coarse recognition |
+| Noisy document | XFUND / KIE sample | Better stress on cluttered business-doc layout and mobile capture artifacts | Harder to score without task-specific expected outputs |
+| Multilingual form | FUNSD / form-like sample | Useful for layout + key-value robustness beyond plain OCR | Needs plugin-specific evaluation if promoted from spot-check to hard benchmark |
 
 Takeaway:
 
@@ -155,10 +168,12 @@ What is already in the repo today:
 - working detector / rectify seams, plus `rapidocr`, `paddleocr`, and `paddleocr_vl` adapter paths
 - detector seam with typed quad / classification contracts and a mock adapter ready for real model integration
 - parser / validator coverage for boarding pass, train ticket, medical record, plus strengthened China ID / passport / hukou booklet flows
+- newly added parser plugins for `birth_certificate`, `only_child_certificate`, `custody_relationship_certificate`, and `diagnosis_proof`
 - MRZ parsing + validation utilities
-- parser regression fixtures now cover boarding_pass, china_id (front/back), passport TD3 MRZ, hukou_booklet, train_ticket, and medical_record
+- parser regression fixtures now cover `birth_certificate`, `boarding_pass`, `china_id` (front/back), `custody_relationship_certificate`, `diagnosis_proof`, `hukou_booklet`, `medical_record`, `only_child_certificate`, `passport` TD3 MRZ, and `train_ticket`
 - evaluation report models and regression fixtures / smoke assets
 - CLI entrypoint and dataset / failure-log helper tools
+- service responses include review-ready quality / validation evidence suitable for human-in-the-loop routing
 
 What is still intentionally incomplete:
 

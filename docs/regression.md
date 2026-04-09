@@ -3,17 +3,21 @@
 This repo keeps a small public regression track under `examples/assets/` and `examples/fixtures/`.
 
 Current parser fixtures intentionally bias toward stable document types and include:
+- `birth_certificate`: de-identified text fixture
 - `boarding_pass`: public sample image fixture
 - `china_id`: front/back inline OCR fixtures plus a multiline-address + lowercase-`x` boundary fixture
+- `custody_relationship_certificate`: de-identified guardianship / custody text fixture
+- `diagnosis_proof`: text-rich and minimal diagnosis certificate fixtures
 - `passport`: TD3 MRZ inline OCR fixtures, including a text-fallback + `«` normalization + unspecified-sex boundary fixture
 - `hukou_booklet`: labeled household member card fixture plus a standalone-labels + inferred-birth boundary fixture
 - `train_ticket`: inline OCR fixtures, including a NAME-anchor proximity boundary fixture
-- `medical_record`: inline text fixture
+- `medical_record`: outpatient-note and sick-note-like inline text fixtures
+- `only_child_certificate`: de-identified Shanghai-style certificate fixture
 
 Current checked-in inventory snapshot:
-- `examples/assets/manifest.json`: `31` public assets
-- `examples/fixtures/`: `11` parser fixtures
-- latest parser regression report (`reports/parser_regression_latest.json`): `11/11` fixtures passed, `89/89` expected fields matched
+- `examples/assets/manifest.json`: `35` public assets
+- `examples/fixtures/`: `17` parser fixtures
+- latest parser regression report (`reports/parser_regression_latest.json`): `17/17` fixtures passed, `140/140` expected fields matched
 
 ## Asset smoke regression
 
@@ -46,6 +50,8 @@ Run:
 PYTHONPATH=src ./.venv/bin/python examples/run_parser_regression.py
 ```
 
+The checked-in runner now includes the newer `birth_certificate`, `custody_relationship_certificate`, `diagnosis_proof`, `medical_record/sick_note_like`, and `only_child_certificate` fixtures, so the generated report matches the full current fixture inventory.
+
 Report: `reports/parser_regression_latest.json`
 
 Current report structure includes:
@@ -54,6 +60,8 @@ Current report structure includes:
 - totals (`num_fixtures`, `num_passed`, `num_failed`, field totals, overall status)
 - per-fixture pass/fail status
 - field-by-field exact-match details
+
+This makes parser regression suitable both as a hard gate for stable template parsers and as a sanity check that newly added plugin families remain wired into the public regression story.
 
 ## Updating the asset set
 
@@ -75,6 +83,10 @@ Current manual spot-check buckets:
 - `natural image`
 - `chart / diagram`
 - `UI screenshot`
+- `handwritten / formula-like`
+- `dense table`
+- `noisy document photo / scan`
+- `multilingual form`
 
 A first seed asset set for this track is now checked in under `examples/assets/browser_visual/` and indexed in `examples/assets/manifest.json` via `benchmark_track="browser_visual_spotcheck"`.
 

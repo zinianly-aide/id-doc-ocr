@@ -7,6 +7,8 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 
 from id_doc_ocr import __version__, plugins as _plugins  # noqa: F401
 from id_doc_ocr.backbones.got_ocr import GOTOCRAdapter
@@ -169,7 +171,7 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
         ocr_backend: str = Form("mock"),
         vlm_backend: str = Form("auto"),
         failure_dir: str | None = Form(None),
-    ) -> dict[str, object]:
+    ) -> JSONResponse:
         selected_plugin = plugin_name or plugin
         if not selected_plugin:
             raise HTTPException(status_code=422, detail="plugin_name is required")
@@ -198,11 +200,15 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         except Exception as exc:  # pragma: no cover
             raise HTTPException(status_code=500, detail=f"Inference failed: {exc}") from exc
-        return {
-            "filename": file.filename,
-            "content_type": file.content_type,
-            "result": result,
-        }
+        return JSONResponse(
+            content=jsonable_encoder(
+                {
+                    "filename": file.filename,
+                    "content_type": file.content_type,
+                    "result": result,
+                }
+            )
+        )
 
     return app
 

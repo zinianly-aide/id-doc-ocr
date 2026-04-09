@@ -17,6 +17,12 @@ mkdir -p data/failures
 make compose-config
 make up
 make health
+curl http://127.0.0.1:${ID_DOC_OCR_PORT:-8000}/capabilities
+curl -X POST http://127.0.0.1:${ID_DOC_OCR_PORT:-8000}/infer \
+  -F plugin_name=boarding_pass \
+  -F ocr_backend=mock \
+  -F vlm_backend=mock \
+  -F file=@examples/assets/paddle_sample_doc_00006737.jpg
 ```
 
 The API should be reachable at `http://127.0.0.1:${ID_DOC_OCR_PORT:-8000}`.
@@ -39,4 +45,9 @@ Docker Compose uses the in-container Python runtime to probe:
 
 - `GET /health`
 
-That avoids adding extra packages such as `curl` only for liveness checks.
+For deployment validation after startup, also verify:
+
+- `GET /capabilities`
+- `POST /infer`
+
+That avoids adding extra packages such as `curl` only for liveness checks while still keeping richer readiness checks available from the host side.

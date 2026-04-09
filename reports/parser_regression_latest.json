@@ -1,21 +1,116 @@
 {
   "schema_version": "0.2.0",
   "report_name": "parser_regression",
-  "generated_at": "2026-04-02T13:07:20.937357+00:00",
+  "generated_at": "2026-04-03T00:25:57.696416+00:00",
   "runner": {
     "pipeline": "DemoPipelineRunner",
     "ocr_backend": "rapidocr"
   },
   "totals": {
-    "num_fixtures": 12,
-    "num_passed": 12,
+    "num_fixtures": 17,
+    "num_passed": 17,
     "num_failed": 0,
-    "num_fields": 101,
-    "num_matched_fields": 101,
+    "num_fields": 169,
+    "num_matched_fields": 169,
     "overall_field_exact_match_rate": 1.0,
     "status": "pass"
   },
   "results": [
+    {
+      "fixture": "examples/fixtures/birth_certificate/shanghai_basic_text_fixture.expected.json",
+      "sample": "de-identified shanghai birth certificate text fixture",
+      "plugin": "birth_certificate",
+      "status": "pass",
+      "num_fields": 14,
+      "num_matched_fields": 14,
+      "field_exact_match_rate": 1.0,
+      "fields": [
+        {
+          "field": "doc_type",
+          "expected": "birth_certificate",
+          "predicted": "birth_certificate",
+          "matched": true
+        },
+        {
+          "field": "child_name",
+          "expected": "安小宁",
+          "predicted": "安小宁",
+          "matched": true
+        },
+        {
+          "field": "sex",
+          "expected": "男",
+          "predicted": "男",
+          "matched": true
+        },
+        {
+          "field": "date_of_birth",
+          "expected": "2024-03-16",
+          "predicted": "2024-03-16",
+          "matched": true
+        },
+        {
+          "field": "time_of_birth",
+          "expected": "08:36",
+          "predicted": "08:36",
+          "matched": true
+        },
+        {
+          "field": "gestational_weeks",
+          "expected": 39,
+          "predicted": 39,
+          "matched": true
+        },
+        {
+          "field": "birth_weight_grams",
+          "expected": 3250,
+          "predicted": 3250,
+          "matched": true
+        },
+        {
+          "field": "birth_place",
+          "expected": "上海市第一妇婴保健院",
+          "predicted": "上海市第一妇婴保健院",
+          "matched": true
+        },
+        {
+          "field": "issuing_unit",
+          "expected": "上海市第一妇婴保健院",
+          "predicted": "上海市第一妇婴保健院",
+          "matched": true
+        },
+        {
+          "field": "certificate_number",
+          "expected": "T310123456",
+          "predicted": "T310123456",
+          "matched": true
+        },
+        {
+          "field": "mother_name",
+          "expected": "张敏",
+          "predicted": "张敏",
+          "matched": true
+        },
+        {
+          "field": "mother_age",
+          "expected": 31,
+          "predicted": 31,
+          "matched": true
+        },
+        {
+          "field": "father_name",
+          "expected": "李强",
+          "predicted": "李强",
+          "matched": true
+        },
+        {
+          "field": "issue_date",
+          "expected": "2024-03-20",
+          "predicted": "2024-03-20",
+          "matched": true
+        }
+      ]
+    },
     {
       "fixture": "examples/fixtures/boarding_pass/public_sample_00006737.expected.json",
       "sample": "examples/assets/paddle_sample_doc_00006737.jpg",
@@ -212,6 +307,351 @@
           "field": "id_number",
           "expected": "31010119881201242X",
           "predicted": "31010119881201242X",
+          "matched": true
+        }
+      ]
+    },
+    {
+      "fixture": "examples/fixtures/custody_relationship_certificate/shanghai_guardianship_text.expected.json",
+      "sample": "de-identified shanghai custody relationship proof text fixture",
+      "plugin": "custody_relationship_certificate",
+      "status": "pass",
+      "num_fields": 14,
+      "num_matched_fields": 14,
+      "field_exact_match_rate": 1.0,
+      "fields": [
+        {
+          "field": "doc_type",
+          "expected": "custody_relationship_certificate",
+          "predicted": "custody_relationship_certificate",
+          "matched": true
+        },
+        {
+          "field": "certificate_title",
+          "expected": "抚养关系证明",
+          "predicted": "抚养关系证明",
+          "matched": true
+        },
+        {
+          "field": "child_name",
+          "expected": "安小宁",
+          "predicted": "安小宁",
+          "matched": true
+        },
+        {
+          "field": "guardian_name",
+          "expected": "张敏",
+          "predicted": "张敏",
+          "matched": true
+        },
+        {
+          "field": "relation",
+          "expected": "抚养关系",
+          "predicted": "抚养关系",
+          "matched": true
+        },
+        {
+          "field": "relation_statement",
+          "expected": "兹证明：张敏，女，身份证号 310101198905062248，系未成年人安小宁之母",
+          "predicted": "兹证明：张敏，女，身份证号 310101198905062248，系未成年人安小宁之母",
+          "matched": true
+        },
+        {
+          "field": "child_birth_date",
+          "expected": "2018-06-12",
+          "predicted": "2018-06-12",
+          "matched": true
+        },
+        {
+          "field": "child_id_number",
+          "expected": "310115201806120017",
+          "predicted": "310115201806120017",
+          "matched": true
+        },
+        {
+          "field": "guardian_id_number",
+          "expected": "310101198905062248",
+          "predicted": "310101198905062248",
+          "matched": true
+        },
+        {
+          "field": "subject_address",
+          "expected": "上海市浦东新区川沙新镇晨光路88号",
+          "predicted": "上海市浦东新区川沙新镇晨光路88号",
+          "matched": true
+        },
+        {
+          "field": "purpose",
+          "expected": "本证明用于子女入学及相关事项办理。",
+          "predicted": "本证明用于子女入学及相关事项办理。",
+          "matched": true
+        },
+        {
+          "field": "issuing_authority",
+          "expected": "上海市浦东新区川沙新镇晨光居民委员会",
+          "predicted": "上海市浦东新区川沙新镇晨光居民委员会",
+          "matched": true
+        },
+        {
+          "field": "issue_date",
+          "expected": "2026-03-18",
+          "predicted": "2026-03-18",
+          "matched": true
+        },
+        {
+          "field": "authority_features",
+          "expected": [
+            "residents_committee"
+          ],
+          "predicted": [
+            "residents_committee"
+          ],
+          "matched": true
+        }
+      ]
+    },
+    {
+      "fixture": "examples/fixtures/diagnosis_proof/diagnosis_certificate_text.expected.json",
+      "sample": "desensitized diagnosis certificate text fixture",
+      "plugin": "diagnosis_proof",
+      "status": "pass",
+      "num_fields": 17,
+      "num_matched_fields": 17,
+      "field_exact_match_rate": 1.0,
+      "fields": [
+        {
+          "field": "doc_type",
+          "expected": "diagnosis_proof",
+          "predicted": "diagnosis_proof",
+          "matched": true
+        },
+        {
+          "field": "hospital_name",
+          "expected": "上海市第八人民医院",
+          "predicted": "上海市第八人民医院",
+          "matched": true
+        },
+        {
+          "field": "certificate_title",
+          "expected": "门诊诊断证明书",
+          "predicted": "门诊诊断证明书",
+          "matched": true
+        },
+        {
+          "field": "patient_name",
+          "expected": "张三",
+          "predicted": "张三",
+          "matched": true
+        },
+        {
+          "field": "gender",
+          "expected": "男",
+          "predicted": "男",
+          "matched": true
+        },
+        {
+          "field": "age",
+          "expected": "35",
+          "predicted": "35",
+          "matched": true
+        },
+        {
+          "field": "department",
+          "expected": "骨科门诊",
+          "predicted": "骨科门诊",
+          "matched": true
+        },
+        {
+          "field": "diagnosis",
+          "expected": [
+            "腰椎间盘突出",
+            "腰肌劳损"
+          ],
+          "predicted": [
+            "腰椎间盘突出",
+            "腰肌劳损"
+          ],
+          "matched": true
+        },
+        {
+          "field": "advice",
+          "expected": [
+            "建议休息7天",
+            "必要时继续理疗治疗"
+          ],
+          "predicted": [
+            "建议休息7天",
+            "必要时继续理疗治疗"
+          ],
+          "matched": true
+        },
+        {
+          "field": "issue_date",
+          "expected": "2026-03-10",
+          "predicted": "2026-03-10",
+          "matched": true
+        },
+        {
+          "field": "rest_start_date",
+          "expected": "2026-03-10",
+          "predicted": "2026-03-10",
+          "matched": true
+        },
+        {
+          "field": "rest_end_date",
+          "expected": "2026-03-16",
+          "predicted": "2026-03-16",
+          "matched": true
+        },
+        {
+          "field": "rest_days",
+          "expected": 7,
+          "predicted": 7,
+          "matched": true
+        },
+        {
+          "field": "physician_name",
+          "expected": "李明",
+          "predicted": "李明",
+          "matched": true
+        },
+        {
+          "field": "physician_department",
+          "expected": "骨科门诊",
+          "predicted": "骨科门诊",
+          "matched": true
+        },
+        {
+          "field": "seal_present",
+          "expected": true,
+          "predicted": true,
+          "matched": true
+        },
+        {
+          "field": "seal_text",
+          "expected": "上海市第八人民医院诊断证明章",
+          "predicted": "上海市第八人民医院诊断证明章",
+          "matched": true
+        }
+      ]
+    },
+    {
+      "fixture": "examples/fixtures/diagnosis_proof/diagnosis_certificate_minimal.expected.json",
+      "sample": "desensitized minimal diagnosis certificate text fixture",
+      "plugin": "diagnosis_proof",
+      "status": "pass",
+      "num_fields": 17,
+      "num_matched_fields": 17,
+      "field_exact_match_rate": 1.0,
+      "fields": [
+        {
+          "field": "doc_type",
+          "expected": "diagnosis_proof",
+          "predicted": "diagnosis_proof",
+          "matched": true
+        },
+        {
+          "field": "hospital_name",
+          "expected": "杭州市某医院",
+          "predicted": "杭州市某医院",
+          "matched": true
+        },
+        {
+          "field": "certificate_title",
+          "expected": "疾病诊断证明书",
+          "predicted": "疾病诊断证明书",
+          "matched": true
+        },
+        {
+          "field": "patient_name",
+          "expected": "李四",
+          "predicted": "李四",
+          "matched": true
+        },
+        {
+          "field": "gender",
+          "expected": null,
+          "predicted": null,
+          "matched": true
+        },
+        {
+          "field": "age",
+          "expected": null,
+          "predicted": null,
+          "matched": true
+        },
+        {
+          "field": "department",
+          "expected": "呼吸内科",
+          "predicted": "呼吸内科",
+          "matched": true
+        },
+        {
+          "field": "diagnosis",
+          "expected": [
+            "急性上呼吸道感染"
+          ],
+          "predicted": [
+            "急性上呼吸道感染"
+          ],
+          "matched": true
+        },
+        {
+          "field": "advice",
+          "expected": [
+            "建议门诊治疗并休息3天"
+          ],
+          "predicted": [
+            "建议门诊治疗并休息3天"
+          ],
+          "matched": true
+        },
+        {
+          "field": "issue_date",
+          "expected": "2026-03-18",
+          "predicted": "2026-03-18",
+          "matched": true
+        },
+        {
+          "field": "rest_start_date",
+          "expected": null,
+          "predicted": null,
+          "matched": true
+        },
+        {
+          "field": "rest_end_date",
+          "expected": null,
+          "predicted": null,
+          "matched": true
+        },
+        {
+          "field": "rest_days",
+          "expected": 3,
+          "predicted": 3,
+          "matched": true
+        },
+        {
+          "field": "physician_name",
+          "expected": "王宁",
+          "predicted": "王宁",
+          "matched": true
+        },
+        {
+          "field": "physician_department",
+          "expected": "呼吸内科",
+          "predicted": "呼吸内科",
+          "matched": true
+        },
+        {
+          "field": "seal_present",
+          "expected": false,
+          "predicted": false,
+          "matched": true
+        },
+        {
+          "field": "seal_text",
+          "expected": null,
+          "predicted": null,
           "matched": true
         }
       ]
@@ -679,6 +1119,121 @@
           "field": "notes",
           "expected": "建议多饮水休息",
           "predicted": "建议多饮水休息",
+          "matched": true
+        }
+      ]
+    },
+    {
+      "fixture": "examples/fixtures/medical_record/sick_note_like.expected.json",
+      "sample": "<inline_ocr_result>",
+      "plugin": "medical_record",
+      "status": "pass",
+      "num_fields": 6,
+      "num_matched_fields": 6,
+      "field_exact_match_rate": 1.0,
+      "fields": [
+        {
+          "field": "doc_type",
+          "expected": "medical_record",
+          "predicted": "medical_record",
+          "matched": true
+        },
+        {
+          "field": "hospital_name",
+          "expected": "上海市第一人民医院",
+          "predicted": "上海市第一人民医院",
+          "matched": true
+        },
+        {
+          "field": "patient_name",
+          "expected": "王小明",
+          "predicted": "王小明",
+          "matched": true
+        },
+        {
+          "field": "visit_date",
+          "expected": "2026-03-11",
+          "predicted": "2026-03-11",
+          "matched": true
+        },
+        {
+          "field": "diagnosis",
+          "expected": [
+            "急性上呼吸道感染"
+          ],
+          "predicted": [
+            "急性上呼吸道感染"
+          ],
+          "matched": true
+        },
+        {
+          "field": "sick_note_check",
+          "expected": {
+            "is_sick_note_like": true,
+            "score": 1.0,
+            "confidence": "high",
+            "matched_features": [
+              "医院抬头",
+              "病休/病假标题",
+              "病休/休息建议",
+              "日期区间/天数",
+              "诊断信息",
+              "医生/医师签名",
+              "盖章/印章"
+            ],
+            "missing_features": [],
+            "feature_hits": {
+              "hospital_header": true,
+              "sick_leave_title": true,
+              "rest_advice": true,
+              "date_range": true,
+              "diagnosis": true,
+              "physician_signature": true,
+              "seal_or_stamp": true
+            },
+            "evidence": {
+              "title": "医务病休证明书",
+              "date_mentions": [
+                "2026年03月11日",
+                "2026年03月13日",
+                "2026年03月11日"
+              ],
+              "line_count": 9
+            }
+          },
+          "predicted": {
+            "is_sick_note_like": true,
+            "score": 1.0,
+            "confidence": "high",
+            "matched_features": [
+              "医院抬头",
+              "病休/病假标题",
+              "病休/休息建议",
+              "日期区间/天数",
+              "诊断信息",
+              "医生/医师签名",
+              "盖章/印章"
+            ],
+            "missing_features": [],
+            "feature_hits": {
+              "hospital_header": true,
+              "sick_leave_title": true,
+              "rest_advice": true,
+              "date_range": true,
+              "diagnosis": true,
+              "physician_signature": true,
+              "seal_or_stamp": true
+            },
+            "evidence": {
+              "title": "医务病休证明书",
+              "date_mentions": [
+                "2026年03月11日",
+                "2026年03月13日",
+                "2026年03月11日"
+              ],
+              "line_count": 9
+            }
+          },
           "matched": true
         }
       ]

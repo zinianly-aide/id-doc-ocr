@@ -86,6 +86,13 @@ class DemoPipelineRunner:
             validation=validation,
             quality_summary=rectify_result.quality_summary.model_dump(),
         )
+        rectify_payload = rectify_result.model_dump(exclude={"image"})
+        rectify_payload["image"] = {
+            "kind": "bytes" if isinstance(rectified_image, (bytes, bytearray)) else "path",
+            "num_bytes": len(rectified_image) if isinstance(rectified_image, (bytes, bytearray)) else None,
+            "preview": None if isinstance(rectified_image, (bytes, bytearray)) else str(rectified_image),
+        }
+
         result = {
             "sample_id": resolved_sample_id,
             "plugin": plugin.metadata.name,
@@ -93,7 +100,7 @@ class DemoPipelineRunner:
             "ocr_backend": self.ocr_backend,
             "vlm_backend": vlm_backend_name,
             "detector": detector_result.model_dump(),
-            "rectify": rectify_result.model_dump(),
+            "rectify": rectify_payload,
             "quality": {
                 "summary": rectify_result.quality_summary.model_dump(),
                 "flags": [flag.model_dump() for flag in rectify_result.quality_summary.flags],

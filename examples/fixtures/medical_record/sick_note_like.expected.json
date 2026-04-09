@@ -21,7 +21,36 @@
     "diagnosis": ["急性上呼吸道感染"],
     "sick_note_check": {
       "is_sick_note_like": true,
-      "confidence": "high"
+      "score": 1.0,
+      "confidence": "high",
+      "matched_features": [
+        "医院抬头",
+        "病休/病假标题",
+        "病休/休息建议",
+        "日期区间/天数",
+        "诊断信息",
+        "医生/医师签名",
+        "盖章/印章"
+      ],
+      "missing_features": [],
+      "feature_hits": {
+        "hospital_header": true,
+        "sick_leave_title": true,
+        "rest_advice": true,
+        "date_range": true,
+        "diagnosis": true,
+        "physician_signature": true,
+        "seal_or_stamp": true
+      },
+      "evidence": {
+        "title": "医务病休证明书",
+        "date_mentions": [
+          "2026年03月11日",
+          "2026年03月13日",
+          "2026年03月11日"
+        ],
+        "line_count": 9
+      }
     }
   }
 }

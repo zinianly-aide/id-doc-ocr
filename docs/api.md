@@ -8,7 +8,22 @@ For deployment and operational guidance beyond the endpoint examples here, see [
 
 ### `GET /health`
 
-Returns service liveness and the currently registered plugins.
+Returns service liveness plus a lightweight runtime snapshot:
+
+- service name / version
+- registered plugin names
+- backbone availability summary
+- runtime metadata
+- default failure directory
+
+### `GET /capabilities`
+
+Returns the fuller machine-readable inventory used for readiness checks and UI bootstrapping:
+
+- plugin metadata (`name`, `schema`, `tags`, supported backbones)
+- OCR / VLM backbone inventory and per-backbone availability diagnostics
+- runtime information
+- aggregate counts (`plugin_count`, `backbone_count`, `available_backbone_count`)
 
 ### `POST /infer`
 
@@ -16,7 +31,7 @@ Multipart form upload endpoint.
 
 Fields:
 
-- `plugin_name` (required)
+- `plugin_name` (required; `plugin` is accepted as an alias)
 - `file` (required)
 - `ocr_backend` (optional, default: `mock`)
 - `vlm_backend` (optional, default: `auto`)
@@ -31,6 +46,26 @@ curl -X POST http://127.0.0.1:8000/infer \
   -F vlm_backend=mock \
   -F file=@examples/assets/paddle_sample_doc_00006737.jpg
 ```
+
+Current registered plugins include:
+
+- `birth_certificate`
+- `boarding_pass`
+- `china_id`
+- `custody_relationship_certificate`
+- `diagnosis_proof`
+- `hukou_booklet`
+- `medical_record`
+- `only_child_certificate`
+- `passport`
+- `train_ticket`
+
+`/infer` responses now include review-oriented payloads in addition to parsed fields:
+
+- `quality.summary` and `quality.flags`
+- `decision.action` (`accept`, `review`, or `reject`)
+- `review.decision`, `review.warnings`, `review.evidence`
+- persisted failure-case metadata when `failure_dir` is configured and validation is not accepted
 
 ## Run locally
 
@@ -58,6 +93,11 @@ docker run --rm -p 8000:8000 id-doc-ocr
 cp .env.example .env
 docker compose --env-file .env up --build -d
 curl http://127.0.0.1:8000/health
+curl http://127.0.0.1:8000/capabilities
+curl -X POST http://127.0.0.1:8000/infer \
+  -F plugin_name=birth_certificate \
+  -F ocr_backend=mock \
+  -F file=@examples/assets/paddle_sample_doc_00006737.jpg
 ```
 
 For the production-leaning compose flow, healthcheck, and supported runtime knobs, see [docs/deployment.md](deployment.md).
