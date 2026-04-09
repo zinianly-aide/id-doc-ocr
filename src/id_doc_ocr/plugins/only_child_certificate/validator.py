@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 
+from id_doc_ocr.plugins.validation_common import add_missing_required_fields, finalize_validation_report
 from id_doc_ocr.schemas.types import ValidationIssue, ValidationReport
 
 
@@ -30,16 +31,7 @@ TITLE_HINTS = ("独生子女父母光荣证", "独生子女证")
 def validate_only_child_certificate(fields: dict) -> ValidationReport:
     issues: list[ValidationIssue] = []
 
-    for field in ["child_name", "child_birth_date", "father_name", "mother_name"]:
-        if not fields.get(field):
-            issues.append(
-                ValidationIssue(
-                    code=f"missing_{field}",
-                    message=f"missing {field}",
-                    severity="error",
-                    field_name=field,
-                )
-            )
+    add_missing_required_fields(issues, fields, ["child_name", "child_birth_date", "father_name", "mother_name"])
 
     certificate_title = fields.get("certificate_title")
     if certificate_title and not any(hint in certificate_title for hint in TITLE_HINTS):
@@ -87,6 +79,4 @@ def validate_only_child_certificate(fields: dict) -> ValidationReport:
             )
         )
 
-    accepted = not any(issue.severity == "error" for issue in issues)
-    score = 1.0 if not issues else 0.85 if accepted else 0.0
-    return ValidationReport(accepted=accepted, score=score, issues=issues)
+    return finalize_validation_report(issues)

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 
+from id_doc_ocr.plugins.validation_common import add_missing_required_fields, finalize_validation_report
 from id_doc_ocr.schemas.types import ValidationIssue, ValidationReport
 
 
@@ -45,16 +46,7 @@ ID_RE = re.compile(r"^(\d{17}[\dXx]|\d{15})$")
 def validate_custody_relationship_certificate(fields: dict) -> ValidationReport:
     issues: list[ValidationIssue] = []
 
-    for field in ["child_name", "guardian_name", "issuing_authority"]:
-        if not fields.get(field):
-            issues.append(
-                ValidationIssue(
-                    code=f"missing_{field}",
-                    message=f"missing {field}",
-                    severity="error",
-                    field_name=field,
-                )
-            )
+    add_missing_required_fields(issues, fields, ["child_name", "guardian_name", "issuing_authority"])
 
     relation = fields.get("relation")
     relation_statement = fields.get("relation_statement")
@@ -146,6 +138,4 @@ def validate_custody_relationship_certificate(fields: dict) -> ValidationReport:
             )
         )
 
-    accepted = not any(issue.severity == "error" for issue in issues)
-    score = 1.0 if not issues else 0.85 if accepted else 0.0
-    return ValidationReport(accepted=accepted, score=score, issues=issues)
+    return finalize_validation_report(issues)

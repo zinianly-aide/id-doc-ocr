@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 
+from id_doc_ocr.plugins.validation_common import add_missing_required_fields, finalize_validation_report
 from id_doc_ocr.schemas.types import ValidationIssue, ValidationReport
 
 
@@ -13,16 +14,7 @@ SHANGHAI_HINTS = ("上海", "浦东", "徐汇", "黄浦", "静安", "长宁", "�
 def validate_birth_certificate(fields: dict) -> ValidationReport:
     issues: list[ValidationIssue] = []
 
-    for field in ["child_name", "sex", "date_of_birth", "birth_place", "mother_name"]:
-        if not fields.get(field):
-            issues.append(
-                ValidationIssue(
-                    code=f"missing_{field}",
-                    message=f"missing {field}",
-                    severity="error",
-                    field_name=field,
-                )
-            )
+    add_missing_required_fields(issues, fields, ["child_name", "sex", "date_of_birth", "birth_place", "mother_name"])
 
     sex = fields.get("sex")
     if sex and sex not in VALID_SEX:
@@ -85,6 +77,4 @@ def validate_birth_certificate(fields: dict) -> ValidationReport:
             )
         )
 
-    accepted = not any(issue.severity == "error" for issue in issues)
-    score = 1.0 if not issues else 0.85 if accepted else 0.0
-    return ValidationReport(accepted=accepted, score=score, issues=issues)
+    return finalize_validation_report(issues)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from id_doc_ocr.plugins.validation_common import add_missing_required_fields, finalize_validation_report
 from id_doc_ocr.schemas.types import ValidationIssue, ValidationReport
 
 
@@ -9,17 +10,7 @@ REQUIRED_FIELDS = ["hospital_name", "diagnosis", "issue_date"]
 def validate_diagnosis_proof(fields: dict) -> ValidationReport:
     issues: list[ValidationIssue] = []
 
-    for field in REQUIRED_FIELDS:
-        value = fields.get(field)
-        if not value:
-            issues.append(
-                ValidationIssue(
-                    code=f"missing_{field}",
-                    message=f"missing {field}",
-                    severity="error",
-                    field_name=field,
-                )
-            )
+    add_missing_required_fields(issues, fields, REQUIRED_FIELDS)
 
     if not fields.get("certificate_title"):
         issues.append(
@@ -83,6 +74,4 @@ def validate_diagnosis_proof(fields: dict) -> ValidationReport:
             )
         )
 
-    accepted = not any(issue.severity == "error" for issue in issues)
-    score = 1.0 if not issues else 0.85 if accepted else 0.0
-    return ValidationReport(accepted=accepted, score=score, issues=issues)
+    return finalize_validation_report(issues)
