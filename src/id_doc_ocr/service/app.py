@@ -8,6 +8,7 @@ from typing import Any
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.encoders import jsonable_encoder
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from id_doc_ocr import __version__, plugins as _plugins  # noqa: F401
@@ -140,6 +141,13 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
     service_settings = settings or ServiceSettings.from_env()
     app = FastAPI(title=service_settings.service_name, version=service_settings.service_version)
     app.state.settings = service_settings
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     @app.get("/health")
     def health() -> dict[str, object]:

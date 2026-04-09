@@ -36,12 +36,13 @@ See [docs/architecture.md](docs/architecture.md).
 
 ## Service API and deployment
 
-A minimal HTTP service is now available with:
+A minimal HTTP service and UI lab are now available with:
 
 - `GET /health`
 - `GET /capabilities`
 - `POST /infer`
 - local CLI serve entrypoint
+- a minimal browser UI for upload + backbone comparison
 - Dockerfile and `docker-compose.yml`
 - `.env.example` and `Makefile` for repeatable compose-based startup
 
@@ -57,6 +58,11 @@ Docs:
 
 - API quickstart: [docs/api.md](docs/api.md)
 - deployment / ops runbook: [docs/deployment.md](docs/deployment.md)
+
+Default local addresses when using Compose:
+
+- API: `http://127.0.0.1:8000`
+- UI lab: `http://127.0.0.1:8080`
 
 ## Regression track
 

@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>id-doc-ocr lab</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #0b1020;
+        --panel: #121933;
+        --panel-2: #1a2445;
+        --text: #e9eefc;
+        --muted: #aab6d6;
+        --accent: #7aa2ff;
+        --ok: #34c759;
+        --warn: #ff9f0a;
+        --bad: #ff453a;
+        --border: rgba(255,255,255,0.12);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: linear-gradient(180deg, #0a0f1d 0%, #11182d 100%);
+        color: var(--text);
+      }
+      main {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+      h1 { margin: 0 0 8px; font-size: 1.8rem; }
+      p { color: var(--muted); }
+      .grid {
+        display: grid;
+        grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+        gap: 20px;
+      }
+      .card {
+        background: rgba(18, 25, 51, 0.92);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 18px;
+        box-shadow: 0 12px 40px rgba(0,0,0,0.24);
+      }
+      form { display: grid; gap: 14px; }
+      label { display: grid; gap: 6px; font-weight: 600; }
+      input, select, button, textarea {
+        width: 100%;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: var(--panel-2);
+        color: var(--text);
+        padding: 10px 12px;
+        font: inherit;
+      }
+      button {
+        background: var(--accent);
+        color: #081126;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      button[disabled] { opacity: 0.6; cursor: wait; }
+      .hint, .mono { font-size: 0.92rem; color: var(--muted); }
+      .mono, pre {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      .status { margin-top: 8px; min-height: 1.5em; }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 0.84rem;
+        border: 1px solid var(--border);
+        margin-right: 8px;
+      }
+      .accept { color: var(--ok); }
+      .review { color: var(--warn); }
+      .reject { color: var(--bad); }
+      .section { margin-top: 18px; }
+      .section h2 { font-size: 1rem; margin: 0 0 10px; }
+      dl {
+        display: grid;
+        grid-template-columns: 160px 1fr;
+        gap: 8px 12px;
+        margin: 0;
+      }
+      dt { color: var(--muted); }
+      dd { margin: 0; word-break: break-word; }
+      ul { margin: 0; padding-left: 18px; }
+      pre {
+        margin: 0;
+        background: rgba(0,0,0,0.2);
+        border-radius: 12px;
+        padding: 12px;
+        overflow: auto;
+        max-height: 420px;
+      }
+      .row { display: flex; flex-wrap: wrap; gap: 8px; }
+      @media (max-width: 920px) {
+        .grid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>id-doc-ocr lab</h1>
+        <p>Upload one image, switch plugin and backbones, then compare decision, quality, validation, and extracted fields.</p>
+      </header>
+
+      <div class="grid">
+        <section class="card" aria-labelledby="form-title">
+          <h2 id="form-title">Run inference</h2>
+          <form id="infer-form">
+            <label for="plugin">Plugin
+              <select id="plugin" name="plugin_name" required aria-describedby="plugin-help"></select>
+            </label>
+            <div id="plugin-help" class="hint">Loaded from <span class="mono">http://127.0.0.1:8000/capabilities</span>.</div>
+
+            <label for="ocr">OCR backend
+              <select id="ocr" name="ocr_backend"></select>
+            </label>
+
+            <label for="vlm">VLM backend
+              <select id="vlm" name="vlm_backend"></select>
+            </label>
+
+            <label for="file">Image file
+              <input id="file" name="file" type="file" accept="image/*" required />
+            </label>
+
+            <button id="submit" type="submit">Run /infer</button>
+            <div id="status" class="status" role="status" aria-live="polite"></div>
+          </form>
+
+          <div class="section">
+            <h2>Capabilities snapshot</h2>
+            <div id="caps" class="hint">Loading…</div>
+          </div>
+        </section>
+
+        <section class="card" aria-labelledby="result-title">
+          <h2 id="result-title">Result</h2>
+          <div id="empty">No result yet.</div>
+          <div id="result" hidden>
+            <div class="row" id="decision-row"></div>
+
+            <div class="section">
+              <h2>Summary</h2>
+              <dl id="summary"></dl>
+            </div>
+
+            <div class="section">
+              <h2>Validation issues</h2>
+              <ul id="validation-issues"></ul>
+            </div>
+
+            <div class="section">
+              <h2>Extracted fields</h2>
+              <dl id="fields"></dl>
+            </div>
+
+            <div class="section">
+              <h2>Raw JSON</h2>
+              <pre id="raw"></pre>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script>
+      const apiBase = `${location.protocol}//${location.hostname}:8000`;
+      const form = document.getElementById("infer-form");
+      const pluginSelect = document.getElementById("plugin");
+      const ocrSelect = document.getElementById("ocr");
+      const vlmSelect = document.getElementById("vlm");
+      const statusEl = document.getElementById("status");
+      const capsEl = document.getElementById("caps");
+      const submitBtn = document.getElementById("submit");
+
+      const decisionRow = document.getElementById("decision-row");
+      const summaryEl = document.getElementById("summary");
+      const issuesEl = document.getElementById("validation-issues");
+      const fieldsEl = document.getElementById("fields");
+      const rawEl = document.getElementById("raw");
+      const resultEl = document.getElementById("result");
+      const emptyEl = document.getElementById("empty");
+
+      function addOptions(select, values, preferred) {
+        select.innerHTML = "";
+        values.forEach((value) => {
+          const option = document.createElement("option");
+          option.value = value;
+          option.textContent = value;
+          if (value === preferred) option.selected = true;
+          select.appendChild(option);
+        });
+      }
+
+      function renderCapabilities(data) {
+        capsEl.textContent = `${data.summary.plugin_count} plugins, ${data.summary.available_backbone_count}/${data.summary.backbone_count} backbones available.`;
+        addOptions(pluginSelect, data.plugins.map((item) => item.name), data.plugins[0]?.name);
+        addOptions(ocrSelect, data.backbones.ocr.map((item) => item.name), "mock");
+        addOptions(vlmSelect, ["auto", ...data.backbones.vlm.map((item) => item.name)], "auto");
+      }
+
+      function renderResult(payload) {
+        const result = payload.result;
+        const decision = result.decision || {};
+        const quality = result.quality?.summary || {};
+        const validation = result.validation || {};
+        const fields = result.merged_fields || result.parsed_fields || {};
+
+        decisionRow.innerHTML = "";
+        [
+          { label: `decision: ${decision.action || "unknown"}`, cls: decision.action || "review" },
+          { label: `quality passed: ${String(decision.quality_passed)}`, cls: decision.quality_passed ? "accept" : "review" },
+          { label: `validation accepted: ${String(decision.validation_accepted)}`, cls: decision.validation_accepted ? "accept" : "review" },
+          { label: `risk: ${quality.risk_score ?? "n/a"}`, cls: "" },
+        ].forEach((item) => {
+          const span = document.createElement("span");
+          span.className = `pill ${item.cls}`.trim();
+          span.textContent = item.label;
+          decisionRow.appendChild(span);
+        });
+
+        const summaryRows = {
+          plugin: result.plugin,
+          filename: payload.filename,
+          ocr_backend: result.ocr_backend,
+          vlm_backend: result.vlm_backend,
+          routing_hint: quality.routing_hint,
+          review_recommended: quality.review_recommended,
+          blur_score: quality.blur_score,
+          glare_score: quality.glare_score,
+          perspective_score: quality.perspective_score,
+        };
+        summaryEl.innerHTML = "";
+        Object.entries(summaryRows).forEach(([key, value]) => {
+          const dt = document.createElement("dt");
+          dt.textContent = key;
+          const dd = document.createElement("dd");
+          dd.textContent = value == null ? "-" : String(value);
+          summaryEl.append(dt, dd);
+        });
+
+        issuesEl.innerHTML = "";
+        const issues = validation.issues || [];
+        if (!issues.length) {
+          const li = document.createElement("li");
+          li.textContent = "No validation issues.";
+          issuesEl.appendChild(li);
+        } else {
+          issues.forEach((issue) => {
+            const li = document.createElement("li");
+            li.textContent = `${issue.code || "issue"}: ${issue.message || ""}`.trim();
+            issuesEl.appendChild(li);
+          });
+        }
+
+        fieldsEl.innerHTML = "";
+        const pairs = Object.entries(fields);
+        if (!pairs.length) {
+          const dt = document.createElement("dt");
+          dt.textContent = "fields";
+          const dd = document.createElement("dd");
+          dd.textContent = "No parsed fields.";
+          fieldsEl.append(dt, dd);
+        } else {
+          pairs.forEach(([key, value]) => {
+            const dt = document.createElement("dt");
+            dt.textContent = key;
+            const dd = document.createElement("dd");
+            dd.textContent = typeof value === "object" ? JSON.stringify(value) : String(value);
+            fieldsEl.append(dt, dd);
+          });
+        }
+
+        rawEl.textContent = JSON.stringify(payload, null, 2);
+        emptyEl.hidden = true;
+        resultEl.hidden = false;
+      }
+
+      async function loadCapabilities() {
+        try {
+          const response = await fetch(`${apiBase}/capabilities`);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const data = await response.json();
+          renderCapabilities(data);
+        } catch (error) {
+          capsEl.textContent = `Failed to load capabilities: ${error.message}`;
+          statusEl.textContent = `API unavailable: ${error.message}`;
+        }
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        submitBtn.disabled = true;
+        statusEl.textContent = "Running inference…";
+        const formData = new FormData(form);
+        try {
+          const response = await fetch(`${apiBase}/infer`, { method: "POST", body: formData });
+          const payload = await response.json();
+          if (!response.ok) throw new Error(payload.detail || `HTTP ${response.status}`);
+          renderResult(payload);
+          statusEl.textContent = "Inference complete.";
+        } catch (error) {
+          statusEl.textContent = `Inference failed: ${error.message}`;
+        } finally {
+          submitBtn.disabled = false;
+        }
+      });
+
+      loadCapabilities();
+    </script>
+  </body>
+</html>

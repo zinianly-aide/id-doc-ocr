@@ -1,11 +1,12 @@
 # Deployment notes
 
-This repo now includes a small, production-leaning Docker Compose setup for running the API service persistently.
+This repo now includes a small Docker Compose setup for running the API and a lightweight UI lab together.
 
 ## Files
 
-- `Dockerfile`: container image build, now running as a non-root user
-- `docker-compose.yml`: restart policy, volume mount, env-driven port selection, and HTTP healthcheck
+- `Dockerfile`: API container image build, now running as a non-root user
+- `docker-compose.yml`: two-service stack, volume mount, env-driven port selection, and HTTP healthchecks
+- `ui/index.html`: minimal comparison UI for uploads and result inspection
 - `.env.example`: runtime knobs to copy into `.env`
 - `Makefile`: common deploy / validation commands
 
@@ -17,6 +18,7 @@ mkdir -p data/failures
 make compose-config
 make up
 make health
+make ui-health
 curl http://127.0.0.1:${ID_DOC_OCR_PORT:-8000}/capabilities
 curl -X POST http://127.0.0.1:${ID_DOC_OCR_PORT:-8000}/infer \
   -F plugin_name=boarding_pass \
@@ -25,7 +27,10 @@ curl -X POST http://127.0.0.1:${ID_DOC_OCR_PORT:-8000}/infer \
   -F file=@examples/assets/paddle_sample_doc_00006737.jpg
 ```
 
-The API should be reachable at `http://127.0.0.1:${ID_DOC_OCR_PORT:-8000}`.
+Addresses after startup:
+
+- API: `http://127.0.0.1:${ID_DOC_OCR_PORT:-8000}`
+- UI lab: `http://127.0.0.1:${ID_DOC_OCR_UI_PORT:-8080}`
 
 ## Runtime data
 
@@ -41,13 +46,14 @@ make down
 
 ## Healthcheck
 
-Docker Compose uses the in-container Python runtime to probe:
+Docker Compose uses:
 
-- `GET /health`
+- API container probe: `GET /health`
+- UI container probe: `GET /index.html`
 
 For deployment validation after startup, also verify:
 
 - `GET /capabilities`
 - `POST /infer`
-
-That avoids adding extra packages such as `curl` only for liveness checks while still keeping richer readiness checks available from the host side.
+- browser access to the UI lab
+- UI fetches to API from `http://127.0.0.1:8000` with CORS enabled in the FastAPI service

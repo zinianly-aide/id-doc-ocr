@@ -98,6 +98,14 @@ curl -X POST http://127.0.0.1:8000/infer \
   -F plugin_name=birth_certificate \
   -F ocr_backend=mock \
   -F file=@examples/assets/paddle_sample_doc_00006737.jpg
+open http://127.0.0.1:8080
 ```
+
+Compose now starts two services together:
+
+- API: `http://127.0.0.1:8000`
+- UI lab: `http://127.0.0.1:8080`
+
+The UI is a static page that calls the API directly, and the API enables cross-origin requests for local comparison use.
 
 For the production-leaning compose flow, healthcheck, and supported runtime knobs, see [docs/deployment.md](deployment.md).

@@ -1,8 +1,8 @@
 COMPOSE ?= docker compose
 ENV_FILE ?= .env
-SERVICE ?= id-doc-ocr
+SERVICE ?= api
 
-.PHONY: compose-config up down logs ps health test
+.PHONY: compose-config up down logs ps health ui-health test
 
 compose-config:
 	$(COMPOSE) --env-file $(ENV_FILE) config
@@ -22,6 +22,9 @@ ps:
 
 health:
 	curl -fsS http://127.0.0.1:$${ID_DOC_OCR_PORT:-8000}/health
+
+ui-health:
+	curl -fsS http://127.0.0.1:$${ID_DOC_OCR_UI_PORT:-8080}/ >/dev/null
 
 test:
 	pytest -q

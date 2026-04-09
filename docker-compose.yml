@@ -1,5 +1,5 @@
 services:
-  id-doc-ocr:
+  api:
     build:
       context: .
     restart: unless-stopped
@@ -30,3 +30,28 @@ services:
         "--port",
         "${ID_DOC_OCR_API_PORT:-8000}",
       ]
+
+  ui:
+    build:
+      context: .
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${ID_DOC_OCR_UI_PORT:-8080}:8080"
+    volumes:
+      - ./ui:/ui:ro
+    command: ["python", "-m", "http.server", "8080", "-d", "/ui"]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/index.html', timeout=3).read()",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
