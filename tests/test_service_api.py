@@ -1,3 +1,4 @@
+import builtins
 import json
 from pathlib import Path
 
@@ -45,6 +46,33 @@ def test_capabilities_exposes_plugins_backbones_runtime_and_availability():
     assert any(plugin["name"] == "boarding_pass" for plugin in payload["plugins"])
     assert any(backbone["name"] == "rapidocr" and "available" in backbone for backbone in payload["backbones"]["ocr"])
     assert any(backbone["name"] == "paddleocr_vl" and "availability" in backbone for backbone in payload["backbones"]["vlm"])
+
+
+def test_capabilities_does_not_import_paddleocr(monkeypatch):
+    monkeypatch.setattr("id_doc_ocr.backbones.paddleocr.module_available", lambda name: True)
+    monkeypatch.setattr("id_doc_ocr.backbones.paddleocr.package_version", lambda name: "fake-3.0")
+
+    original_import = builtins.__import__
+
+    def guarded_import(name, *args, **kwargs):
+        if name == "paddleocr":
+            raise AssertionError("/capabilities should not import paddleocr")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", guarded_import)
+
+    client = build_client()
+    response = client.get("/capabilities")
+
+    assert response.status_code == 200
+    payload = response.json()
+    paddle = next(
+        backbone
+        for backbone in payload["backbones"]["ocr"]
+        if backbone["name"] == "paddleocr" and backbone["description"] == "PaddleOCR backbone adapter"
+    )
+    assert paddle["available"] is True
+    assert paddle["availability"]["probe"] == "module_spec"
 
 
 def test_infer_success():
@@ -180,6 +208,39 @@ def test_infer_rejects_unavailable_paddleocr_backend(monkeypatch):
     )
     assert response.status_code == 422
     assert response.json()["detail"] == "OCR backend 'paddleocr' is unavailable. See docs/paddleocr-setup.md for local setup instructions."
+
+
+def test_infer_accepts_paddleocr_after_capabilities_probe(monkeypatch):
+    class FakePaddleOCR:
+        def __init__(self, **kwargs):
+            self.kwargs = kwargs
+
+        def ocr(self, image, cls=True):
+            return [[[ [0, 0], [10, 0], [10, 10], [0, 10] ], ("姓名 张三", 0.99)]]
+
+    import types
+    import sys
+
+    module = types.ModuleType("paddleocr")
+    module.__version__ = "fake-3.0"
+    module.PaddleOCR = FakePaddleOCR
+    monkeypatch.setitem(sys.modules, "paddleocr", module)
+    monkeypatch.setattr("id_doc_ocr.backbones.paddleocr.module_available", lambda name: True)
+    monkeypatch.setattr("id_doc_ocr.backbones.paddleocr.package_version", lambda name: "fake-3.0")
+
+    client = build_client()
+
+    capabilities = client.get("/capabilities")
+    assert capabilities.status_code == 200
+
+    response = client.post(
+        "/infer",
+        data={"plugin_name": "boarding_pass", "ocr_backend": "paddleocr", "vlm_backend": "mock"},
+        files={"file": ("sample.jpg", b"fake-image-bytes", "image/jpeg")},
+    )
+    assert response.status_code == 200
+    assert response.json()["result"]["ocr_backend"] == "paddleocr"
+    assert response.json()["result"]["ocr"]["engine"] == "paddleocr"
 
 
 @pytest.mark.parametrize("vlm_backend", ["paddleocr_vl", "auto"])

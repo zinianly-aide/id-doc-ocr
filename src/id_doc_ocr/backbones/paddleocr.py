@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import inspect
 import os
+from importlib.metadata import PackageNotFoundError, version as package_version
 from pathlib import Path
 from typing import Any
 
 from id_doc_ocr.backbones.base import BackboneInfo, OCRBackboneAdapter
+from id_doc_ocr.utils.runtime import module_available
 
 
 class PaddleOCRAdapter(OCRBackboneAdapter):
@@ -41,11 +43,7 @@ class PaddleOCRAdapter(OCRBackboneAdapter):
 
     @classmethod
     def is_available(cls) -> bool:
-        try:
-            from paddleocr import PaddleOCR as _PaddleOCR  # type: ignore
-        except Exception:
-            return False
-        return _PaddleOCR is not None
+        return module_available("paddleocr")
 
     @classmethod
     def availability_details(cls) -> dict[str, Any]:
@@ -58,13 +56,18 @@ class PaddleOCRAdapter(OCRBackboneAdapter):
                 "ID_DOC_OCR_PADDLE_ENABLE_MKLDNN": os.getenv("ID_DOC_OCR_PADDLE_ENABLE_MKLDNN"),
             },
         }
-        try:
-            import paddleocr  # type: ignore
-        except Exception as exc:
-            details["reason"] = f"import_failed: {exc}"
+        if not cls.is_available():
+            details["reason"] = "module_spec_not_found"
             return details
+
         details["available"] = True
-        details["version"] = getattr(paddleocr, "__version__", "unknown")
+        try:
+            details["version"] = package_version("paddleocr")
+        except PackageNotFoundError:
+            details["version"] = "unknown"
+        except Exception as exc:
+            details["version_error"] = str(exc)
+        details["probe"] = "module_spec"
         return details
 
     def _create_engine(self) -> Any:

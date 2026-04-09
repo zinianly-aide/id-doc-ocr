@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import builtins
 import sys
 import types
 from pathlib import Path
@@ -36,6 +37,28 @@ def test_paddleocr_adapter_availability_shape(monkeypatch):
     assert details["package"] == "paddleocr"
 
 
+def test_paddleocr_adapter_availability_probe_is_lazy(monkeypatch):
+    from id_doc_ocr.backbones.paddleocr import PaddleOCRAdapter
+
+    monkeypatch.setattr("id_doc_ocr.backbones.paddleocr.module_available", lambda name: True)
+    monkeypatch.setattr("id_doc_ocr.backbones.paddleocr.package_version", lambda name: "fake-3.0")
+
+    original_import = builtins.__import__
+
+    def guarded_import(name, *args, **kwargs):
+        if name == "paddleocr":
+            raise AssertionError("availability probe should not import paddleocr")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", guarded_import)
+
+    details = PaddleOCRAdapter.availability_details()
+
+    assert details["available"] is True
+    assert details["version"] == "fake-3.0"
+    assert details["probe"] == "module_spec"
+
+
 def test_paddleocr_adapter_normalizes_result(monkeypatch):
     install_fake_paddleocr(
         monkeypatch,
@@ -52,6 +75,9 @@ def test_paddleocr_adapter_normalizes_result(monkeypatch):
     )
 
     from id_doc_ocr.backbones.paddleocr import PaddleOCRAdapter
+
+    monkeypatch.setattr("id_doc_ocr.backbones.paddleocr.module_available", lambda name: True)
+    monkeypatch.setattr("id_doc_ocr.backbones.paddleocr.package_version", lambda name: "fake-3.0")
 
     adapter = PaddleOCRAdapter(lang="ch")
     result = adapter.infer(Path("examples/assets/paddle_sample_doc_00006737.jpg"))
