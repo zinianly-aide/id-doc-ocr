@@ -4,6 +4,10 @@ ARG ID_DOC_OCR_INSTALL_PADDLE=1
 
 WORKDIR /app
 
+RUN apt-get update -o Acquire::Retries=5 -o Acquire::http::Timeout=20 && \
+    apt-get install -y --no-install-recommends libgl1 libglib2.0-0 && \
+    rm -rf /var/lib/apt/lists/*
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     ID_DOC_OCR_FAILURE_DIR=/data/failures \
@@ -14,11 +18,10 @@ COPY src ./src
 COPY docs ./docs
 COPY examples ./examples
 
-RUN pip install --no-cache-dir --upgrade pip && \
-    if [ "$ID_DOC_OCR_INSTALL_PADDLE" = "1" ]; then \
-      pip install --no-cache-dir '.[ocr,paddle-vl]' paddlepaddle; \
+RUN if [ "$ID_DOC_OCR_INSTALL_PADDLE" = "1" ]; then \
+      pip install --no-cache-dir --no-build-isolation '.[ocr,paddle-vl]' paddlepaddle; \
     else \
-      pip install --no-cache-dir '.[ocr]'; \
+      pip install --no-cache-dir --no-build-isolation '.[ocr]'; \
     fi && \
     adduser --disabled-password --gecos "" appuser && \
     mkdir -p /data/failures && \

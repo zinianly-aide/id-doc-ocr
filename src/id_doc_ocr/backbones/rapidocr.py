@@ -1,13 +1,37 @@
 from __future__ import annotations
 
+from importlib.metadata import PackageNotFoundError, version as package_version
 from pathlib import Path
 from typing import Any
 
 from id_doc_ocr.backbones.base import BackboneInfo, OCRBackboneAdapter
+from id_doc_ocr.utils.runtime import module_available
 
 
 class RapidOCRAdapter(OCRBackboneAdapter):
     info = BackboneInfo(name="rapidocr", kind="ocr", description="RapidOCR ONNXRuntime adapter")
+
+    @classmethod
+    def is_available(cls) -> bool:
+        return module_available("rapidocr_onnxruntime")
+
+    @classmethod
+    def availability_details(cls) -> dict[str, Any]:
+        details: dict[str, Any] = {
+            "available": cls.is_available(),
+            "package": "rapidocr_onnxruntime",
+            "probe": "module_spec",
+        }
+        if not details["available"]:
+            details["reason"] = "module_spec_not_found"
+            return details
+        try:
+            details["version"] = package_version("rapidocr_onnxruntime")
+        except PackageNotFoundError:
+            details["version"] = "unknown"
+        except Exception as exc:  # pragma: no cover
+            details["version_error"] = str(exc)
+        return details
 
     def __init__(self) -> None:
         try:

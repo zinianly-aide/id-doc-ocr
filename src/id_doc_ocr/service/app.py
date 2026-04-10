@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import logging
 import os
 import platform
 import sys
+import time
 from dataclasses import asdict, dataclass
 from typing import Any
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -19,6 +21,8 @@ from id_doc_ocr.backbones.paddleocr_vl import PaddleOCRVLAdapter
 from id_doc_ocr.backbones.rapidocr import RapidOCRAdapter
 from id_doc_ocr.core.registry import registry
 from id_doc_ocr.pipeline.runner import BackendSelectionError, DemoPipelineRunner
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(slots=True)
@@ -141,6 +145,30 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
     service_settings = settings or ServiceSettings.from_env()
     app = FastAPI(title=service_settings.service_name, version=service_settings.service_version)
     app.state.settings = service_settings
+
+    @app.on_event("startup")
+    async def _on_startup() -> None:
+        logger.info(
+            "service_startup name=%s version=%s default_failure_dir=%s",
+            service_settings.service_name,
+            service_settings.service_version,
+            service_settings.default_failure_dir,
+        )
+
+    @app.middleware("http")
+    async def _request_logging(request: Request, call_next):
+        start = time.perf_counter()
+        response = await call_next(request)
+        elapsed_ms = (time.perf_counter() - start) * 1000.0
+        logger.info(
+            "request method=%s path=%s status=%s elapsed_ms=%.2f",
+            request.method,
+            request.url.path,
+            response.status_code,
+            elapsed_ms,
+        )
+        return response
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -213,7 +241,7 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
         except RuntimeError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         except Exception as exc:  # pragma: no cover
-            raise HTTPException(status_code=500, detail=f"Inference failed: {exc}") from exc
+            raise HTTPException(status_code=500, detail=f"Inference failed [{exc.__class__.__name__}]: {exc}") from exc
         return JSONResponse(
             content=jsonable_encoder(
                 {
