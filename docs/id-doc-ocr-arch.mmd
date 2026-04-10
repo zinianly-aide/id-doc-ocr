@@ -1,0 +1,12 @@
+flowchart TD
+    A[输入图像 / 扫描件] --> B[文档检测 Detector]
+    B --> C[透视矫正 / 质量评估 Rectify]
+    C --> D[文档类型分类 / 插件路由]
+    D --> E[字段区域提取]
+    E --> F[OCR 主识别]
+    F --> G[Parser 字段解析]
+    G --> H[Validator 规则校验]
+    H --> I{结果可信?}
+    I -- 是 --> J[输出结构化结果]
+    I -- 否 --> K[VLM / KIE Fallback]
+    K --> L[人工复核 / Failure Case]

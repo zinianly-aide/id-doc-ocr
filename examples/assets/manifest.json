@@ -3,7 +3,7 @@
   "version": "0.2.0",
   "source": "PaddleOCR public repository examples",
   "schema_version": "0.2.0",
-  "num_samples": 31,
+  "num_samples": 35,
   "samples": [
     {
       "sample_id": "boarding-00006737",
@@ -348,6 +348,54 @@
       "size_bytes": 42633,
       "sha256": "4ff65b43941bda3ca9d938df23d794d11a9ec1eac766b30ba2d5359040c74224",
       "license": "Captured for internal benchmark / see source site terms",
+      "benchmark_track": "browser_visual_spotcheck"
+    },
+    {
+      "sample_id": "browser-visual-handwritten-formula-hme-00",
+      "category": "browser_visual",
+      "path": "examples/assets/browser_visual/handwritten/paddle_formula_hme_00.jpg",
+      "kind": "handwritten_like",
+      "source_path": "docs/datasets/formula/0000.jpg",
+      "source_url": "https://raw.githubusercontent.com/PaddlePaddle/PaddleOCR/main/docs/datasets/formula/0000.jpg",
+      "size_bytes": 11789,
+      "sha256": "9e7bfdf149d57e71368843e79d38ef9abd6699fcb4c0e3935e2fbedce7f145e7",
+      "license": "Apache-2.0",
+      "benchmark_track": "browser_visual_spotcheck"
+    },
+    {
+      "sample_id": "browser-visual-dense-table-tablebank-004",
+      "category": "browser_visual",
+      "path": "examples/assets/browser_visual/dense_table/paddle_tablebank_004.png",
+      "kind": "dense_table",
+      "source_path": "ppstructure/docs/table_recognition/demo/004.png",
+      "source_url": "https://raw.githubusercontent.com/PaddlePaddle/PaddleOCR/main/ppstructure/docs/table_recognition/demo/004.png",
+      "size_bytes": 627735,
+      "sha256": "84e504204db82ff320e200b03f353c70700b0e24a83026f70ddca3b6af7e7137",
+      "license": "Apache-2.0",
+      "benchmark_track": "browser_visual_spotcheck"
+    },
+    {
+      "sample_id": "browser-visual-noisy-doc-xfund-zh-0",
+      "category": "browser_visual",
+      "path": "examples/assets/browser_visual/noisy_doc/paddle_xfund_zh_0.jpg",
+      "kind": "noisy_doc",
+      "source_path": "ppstructure/docs/kie/input/zh_val_0.jpg",
+      "source_url": "https://raw.githubusercontent.com/PaddlePaddle/PaddleOCR/main/ppstructure/docs/kie/input/zh_val_0.jpg",
+      "size_bytes": 650714,
+      "sha256": "2ba146db051f082916cc69fe2abd59ac61299f2cbe9662cd283fa42259247502",
+      "license": "Apache-2.0",
+      "benchmark_track": "browser_visual_spotcheck"
+    },
+    {
+      "sample_id": "browser-visual-multilingual-form-funsd-00040534",
+      "category": "browser_visual",
+      "path": "examples/assets/browser_visual/multilingual_form/paddle_funsd_00040534.jpg",
+      "kind": "multilingual_form",
+      "source_path": "train_data/XFUND/zh_train/image/00040534.jpg",
+      "source_url": "https://raw.githubusercontent.com/PaddlePaddle/PaddleOCR/main/train_data/XFUND/zh_train/image/00040534.jpg",
+      "size_bytes": 242411,
+      "sha256": "4a58cd9cf5aabca81c01d882cb09b14a8591596a8c7126c1a6ccbab6b4504de8",
+      "license": "Apache-2.0",
       "benchmark_track": "browser_visual_spotcheck"
     }
   ]
