@@ -11,3 +11,6 @@ dist/
 .coverage
 coverage.xml
 htmlcov/
+
+# local runtime artifacts
+data/failures/

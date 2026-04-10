@@ -42,7 +42,7 @@ class ServiceSettings:
 
 BACKBONE_SPECS = {
     "ocr": [MockPaddleOCRAdapter, RapidOCRAdapter, PaddleOCRAdapter, GOTOCRAdapter],
-    "vlm": [MockPaddleOCRVLAdapter, PaddleOCRVLAdapter],
+    "vlm": [PaddleOCRVLAdapter, MockPaddleOCRVLAdapter],
 }
 
 

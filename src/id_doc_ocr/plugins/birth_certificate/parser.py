@@ -3,8 +3,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from id_doc_ocr.plugins.proof_common import collect_labeled_value, normalize_date, normalize_gender, rows_from_ocr
 
-DATE_RE = re.compile(r"(20\d{2}|19\d{2})[年\-/.](\d{1,2})[月\-/.](\d{1,2})日?")
 TIME_RE = re.compile(r"\b([01]?\d|2[0-3])[:：]([0-5]\d)\b")
 WEEKS_RE = re.compile(r"(\d{2})\s*周")
 WEIGHT_RE = re.compile(r"(\d{3,4})\s*(?:克|g|G)\b")
@@ -27,52 +27,8 @@ LABEL_ALIASES = {
 }
 
 
-def _rows(ocr_result: dict[str, Any]) -> list[str]:
-    rows: list[str] = []
-    for item in ocr_result.get("lines", []):
-        text = str(item.get("text") or "").strip()
-        if text:
-            rows.append(text)
-    if not rows and ocr_result.get("text"):
-        rows.extend(line.strip() for line in str(ocr_result["text"]).splitlines() if line.strip())
-    return rows
-
-
-def _after_label(text: str, aliases: list[str]) -> str | None:
-    normalized = text.replace("：", ":")
-    upper = normalized.upper()
-    for alias in aliases:
-        alias_upper = alias.upper()
-        if upper.startswith(alias_upper + ":"):
-            return normalized[len(alias) + 1 :].strip()
-        if upper == alias_upper:
-            return ""
-    return None
-
-
 def _collect_labeled_value(rows: list[str], field: str) -> str | None:
-    aliases = LABEL_ALIASES[field]
-    for idx, row in enumerate(rows):
-        value = _after_label(row, aliases)
-        if value is None:
-            continue
-        if value:
-            return value
-        if idx + 1 < len(rows):
-            candidate = rows[idx + 1].strip()
-            if candidate:
-                return candidate
-    return None
-
-
-def _normalize_date(value: str | None) -> str | None:
-    if not value:
-        return None
-    match = DATE_RE.search(value)
-    if not match:
-        return None
-    year, month, day = match.groups()
-    return f"{int(year):04d}-{int(month):02d}-{int(day):02d}"
+    return collect_labeled_value(rows, LABEL_ALIASES[field])
 
 
 def _normalize_time(value: str | None) -> str | None:
@@ -83,17 +39,6 @@ def _normalize_time(value: str | None) -> str | None:
         return None
     hh, mm = match.groups()
     return f"{int(hh):02d}:{int(mm):02d}"
-
-
-def _normalize_sex(value: str | None) -> str | None:
-    if not value:
-        return None
-    normalized = value.strip().upper()
-    if "男" in value or normalized == "MALE":
-        return "男"
-    if "女" in value or normalized == "FEMALE":
-        return "女"
-    return value.strip()
 
 
 def _extract_int(value: str | None, pattern: re.Pattern[str]) -> int | None:
@@ -112,11 +57,11 @@ def _extract_certificate_number(value: str | None) -> str | None:
 
 
 def parse_birth_certificate_fields(ocr_result: dict[str, Any]) -> dict[str, Any]:
-    rows = _rows(ocr_result)
+    rows = rows_from_ocr(ocr_result)
 
     child_name = _collect_labeled_value(rows, "child_name")
-    sex = _normalize_sex(_collect_labeled_value(rows, "sex"))
-    date_of_birth = _normalize_date(_collect_labeled_value(rows, "date_of_birth"))
+    sex = normalize_gender(_collect_labeled_value(rows, "sex"))
+    date_of_birth = normalize_date(_collect_labeled_value(rows, "date_of_birth"))
     time_of_birth = _normalize_time(_collect_labeled_value(rows, "time_of_birth"))
     gestational_weeks = _extract_int(_collect_labeled_value(rows, "gestational_weeks"), WEEKS_RE)
     birth_weight_grams = _extract_int(_collect_labeled_value(rows, "birth_weight_grams"), WEIGHT_RE)
@@ -126,7 +71,7 @@ def parse_birth_certificate_fields(ocr_result: dict[str, Any]) -> dict[str, Any]
     mother_name = _collect_labeled_value(rows, "mother_name")
     mother_age = _extract_int(_collect_labeled_value(rows, "mother_age"), AGE_RE)
     father_name = _collect_labeled_value(rows, "father_name")
-    issue_date = _normalize_date(_collect_labeled_value(rows, "issue_date"))
+    issue_date = normalize_date(_collect_labeled_value(rows, "issue_date"))
 
     return {
         "doc_type": "birth_certificate",
