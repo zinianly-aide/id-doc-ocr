@@ -128,10 +128,18 @@ class PaddleOCRVLAdapter(OCRBackboneAdapter):
         layout: list[dict[str, Any]] = []
         kv_pairs: dict[str, Any] = {}
         self._walk(raw, texts, layout, kv_pairs)
-        confidence_values = [float(item.get("score", 0.0)) for item in layout if isinstance(item.get("score"), (int, float))]
-        confidence = sum(confidence_values) / len(confidence_values) if confidence_values else 0.0
+        deduped_texts: list[str] = []
+        seen_texts: set[str] = set()
+        for text in texts:
+            normalized = self.normalize_text(text)
+            if not normalized or normalized in seen_texts:
+                continue
+            seen_texts.add(normalized)
+            deduped_texts.append(normalized)
+
+        confidence = self.average_confidence(layout)
         return {
-            "text": "\n".join(x for x in texts if x).strip(),
+            "text": "\n".join(deduped_texts).strip(),
             "layout": layout,
             "kv": kv_pairs,
             "confidence": confidence,
@@ -141,37 +149,44 @@ class PaddleOCRVLAdapter(OCRBackboneAdapter):
         if node is None:
             return
         if isinstance(node, str):
-            value = node.strip()
+            value = self.normalize_text(node)
             if value:
                 texts.append(value)
             return
         if isinstance(node, (int, float, bool)):
             return
         if isinstance(node, dict):
-            text = node.get("text") or node.get("transcription") or node.get("label")
-            if isinstance(text, str) and text.strip():
-                texts.append(text.strip())
-                entry = {"text": text.strip()}
-                for key in ("score", "bbox", "box", "type", "label"):
+            text = self.normalize_text(node.get("text") or node.get("transcription") or node.get("label"))
+            if text:
+                texts.append(text)
+                entry = {"text": text}
+                for key in ("bbox", "box", "type", "label"):
                     if key in node:
                         entry[key] = node[key]
+                if "score" in node:
+                    entry["score"] = self.normalize_score(node.get("score"))
                 layout.append(entry)
             key = node.get("key") or node.get("field") or node.get("name")
             value = node.get("value")
             if isinstance(key, str) and value is not None and key not in {"text", "label"}:
                 kv_pairs[key] = value
-            for child in node.values():
+            for child_key, child in node.items():
+                if child_key in {"text", "transcription", "label", "score", "bbox", "box", "type"}:
+                    continue
                 self._walk(child, texts, layout, kv_pairs)
             return
         if isinstance(node, (list, tuple, set)):
             if len(node) >= 2 and isinstance(node[1], str):
-                entry: dict[str, Any] = {"text": node[1].strip()}
-                texts.append(node[1].strip())
-                if len(node) >= 1:
-                    entry["box"] = node[0]
-                if len(node) >= 3 and isinstance(node[2], (int, float)):
-                    entry["score"] = float(node[2])
-                layout.append(entry)
+                text = self.normalize_text(node[1])
+                if text:
+                    entry: dict[str, Any] = {"text": text}
+                    texts.append(text)
+                    if len(node) >= 1:
+                        entry["box"] = node[0]
+                    if len(node) >= 3:
+                        entry["score"] = self.normalize_score(node[2])
+                    layout.append(entry)
+                return
             for item in node:
                 self._walk(item, texts, layout, kv_pairs)
 

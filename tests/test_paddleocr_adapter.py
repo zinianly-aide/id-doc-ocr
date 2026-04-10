@@ -90,6 +90,29 @@ def test_paddleocr_adapter_normalizes_result(monkeypatch):
     assert result["config"]["lang"] == "ch"
 
 
+def test_paddleocr_adapter_skips_empty_text_and_normalizes_dirty_scores(monkeypatch):
+    install_fake_paddleocr(
+        monkeypatch,
+        result=[
+            {
+                "rec_texts": ["  ", "姓名 李四"],
+                "rec_scores": ["nan?", "0.87"],
+                "dt_polys": [None, None],
+            }
+        ],
+    )
+
+    from id_doc_ocr.backbones.paddleocr import PaddleOCRAdapter
+
+    adapter = PaddleOCRAdapter(lang="ch")
+    result = adapter.infer("dummy.png")
+
+    assert result["text"] == "姓名 李四"
+    assert len(result["lines"]) == 1
+    assert result["lines"][0]["score"] == pytest.approx(0.87)
+    assert result["confidence"] == pytest.approx(0.87)
+
+
 def test_runner_accepts_paddleocr_backend(monkeypatch):
     install_fake_paddleocr(monkeypatch, result=[])
 

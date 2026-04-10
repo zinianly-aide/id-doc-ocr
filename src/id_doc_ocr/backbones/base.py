@@ -29,5 +29,25 @@ class OCRBackboneAdapter:
             return str(image)
         return image
 
+    @staticmethod
+    def normalize_text(value: Any) -> str:
+        if value is None:
+            return ""
+        return str(value).strip()
+
+    @staticmethod
+    def normalize_score(value: Any, default: float = 0.0) -> float:
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return default
+
+    @staticmethod
+    def average_confidence(lines: list[dict[str, Any]], score_key: str = "score") -> float:
+        if not lines:
+            return 0.0
+        scores = [OCRBackboneAdapter.normalize_score(item.get(score_key), 0.0) for item in lines]
+        return sum(scores) / len(scores) if scores else 0.0
+
     def infer(self, image: bytes | str | Path) -> dict[str, Any]:
         raise NotImplementedError

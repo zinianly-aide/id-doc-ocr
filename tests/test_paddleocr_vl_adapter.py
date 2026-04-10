@@ -1,3 +1,5 @@
+import pytest
+
 from id_doc_ocr.backbones.paddleocr_vl import PaddleOCRVLAdapter
 from id_doc_ocr.pipeline.runner import DemoPipelineRunner
 
@@ -32,6 +34,22 @@ def test_paddleocr_vl_adapter_reports_unavailable_without_runtime():
     result = adapter.infer("dummy.png")
     assert result["status"] == "unavailable"
     assert result["engine"] == "paddleocr_vl"
+
+
+def test_paddleocr_vl_adapter_dedupes_text_and_normalizes_string_scores():
+    class _EngineWithDuplicates:
+        def predict(self, image):
+            return [
+                {"text": "门诊记录", "score": "0.5"},
+                {"text": "门诊记录", "score": 0.9},
+                ([0, 0, 1, 1], "姓名 王五", "0.8"),
+            ]
+
+    adapter = PaddleOCRVLAdapter(auto_init=False, engine=_EngineWithDuplicates())
+    result = adapter.infer("dummy.png")
+
+    assert result["text"] == "门诊记录\n姓名 王五"
+    assert result["confidence"] == pytest.approx((0.5 + 0.9 + 0.8) / 3)
 
 
 def test_demo_runner_auto_vlm_uses_requested_backend_without_mock_fallback():

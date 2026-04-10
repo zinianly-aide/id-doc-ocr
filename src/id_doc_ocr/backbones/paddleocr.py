@@ -111,10 +111,10 @@ class PaddleOCRAdapter(OCRBackboneAdapter):
             ocr_kwargs["cls"] = bool(self.config.get("cls", True))
         raw_result = self._engine.ocr(normalized_image, **ocr_kwargs)
         lines = self._normalize_lines(raw_result)
-        avg_score = sum(x["score"] for x in lines) / len(lines) if lines else 0.0
+        avg_score = self.average_confidence(lines)
         return {
             "engine": self.info.name,
-            "text": "\n".join(x["text"] for x in lines),
+            "text": "\n".join(x["text"] for x in lines if x.get("text")),
             "lines": lines,
             "confidence": avg_score,
             "model_name": "PP-OCR",
@@ -133,14 +133,12 @@ class PaddleOCRAdapter(OCRBackboneAdapter):
                 scores = page.get("rec_scores") or []
                 boxes = page.get("dt_polys") or page.get("rec_polys") or []
                 for idx, text in enumerate(texts):
-                    score = 0.0
-                    if idx < len(scores):
-                        try:
-                            score = float(scores[idx])
-                        except (TypeError, ValueError):
-                            score = 0.0
+                    score = self.normalize_score(scores[idx] if idx < len(scores) else None)
                     box = boxes[idx].tolist() if idx < len(boxes) and hasattr(boxes[idx], "tolist") else (boxes[idx] if idx < len(boxes) else None)
-                    merged.append({"box": box, "text": str(text), "score": score})
+                    normalized_text = self.normalize_text(text)
+                    if not normalized_text:
+                        continue
+                    merged.append({"box": box, "text": normalized_text, "score": score})
             return merged
 
         candidates = raw_result
@@ -162,12 +160,11 @@ class PaddleOCRAdapter(OCRBackboneAdapter):
         text = ""
         score = 0.0
         if isinstance(payload, (list, tuple)) and payload:
-            text = str(payload[0])
+            text = self.normalize_text(payload[0])
             if len(payload) > 1:
-                try:
-                    score = float(payload[1])
-                except (TypeError, ValueError):
-                    score = 0.0
+                score = self.normalize_score(payload[1])
         elif isinstance(payload, str):
-            text = payload
+            text = self.normalize_text(payload)
+        if not text:
+            return None
         return {"box": box, "text": text, "score": score}
