@@ -44,12 +44,47 @@ The image now installs `rapidocr`, `paddleocr`, and `paddlepaddle` by default, s
 
 Useful knobs:
 
+- `ID_DOC_OCR_PYTHON_BASE_IMAGE=python:3.11-slim-bookworm`: default base image for normal builds
+- if Docker Hub pulls time out but you already have a compatible Python base image cached locally, tag it (for example `docker tag python:3.11-slim local/python:3.11-slim`) and set `ID_DOC_OCR_PYTHON_BASE_IMAGE=local/python:3.11-slim`
+- `ID_DOC_OCR_APT_MIRROR=http://deb.debian.org/debian`: main Debian package mirror used during image build
+- `ID_DOC_OCR_APT_SECURITY_MIRROR=http://deb.debian.org/debian-security`: Debian security mirror used during image build
+- `ID_DOC_OCR_PIP_INDEX_URL=https://pypi.org/simple`: pip package index used during image build
+- `ID_DOC_OCR_PIP_EXTRA_INDEX_URL`: optional secondary package index
+- `ID_DOC_OCR_PIP_TRUSTED_HOST`: only needed for non-default trust scenarios; avoid unless required
+- `HTTP_PROXY` / `HTTPS_PROXY` / `NO_PROXY`: optional proxy passthrough for build and runtime when Docker Desktop is not already configured with a proxy
 - `ID_DOC_OCR_INSTALL_PADDLE=1` (default): build the full image with PaddleOCR enabled
 - `ID_DOC_OCR_INSTALL_PADDLE=0`: build a lighter `rapidocr` / `mock` image when Paddle wheels are not available or you want faster builds
 - `ID_DOC_OCR_DEFAULT_OCR_BACKEND=paddleocr`: recommended full-image runtime default
 - `ID_DOC_OCR_DEFAULT_VLM_BACKEND=mock`: recommended stable default for practical trials
 - `ID_DOC_OCR_DEFAULT_DETECTOR_BACKEND=pil`
 - `ID_DOC_OCR_DEFAULT_RECTIFY_BACKEND=pil`
+
+Mirror troubleshooting:
+
+- on this machine, Docker already has daemon-level proxy settings (`http.docker.internal:3128`), so adding another system proxy is usually not the first fix
+- the more promising mitigation is switching Debian mirrors when `apt-get update` / `apt-get install` is slow or returns transient 502s
+- two candidate mirrors that responded faster than `deb.debian.org` in local checks were:
+  - `http://mirrors.tuna.tsinghua.edu.cn/debian`
+  - `http://mirrors.aliyun.com/debian`
+- matching security mirrors:
+  - `http://mirrors.tuna.tsinghua.edu.cn/debian-security`
+  - `http://mirrors.aliyun.com/debian-security`
+
+Example `.env` override for mainland-friendly mirrors:
+
+```bash
+ID_DOC_OCR_APT_MIRROR=http://mirrors.tuna.tsinghua.edu.cn/debian
+ID_DOC_OCR_APT_SECURITY_MIRROR=http://mirrors.tuna.tsinghua.edu.cn/debian-security
+ID_DOC_OCR_PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+```
+
+PyPI mirror troubleshooting:
+
+- local latency checks showed these HTTPS mirrors were much faster than `https://pypi.org/simple` on this machine:
+  - `https://pypi.tuna.tsinghua.edu.cn/simple`
+  - `https://mirrors.aliyun.com/pypi/simple`
+  - `https://pypi.mirrors.ustc.edu.cn/simple`
+- prefer HTTPS mirrors so we do not need to weaken trust settings with `trusted-host`
 
 Apple Silicon / ARM notes:
 

@@ -3,11 +3,29 @@ services:
     build:
       context: .
       args:
+        ID_DOC_OCR_PYTHON_BASE_IMAGE: ${ID_DOC_OCR_PYTHON_BASE_IMAGE:-python:3.11-slim-bookworm}
         ID_DOC_OCR_INSTALL_PADDLE: ${ID_DOC_OCR_INSTALL_PADDLE:-1}
+        ID_DOC_OCR_APT_MIRROR: ${ID_DOC_OCR_APT_MIRROR:-http://deb.debian.org/debian}
+        ID_DOC_OCR_APT_SECURITY_MIRROR: ${ID_DOC_OCR_APT_SECURITY_MIRROR:-http://deb.debian.org/debian-security}
+        ID_DOC_OCR_PIP_INDEX_URL: ${ID_DOC_OCR_PIP_INDEX_URL:-https://pypi.org/simple}
+        ID_DOC_OCR_PIP_EXTRA_INDEX_URL: ${ID_DOC_OCR_PIP_EXTRA_INDEX_URL:-}
+        ID_DOC_OCR_PIP_TRUSTED_HOST: ${ID_DOC_OCR_PIP_TRUSTED_HOST:-}
+        HTTP_PROXY: ${HTTP_PROXY:-}
+        HTTPS_PROXY: ${HTTPS_PROXY:-}
+        NO_PROXY: ${NO_PROXY:-}
+        http_proxy: ${http_proxy:-}
+        https_proxy: ${https_proxy:-}
+        no_proxy: ${no_proxy:-}
     restart: unless-stopped
     ports:
       - "${ID_DOC_OCR_PORT:-8000}:8000"
     environment:
+      HTTP_PROXY: ${HTTP_PROXY:-}
+      HTTPS_PROXY: ${HTTPS_PROXY:-}
+      NO_PROXY: ${NO_PROXY:-}
+      http_proxy: ${http_proxy:-}
+      https_proxy: ${https_proxy:-}
+      no_proxy: ${no_proxy:-}
       ID_DOC_OCR_LOG_LEVEL: ${ID_DOC_OCR_LOG_LEVEL:-info}
       ID_DOC_OCR_FAILURE_DIR: /data/failures
       ID_DOC_OCR_DEFAULT_OCR_BACKEND: ${ID_DOC_OCR_DEFAULT_OCR_BACKEND:-paddleocr}
@@ -41,7 +59,19 @@ services:
     build:
       context: .
       args:
+        ID_DOC_OCR_PYTHON_BASE_IMAGE: ${ID_DOC_OCR_PYTHON_BASE_IMAGE:-python:3.11-slim-bookworm}
         ID_DOC_OCR_INSTALL_PADDLE: ${ID_DOC_OCR_INSTALL_PADDLE:-1}
+        ID_DOC_OCR_APT_MIRROR: ${ID_DOC_OCR_APT_MIRROR:-http://deb.debian.org/debian}
+        ID_DOC_OCR_APT_SECURITY_MIRROR: ${ID_DOC_OCR_APT_SECURITY_MIRROR:-http://deb.debian.org/debian-security}
+        ID_DOC_OCR_PIP_INDEX_URL: ${ID_DOC_OCR_PIP_INDEX_URL:-https://pypi.org/simple}
+        ID_DOC_OCR_PIP_EXTRA_INDEX_URL: ${ID_DOC_OCR_PIP_EXTRA_INDEX_URL:-}
+        ID_DOC_OCR_PIP_TRUSTED_HOST: ${ID_DOC_OCR_PIP_TRUSTED_HOST:-}
+        HTTP_PROXY: ${HTTP_PROXY:-}
+        HTTPS_PROXY: ${HTTPS_PROXY:-}
+        NO_PROXY: ${NO_PROXY:-}
+        http_proxy: ${http_proxy:-}
+        https_proxy: ${https_proxy:-}
+        no_proxy: ${no_proxy:-}
     restart: unless-stopped
     depends_on:
       api:
