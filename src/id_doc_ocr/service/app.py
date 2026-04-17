@@ -140,7 +140,7 @@ def _build_summary(
 def build_capabilities(settings: ServiceSettings) -> dict[str, Any]:
     plugins = _build_plugin_inventory()
     backbones = _build_backbone_inventory()
-    stage_inventory = DemoPipelineRunner.build_stage_inventory()
+    stage_inventory = DemoPipelineRunner.build_stage_inventory(stages=["detector", "rectify"])
     detectors = {"detector": stage_inventory["detector"]}
     rectify = {"rectify": stage_inventory["rectify"]}
     summary = _build_summary(plugins, backbones, detectors, rectify)

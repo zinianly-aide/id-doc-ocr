@@ -113,6 +113,29 @@ def test_paddleocr_adapter_skips_empty_text_and_normalizes_dirty_scores(monkeypa
     assert result["confidence"] == pytest.approx(0.87)
 
 
+def test_paddleocr_adapter_writes_bytes_to_temp_path(monkeypatch):
+    fake_cls = install_fake_paddleocr(
+        monkeypatch,
+        result=[[
+            [
+                [[0, 0], [10, 0], [10, 10], [0, 10]],
+                ("姓名 张三", 0.99),
+            ]
+        ]],
+    )
+
+    from id_doc_ocr.backbones.paddleocr import PaddleOCRAdapter
+
+    adapter = PaddleOCRAdapter(lang="ch")
+    result = adapter.infer(b"fake-image-bytes")
+
+    assert result["text"] == "姓名 张三"
+    assert isinstance(adapter._engine.image, str)
+    assert adapter._engine.image.endswith('.png')
+    assert adapter._engine.cls is True
+    assert fake_cls is not None
+
+
 def test_runner_accepts_paddleocr_backend(monkeypatch):
     install_fake_paddleocr(monkeypatch, result=[])
 

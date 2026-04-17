@@ -104,6 +104,21 @@ def test_capabilities_does_not_import_paddleocr(monkeypatch):
     assert paddle["availability"]["probe"] == "module_spec"
 
 
+def test_capabilities_does_not_initialize_paddleocr_vl(monkeypatch):
+    def guarded_init(self, *args, **kwargs):
+        raise AssertionError("/capabilities should not initialize paddleocr_vl")
+
+    monkeypatch.setattr("id_doc_ocr.backbones.paddleocr_vl.PaddleOCRVLAdapter.__init__", guarded_init)
+
+    client = build_client()
+    response = client.get("/capabilities")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert "detector" in payload["detectors"]
+    assert "rectify" in payload["rectify"]
+
+
 def test_infer_success():
     client = build_client()
     response = client.post(

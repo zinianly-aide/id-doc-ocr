@@ -139,9 +139,11 @@ class DemoPipelineRunner:
         return sorted(cls.STAGE_BACKENDS[stage])
 
     @classmethod
-    def build_stage_inventory(cls) -> dict[str, list[dict[str, Any]]]:
+    def build_stage_inventory(cls, stages: list[str] | tuple[str, ...] | None = None) -> dict[str, list[dict[str, Any]]]:
         inventory: dict[str, list[dict[str, Any]]] = {}
-        for stage, stage_specs in cls.STAGE_BACKENDS.items():
+        selected_stages = list(stages) if stages is not None else list(cls.STAGE_BACKENDS)
+        for stage in selected_stages:
+            stage_specs = cls.STAGE_BACKENDS[stage]
             inventory[stage] = []
             for backend_name in cls.stage_backend_names(stage):
                 spec = stage_specs[backend_name]

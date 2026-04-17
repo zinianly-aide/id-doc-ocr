@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import inspect
 import os
+import tempfile
 from importlib.metadata import PackageNotFoundError, version as package_version
 from pathlib import Path
 from typing import Any
@@ -109,7 +110,13 @@ class PaddleOCRAdapter(OCRBackboneAdapter):
             ocr_signature = None
         if ocr_signature is None or "cls" in ocr_signature.parameters:
             ocr_kwargs["cls"] = bool(self.config.get("cls", True))
-        raw_result = self._engine.ocr(normalized_image, **ocr_kwargs)
+        if isinstance(normalized_image, bytes):
+            with tempfile.NamedTemporaryFile(suffix=".png") as temp_image:
+                temp_image.write(normalized_image)
+                temp_image.flush()
+                raw_result = self._engine.ocr(temp_image.name, **ocr_kwargs)
+        else:
+            raw_result = self._engine.ocr(normalized_image, **ocr_kwargs)
         lines = self._normalize_lines(raw_result)
         avg_score = self.average_confidence(lines)
         return {
