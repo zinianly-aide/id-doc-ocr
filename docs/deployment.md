@@ -51,6 +51,7 @@ Useful knobs:
 - `ID_DOC_OCR_PIP_INDEX_URL=https://pypi.org/simple`: pip package index used during image build
 - `ID_DOC_OCR_PIP_EXTRA_INDEX_URL`: optional secondary package index
 - `ID_DOC_OCR_PIP_TRUSTED_HOST`: only needed for non-default trust scenarios; avoid unless required
+- `ID_DOC_OCR_PREFETCH_PADDLE_MODELS=0`: when set to `1` during a full Paddle build, run one sample inference at build time so OCR runtime models are baked into the image layer/cache
 - `HTTP_PROXY` / `HTTPS_PROXY` / `NO_PROXY`: optional proxy passthrough for build and runtime when Docker Desktop is not already configured with a proxy
 - `ID_DOC_OCR_INSTALL_PADDLE=1` (default): build the full image with PaddleOCR enabled
 - `ID_DOC_OCR_INSTALL_PADDLE=0`: build a lighter `rapidocr` / `mock` image when Paddle wheels are not available or you want faster builds
@@ -58,6 +59,7 @@ Useful knobs:
 - `ID_DOC_OCR_DEFAULT_VLM_BACKEND=mock`: recommended stable default for practical trials
 - `ID_DOC_OCR_DEFAULT_DETECTOR_BACKEND=pil`
 - `ID_DOC_OCR_DEFAULT_RECTIFY_BACKEND=pil`
+- `ID_DOC_OCR_PADDLE_MODEL_CACHE_DIR_HOST=./data/paddle-model-cache`: host directory mounted to `/home/appuser/.paddlex` so official model downloads survive container restarts
 
 Mirror troubleshooting:
 
@@ -92,6 +94,42 @@ Apple Silicon / ARM notes:
 - the first real PaddleOCR request may download model assets, so expect the first `/infer?ocr_backend=paddleocr` call to be slower than later calls
 - if your host / mirror cannot resolve compatible Paddle wheels, rebuild with `ID_DOC_OCR_INSTALL_PADDLE=0` and use `rapidocr` or `mock` as the OCR backend
 - if you specifically need x86 wheels on Apple Silicon, run compose with emulation, for example `DOCKER_DEFAULT_PLATFORM=linux/amd64 docker compose up --build`
+
+## Recommended performance optimizations for full Paddle deployments
+
+Fastest practical setup without rebuilding often:
+
+```bash
+mkdir -p data/failures data/paddle-model-cache
+cp .env.example .env
+# keep the persistent model cache mount enabled
+docker compose up --build
+```
+
+This stores official Paddle/PaddleX model downloads under `./data/paddle-model-cache`, so after the first successful inference, later restarts do not need to re-download those models.
+
+If you want the image itself to arrive pre-warmed for first-use demos or CI images, enable build-time prefetch:
+
+```bash
+ID_DOC_OCR_INSTALL_PADDLE=1 \
+ID_DOC_OCR_PREFETCH_PADDLE_MODELS=1 \
+ID_DOC_OCR_PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple \
+ID_DOC_OCR_APT_MIRROR=http://mirrors.tuna.tsinghua.edu.cn/debian \
+ID_DOC_OCR_APT_SECURITY_MIRROR=http://mirrors.tuna.tsinghua.edu.cn/debian-security \
+  docker compose build api
+```
+
+Trade-offs:
+
+- persistent cache mount:
+  - best default for local/dev and long-lived hosts
+  - faster subsequent startups and first inference after restart
+  - image size stays smaller than a prewarmed image
+- build-time prefetch:
+  - best when you want a ready-to-demo image artifact
+  - slower build
+  - larger image layers
+  - still benefits from the mounted cache if you keep the volume enabled at runtime
 
 ## Useful commands
 

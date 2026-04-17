@@ -8,6 +8,7 @@ ARG ID_DOC_OCR_APT_SECURITY_MIRROR=http://deb.debian.org/debian-security
 ARG ID_DOC_OCR_PIP_INDEX_URL=https://pypi.org/simple
 ARG ID_DOC_OCR_PIP_EXTRA_INDEX_URL=
 ARG ID_DOC_OCR_PIP_TRUSTED_HOST=
+ARG ID_DOC_OCR_PREFETCH_PADDLE_MODELS=0
 ARG HTTP_PROXY
 ARG HTTPS_PROXY
 ARG NO_PROXY
@@ -43,6 +44,7 @@ RUN apt-get update -o Acquire::Retries=5 -o Acquire::http::Timeout=20 && \
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     ID_DOC_OCR_FAILURE_DIR=/data/failures \
+    ID_DOC_OCR_PADDLE_MODEL_CACHE_DIR=/home/appuser/.paddlex \
     PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK=True \
     PIP_INDEX_URL=${ID_DOC_OCR_PIP_INDEX_URL} \
     PIP_EXTRA_INDEX_URL=${ID_DOC_OCR_PIP_EXTRA_INDEX_URL} \
@@ -52,6 +54,7 @@ COPY pyproject.toml README.md ./
 COPY src ./src
 COPY docs ./docs
 COPY examples ./examples
+COPY docker ./docker
 
 RUN if [ "$ID_DOC_OCR_INSTALL_PADDLE" = "1" ]; then \
       pip install --no-cache-dir --no-build-isolation '.[ocr,paddle-vl]' paddlepaddle; \
@@ -59,8 +62,12 @@ RUN if [ "$ID_DOC_OCR_INSTALL_PADDLE" = "1" ]; then \
       pip install --no-cache-dir --no-build-isolation '.[ocr]'; \
     fi && \
     adduser --disabled-password --gecos "" appuser && \
-    mkdir -p /data/failures && \
-    chown -R appuser:appuser /app /data
+    mkdir -p /data/failures /home/appuser/.paddlex && \
+    chown -R appuser:appuser /app /data /home/appuser
+
+RUN if [ "$ID_DOC_OCR_INSTALL_PADDLE" = "1" ] && [ "$ID_DOC_OCR_PREFETCH_PADDLE_MODELS" = "1" ]; then \
+      su -s /bin/sh appuser -c "cd /app && python docker/prefetch_paddle_models.py"; \
+    fi
 
 USER appuser
 

@@ -10,6 +10,7 @@ services:
         ID_DOC_OCR_PIP_INDEX_URL: ${ID_DOC_OCR_PIP_INDEX_URL:-https://pypi.org/simple}
         ID_DOC_OCR_PIP_EXTRA_INDEX_URL: ${ID_DOC_OCR_PIP_EXTRA_INDEX_URL:-}
         ID_DOC_OCR_PIP_TRUSTED_HOST: ${ID_DOC_OCR_PIP_TRUSTED_HOST:-}
+        ID_DOC_OCR_PREFETCH_PADDLE_MODELS: ${ID_DOC_OCR_PREFETCH_PADDLE_MODELS:-0}
         HTTP_PROXY: ${HTTP_PROXY:-}
         HTTPS_PROXY: ${HTTPS_PROXY:-}
         NO_PROXY: ${NO_PROXY:-}
@@ -32,8 +33,10 @@ services:
       ID_DOC_OCR_DEFAULT_VLM_BACKEND: ${ID_DOC_OCR_DEFAULT_VLM_BACKEND:-mock}
       ID_DOC_OCR_DEFAULT_DETECTOR_BACKEND: ${ID_DOC_OCR_DEFAULT_DETECTOR_BACKEND:-pil}
       ID_DOC_OCR_DEFAULT_RECTIFY_BACKEND: ${ID_DOC_OCR_DEFAULT_RECTIFY_BACKEND:-pil}
+      ID_DOC_OCR_PADDLE_MODEL_CACHE_DIR: /home/appuser/.paddlex
     volumes:
       - ${ID_DOC_OCR_FAILURE_DIR:-./data/failures}:/data/failures
+      - ${ID_DOC_OCR_PADDLE_MODEL_CACHE_DIR_HOST:-./data/paddle-model-cache}:/home/appuser/.paddlex
     healthcheck:
       test:
         [
@@ -66,6 +69,7 @@ services:
         ID_DOC_OCR_PIP_INDEX_URL: ${ID_DOC_OCR_PIP_INDEX_URL:-https://pypi.org/simple}
         ID_DOC_OCR_PIP_EXTRA_INDEX_URL: ${ID_DOC_OCR_PIP_EXTRA_INDEX_URL:-}
         ID_DOC_OCR_PIP_TRUSTED_HOST: ${ID_DOC_OCR_PIP_TRUSTED_HOST:-}
+        ID_DOC_OCR_PREFETCH_PADDLE_MODELS: ${ID_DOC_OCR_PREFETCH_PADDLE_MODELS:-0}
         HTTP_PROXY: ${HTTP_PROXY:-}
         HTTPS_PROXY: ${HTTPS_PROXY:-}
         NO_PROXY: ${NO_PROXY:-}
