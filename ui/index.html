@@ -129,6 +129,14 @@
               <select id="vlm" name="vlm_backend"></select>
             </label>
 
+            <label for="detector">Detector backend
+              <select id="detector" name="detector_backend"></select>
+            </label>
+
+            <label for="rectify">Rectify backend
+              <select id="rectify" name="rectify_backend"></select>
+            </label>
+
             <label for="file">Image file
               <input id="file" name="file" type="file" accept="image/*" required />
             </label>
@@ -179,6 +187,8 @@
       const pluginSelect = document.getElementById("plugin");
       const ocrSelect = document.getElementById("ocr");
       const vlmSelect = document.getElementById("vlm");
+      const detectorSelect = document.getElementById("detector");
+      const rectifySelect = document.getElementById("rectify");
       const statusEl = document.getElementById("status");
       const capsEl = document.getElementById("caps");
       const submitBtn = document.getElementById("submit");
@@ -256,19 +266,20 @@
       }
 
       function renderCapabilities(data) {
-        capsEl.textContent = `${data.summary.plugin_count} plugins, ${data.summary.available_backbone_count}/${data.summary.backbone_count} backbones available.`;
+        capsEl.textContent = `${data.summary.plugin_count} plugins, ${data.summary.available_backbone_count}/${data.summary.backbone_count} OCR/VLM backends available, ${data.summary.available_detector_count}/${data.summary.detector_count} detector backends, ${data.summary.available_rectify_count}/${data.summary.rectify_count} rectify backends.`;
+        const pluginPreferred = data.plugins[0]?.name;
         setSelectOptions(
           pluginSelect,
-          data.plugins.map((item) => ({ value: item.name, label: item.name })),
-          data.plugins[0]?.name,
+          data.plugins.map((item) => ({ value: item.name, label: `${item.name} · ${item.maturity?.level || 'unknown'}` })),
+          pluginPreferred,
           { emptyLabel: "No plugins available" }
         );
 
-        const preferredOcr = data.backbones.ocr.find((item) => item.name === "mock" && item.available)?.name ?? data.backbones.ocr.find((item) => item.available)?.name ?? null;
+        const preferredOcr = data.service?.default_ocr_backend ?? data.backbones.ocr.find((item) => item.name === "paddleocr" && item.available)?.name ?? data.backbones.ocr.find((item) => item.name === "rapidocr" && item.available)?.name ?? data.backbones.ocr.find((item) => item.available)?.name ?? null;
         renderBackendOptions(ocrSelect, data.backbones.ocr, preferredOcr, "OCR");
 
         const availableVlm = data.backbones.vlm.filter((item) => item.available);
-        const preferredVlm = availableVlm.find((item) => item.name === "paddleocr_vl")?.name ?? availableVlm.find((item) => item.name === "mock")?.name ?? availableVlm[0]?.name ?? null;
+        const preferredVlm = data.service?.default_vlm_backend ?? availableVlm.find((item) => item.name === "mock")?.name ?? availableVlm[0]?.name ?? null;
         const autoAvailable = data.backbones.vlm.some((item) => item.available && item.name !== "mock");
         const vlmItems = [];
         if (autoAvailable) {
@@ -277,9 +288,12 @@
         availableVlm.forEach((item) => {
           vlmItems.push({ value: item.name, label: item.name });
         });
-        setSelectOptions(vlmSelect, vlmItems, autoAvailable ? "auto" : preferredVlm, {
+        setSelectOptions(vlmSelect, vlmItems, preferredVlm, {
           emptyLabel: "No available VLM backends",
         });
+
+        renderBackendOptions(detectorSelect, data.detectors.detector || [], data.service?.default_detector_backend ?? "pil", "detector");
+        renderBackendOptions(rectifySelect, data.rectify.rectify || [], data.service?.default_rectify_backend ?? "pil", "rectify");
       }
 
       function renderResult(payload) {
@@ -307,6 +321,8 @@
           filename: payload.filename,
           ocr_backend: result.ocr_backend,
           vlm_backend: result.vlm_backend,
+          detector_backend: result.detector_backend,
+          rectify_backend: result.rectify_backend,
           routing_hint: quality.routing_hint,
           review_recommended: quality.review_recommended,
           blur_score: quality.blur_score,
@@ -365,9 +381,9 @@
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
           const data = await response.json();
           renderCapabilities(data);
-          if (ocrSelect.disabled || vlmSelect.disabled || pluginSelect.disabled) {
+          if (ocrSelect.disabled || vlmSelect.disabled || detectorSelect.disabled || rectifySelect.disabled || pluginSelect.disabled) {
             submitBtn.disabled = true;
-            statusEl.textContent = "Inference unavailable until at least one plugin, OCR backend, and VLM backend are available.";
+            statusEl.textContent = "Inference unavailable until plugin, OCR, VLM, detector, and rectify backends are all available.";
           } else {
             submitBtn.disabled = false;
             statusEl.textContent = "";

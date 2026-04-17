@@ -52,6 +52,8 @@ def _build_failure_record(payload: dict[str, Any], name: str, metadata: dict[str
     backend = {
         "ocr": meta.get("ocr_backend") or payload.get("ocr_backend"),
         "vlm": meta.get("vlm_backend") or payload.get("vlm_backend"),
+        "detector": meta.get("detector_backend") or payload.get("detector_backend"),
+        "rectify": meta.get("rectify_backend") or payload.get("rectify_backend"),
     }
     source = {
         "kind": meta.get("source_kind") or ("path" if payload.get("sample_id") != "in_memory_sample" else "in_memory"),

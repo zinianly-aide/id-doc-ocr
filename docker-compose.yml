@@ -10,6 +10,10 @@ services:
     environment:
       ID_DOC_OCR_LOG_LEVEL: ${ID_DOC_OCR_LOG_LEVEL:-info}
       ID_DOC_OCR_FAILURE_DIR: /data/failures
+      ID_DOC_OCR_DEFAULT_OCR_BACKEND: ${ID_DOC_OCR_DEFAULT_OCR_BACKEND:-paddleocr}
+      ID_DOC_OCR_DEFAULT_VLM_BACKEND: ${ID_DOC_OCR_DEFAULT_VLM_BACKEND:-mock}
+      ID_DOC_OCR_DEFAULT_DETECTOR_BACKEND: ${ID_DOC_OCR_DEFAULT_DETECTOR_BACKEND:-pil}
+      ID_DOC_OCR_DEFAULT_RECTIFY_BACKEND: ${ID_DOC_OCR_DEFAULT_RECTIFY_BACKEND:-pil}
     volumes:
       - ${ID_DOC_OCR_FAILURE_DIR:-./data/failures}:/data/failures
     healthcheck:

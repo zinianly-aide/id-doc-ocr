@@ -8,7 +8,7 @@ from id_doc_ocr.schemas.types import Point, QualityReport
 
 
 class MockPerspectiveCorrector(PerspectiveCorrector):
-    def correct(self, image: bytes | str | Path) -> tuple[bytes | str, PerspectiveTransform]:
+    def correct(self, image: bytes | str | Path, *, detection=None) -> tuple[bytes | str, PerspectiveTransform]:
         transform = PerspectiveTransform(
             source_corners=[
                 Point(x=0, y=0),
@@ -41,6 +41,8 @@ class MockQualityScorer(QualityScorer):
             blur_score=0.95,
             glare_score=0.95,
             occlusion_score=0.95,
+            shadow_score=0.95,
+            crop_integrity_score=0.95,
             passed=True,
             reasons=[],
         )

@@ -16,7 +16,12 @@ from id_doc_ocr.schemas.types import DocumentDetection, QualityReport
 
 
 class PerspectiveCorrector:
-    def correct(self, image: bytes | str | Path) -> tuple[bytes | str, PerspectiveTransform]:
+    def correct(
+        self,
+        image: bytes | str | Path,
+        *,
+        detection: DocumentDetection | None = None,
+    ) -> tuple[bytes | str, PerspectiveTransform]:
         raise NotImplementedError
 
 
@@ -48,7 +53,7 @@ class BaseRectifyPipeline(RectifyPipelineStage):
 
     def process(self, image: bytes | str | Path, detection: DocumentDetection | None = None) -> RectifyResult:
         normalized = OCRBackboneAdapter.normalize_image_input(image)
-        perspective_image, perspective = self.perspective_corrector.correct(normalized)
+        perspective_image, perspective = self.perspective_corrector.correct(normalized, detection=detection)
         oriented_image, orientation = self.orientation_corrector.correct(perspective_image)
         quality = self.quality_scorer.score(oriented_image)
         quality_summary = self._build_quality_summary(
@@ -96,6 +101,8 @@ class BaseRectifyPipeline(RectifyPipelineStage):
             "blur_score": quality.blur_score,
             "glare_score": quality.glare_score,
             "occlusion_score": quality.occlusion_score,
+            "shadow_score": quality.shadow_score,
+            "crop_integrity_score": quality.crop_integrity_score,
             "quality_passed": quality.passed,
         }
 
@@ -140,6 +147,8 @@ class BaseRectifyPipeline(RectifyPipelineStage):
             ("blur_score", quality.blur_score),
             ("glare_score", quality.glare_score),
             ("occlusion_score", quality.occlusion_score),
+            ("shadow_score", quality.shadow_score),
+            ("crop_integrity_score", quality.crop_integrity_score),
         ):
             self._maybe_add_flag(
                 flags,

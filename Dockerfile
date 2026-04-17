@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 
 ARG ID_DOC_OCR_INSTALL_PADDLE=1
 

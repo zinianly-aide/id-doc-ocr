@@ -13,17 +13,22 @@ Returns service liveness plus a lightweight runtime snapshot:
 - service name / version
 - registered plugin names
 - backbone availability summary
+- detector / rectify availability summary
 - runtime metadata
 - default failure directory
+- default detector / rectify backends
 
 ### `GET /capabilities`
 
 Returns the fuller machine-readable inventory used for readiness checks and UI bootstrapping:
 
 - plugin metadata (`name`, `schema`, `tags`, supported backbones)
+- plugin maturity data (`maturity`, `regression`, `trial_profile`)
 - OCR / VLM backbone inventory and per-backbone availability diagnostics
+- detector / rectify backend inventory and availability diagnostics
+- service default backend settings for actual trial use
 - runtime information
-- aggregate counts (`plugin_count`, `backbone_count`, `available_backbone_count`)
+- aggregate counts (`plugin_count`, `backbone_count`, `available_backbone_count`, detector / rectify totals)
 
 ### `POST /infer`
 
@@ -33,8 +38,10 @@ Fields:
 
 - `plugin_name` (required; `plugin` is accepted as an alias)
 - `file` (required)
-- `ocr_backend` (optional, default: `mock`)
-- `vlm_backend` (optional, default: `auto`)
+- `ocr_backend` (optional, default: service-configured default; full image recommendation: `paddleocr`)
+- `vlm_backend` (optional, default: service-configured default; recommended: `mock`)
+- `detector_backend` (optional, default: service-configured default; recommended: `pil`)
+- `rectify_backend` (optional, default: service-configured default; recommended: `pil`)
 - `failure_dir` (optional)
 
 Status codes:
@@ -51,6 +58,8 @@ curl -X POST http://127.0.0.1:8000/infer \
   -F plugin_name=boarding_pass \
   -F ocr_backend=mock \
   -F vlm_backend=mock \
+  -F detector_backend=pil \
+  -F rectify_backend=pil \
   -F file=@examples/assets/paddle_sample_doc_00006737.jpg
 ```
 

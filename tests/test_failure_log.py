@@ -29,7 +29,7 @@ def test_write_failure_case_wraps_payload_with_structured_metadata(tmp_path: Pat
     assert path.exists()
     assert payload["sample_id"] == "sample1"
     assert payload["plugin"] == "passport"
-    assert payload["backend"] == {"ocr": "mock", "vlm": "paddleocr_vl"}
+    assert payload["backend"] == {"ocr": "mock", "vlm": "paddleocr_vl", "detector": None, "rectify": None}
     assert payload["validation"]["accepted"] is False
     assert payload["validation"]["issue_count"] == 2
     assert payload["validation"]["severity_counts"] == {"error": 1, "warning": 1, "info": 0}

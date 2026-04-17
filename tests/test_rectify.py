@@ -48,7 +48,7 @@ def test_runner_exposes_rectify_stage_output():
 
 
 class StrongPerspectiveCorrector(PerspectiveCorrector):
-    def correct(self, image):
+    def correct(self, image, *, detection=None):
         return image, PerspectiveTransform(
             source_corners=[Point(x=0, y=0), Point(x=10, y=0), Point(x=10, y=10), Point(x=0, y=10)],
             target_corners=[Point(x=0, y=0), Point(x=10, y=0), Point(x=10, y=10), Point(x=0, y=10)],

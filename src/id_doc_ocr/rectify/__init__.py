@@ -19,6 +19,12 @@ from id_doc_ocr.rectify.mock import (
     MockQualityScorer,
     MockRectifyPipeline,
 )
+from id_doc_ocr.rectify.pillow import (
+    PillowOrientationCorrector,
+    PillowPerspectiveCorrector,
+    PillowQualityScorer,
+    PillowRectifyPipeline,
+)
 
 __all__ = [
     "BaseRectifyPipeline",
@@ -36,4 +42,8 @@ __all__ = [
     "MockPerspectiveCorrector",
     "MockQualityScorer",
     "MockRectifyPipeline",
+    "PillowPerspectiveCorrector",
+    "PillowOrientationCorrector",
+    "PillowQualityScorer",
+    "PillowRectifyPipeline",
 ]

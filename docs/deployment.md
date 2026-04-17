@@ -24,6 +24,8 @@ curl -X POST http://127.0.0.1:${ID_DOC_OCR_PORT:-8000}/infer \
   -F plugin_name=boarding_pass \
   -F ocr_backend=paddleocr \
   -F vlm_backend=mock \
+  -F detector_backend=pil \
+  -F rectify_backend=pil \
   -F file=@examples/assets/paddle_sample_doc_00006737.jpg
 ```
 
@@ -44,6 +46,10 @@ Useful knobs:
 
 - `ID_DOC_OCR_INSTALL_PADDLE=1` (default): build the full image with PaddleOCR enabled
 - `ID_DOC_OCR_INSTALL_PADDLE=0`: build a lighter `rapidocr` / `mock` image when Paddle wheels are not available or you want faster builds
+- `ID_DOC_OCR_DEFAULT_OCR_BACKEND=paddleocr`: recommended full-image runtime default
+- `ID_DOC_OCR_DEFAULT_VLM_BACKEND=mock`: recommended stable default for practical trials
+- `ID_DOC_OCR_DEFAULT_DETECTOR_BACKEND=pil`
+- `ID_DOC_OCR_DEFAULT_RECTIFY_BACKEND=pil`
 
 Apple Silicon / ARM notes:
 

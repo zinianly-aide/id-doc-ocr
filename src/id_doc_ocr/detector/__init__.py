@@ -1,6 +1,7 @@
 from id_doc_ocr.detector.base import DetectorAdapter, DetectorCapabilities, DetectorInfo
 from id_doc_ocr.detector.contracts import DetectorResult, DocumentClassification, DocumentQuad
 from id_doc_ocr.detector.mock import MockDocumentDetectorAdapter
+from id_doc_ocr.detector.pillow import PillowDocumentDetectorAdapter
 
 __all__ = [
     "DetectorAdapter",
@@ -10,4 +11,5 @@ __all__ = [
     "DocumentClassification",
     "DocumentQuad",
     "MockDocumentDetectorAdapter",
+    "PillowDocumentDetectorAdapter",
 ]

@@ -1,11 +1,17 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from id_doc_ocr import plugins  # noqa: F401
+from id_doc_ocr.backbones.rapidocr import RapidOCRAdapter
 from id_doc_ocr.pipeline.runner import DemoPipelineRunner
 
 
 def test_boarding_pass_public_fixture_matches_expected_fields():
+    if not RapidOCRAdapter.is_available():
+        pytest.skip("rapidocr_onnxruntime is not installed")
+
     fixture = json.loads(Path("examples/fixtures/boarding_pass/public_sample_00006737.expected.json").read_text())
     runner = DemoPipelineRunner(ocr_backend="rapidocr")
     result = runner.run("boarding_pass", Path(fixture["sample"]))

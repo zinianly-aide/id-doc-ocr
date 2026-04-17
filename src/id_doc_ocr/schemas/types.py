@@ -26,6 +26,8 @@ class QualityReport(BaseModel):
     blur_score: float | None = None
     glare_score: float | None = None
     occlusion_score: float | None = None
+    shadow_score: float | None = None
+    crop_integrity_score: float | None = None
     passed: bool = True
     reasons: list[str] = Field(default_factory=list)
 

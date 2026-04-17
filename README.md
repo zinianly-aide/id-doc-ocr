@@ -50,7 +50,9 @@ A minimal HTTP service and UI lab are now available with:
 What the service now exposes beyond a bare liveness probe:
 
 - plugin inventory for all registered document types
+- plugin maturity inventory (`maturity`, `regression`, `trial_profile`)
 - OCR / VLM backbone availability details
+- detector / rectify backend inventory and service defaults
 - normalized quality / routing summary (`quality.summary`, `quality.flags`)
 - review-oriented decision output (`decision`, `review`, `warnings`, `evidence`)
 - optional failure-case persistence via `failure_dir`
@@ -58,6 +60,7 @@ What the service now exposes beyond a bare liveness probe:
 Docs:
 
 - API quickstart: [docs/api.md](docs/api.md)
+- plugin maturity inventory: [docs/plugin-maturity.md](docs/plugin-maturity.md)
 - deployment / ops runbook: [docs/deployment.md](docs/deployment.md)
 
 Default local addresses when using Compose:

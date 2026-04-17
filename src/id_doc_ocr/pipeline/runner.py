@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from pydantic import BaseModel
 
@@ -12,7 +13,9 @@ from id_doc_ocr.backbones.paddleocr_vl import PaddleOCRVLAdapter
 from id_doc_ocr.core.registry import registry
 from id_doc_ocr.datasets.schema import FieldAnnotation, InternalAnnotation, RegionAnnotation
 from id_doc_ocr.detector.mock import MockDocumentDetectorAdapter
+from id_doc_ocr.detector.pillow import PillowDocumentDetectorAdapter
 from id_doc_ocr.rectify.mock import MockRectifyPipeline
+from id_doc_ocr.rectify.pillow import PillowRectifyPipeline
 from id_doc_ocr.review import ReviewDecision, ReviewEvidence, ReviewEvidenceItem, ReviewReadyPayload, ReviewWarning
 from id_doc_ocr.tools.failure_log import write_failure_case
 
@@ -21,65 +24,180 @@ class BackendSelectionError(RuntimeError):
     pass
 
 
+@dataclass(frozen=True)
+class StageBackendSpec:
+    name: str
+    builder: Callable[[], Any]
+    availability_check: Callable[[], bool]
+    unavailable_message: str | None = None
+    display_name: str | None = None
+
+
 class DemoPipelineRunner:
-    OCR_BACKENDS = {
-        "mock": lambda: MockPaddleOCRAdapter(),
-        "rapidocr": lambda: __import__("id_doc_ocr.backbones.rapidocr", fromlist=["RapidOCRAdapter"]).RapidOCRAdapter(),
-        "paddleocr": lambda: PaddleOCRAdapter(),
+    STAGE_LABELS = {
+        "ocr": "OCR",
+        "vlm": "VLM",
+        "detector": "detector",
+        "rectify": "rectify",
     }
-    VLM_BACKENDS = {
-        "mock": lambda: MockPaddleOCRVLAdapter(),
-        "paddleocr_vl": lambda: PaddleOCRVLAdapter(auto_init=True),
-        "auto": lambda: PaddleOCRVLAdapter(auto_init=True),
+    STAGE_BACKENDS: dict[str, dict[str, StageBackendSpec]] = {
+        "ocr": {
+            "mock": StageBackendSpec(
+                name="mock",
+                builder=lambda: MockPaddleOCRAdapter(),
+                availability_check=lambda: True,
+            ),
+            "rapidocr": StageBackendSpec(
+                name="rapidocr",
+                builder=lambda: __import__("id_doc_ocr.backbones.rapidocr", fromlist=["RapidOCRAdapter"]).RapidOCRAdapter(),
+                availability_check=lambda: __import__("id_doc_ocr.backbones.rapidocr", fromlist=["RapidOCRAdapter"]).RapidOCRAdapter.is_available(),
+                unavailable_message="OCR backend 'rapidocr' is unavailable. Install rapidocr_onnxruntime to enable the ONNX baseline.",
+            ),
+            "paddleocr": StageBackendSpec(
+                name="paddleocr",
+                builder=lambda: PaddleOCRAdapter(),
+                availability_check=lambda: PaddleOCRAdapter.is_available(),
+                unavailable_message="OCR backend 'paddleocr' is unavailable. See docs/paddleocr-setup.md for local setup instructions.",
+            ),
+        },
+        "vlm": {
+            "mock": StageBackendSpec(
+                name="mock",
+                builder=lambda: MockPaddleOCRVLAdapter(),
+                availability_check=lambda: True,
+            ),
+            "paddleocr_vl": StageBackendSpec(
+                name="paddleocr_vl",
+                builder=lambda: PaddleOCRVLAdapter(auto_init=True),
+                availability_check=lambda: PaddleOCRVLAdapter.is_runtime_available(),
+                unavailable_message="VLM backend 'paddleocr_vl' is unavailable. Install optional PaddleOCR-VL runtime dependencies first.",
+            ),
+            "auto": StageBackendSpec(
+                name="auto",
+                builder=lambda: PaddleOCRVLAdapter(auto_init=True),
+                availability_check=lambda: PaddleOCRVLAdapter.is_runtime_available(),
+                unavailable_message="VLM backend 'auto' is unavailable. Install optional PaddleOCR-VL runtime dependencies first.",
+            ),
+        },
+        "detector": {
+            "mock": StageBackendSpec(
+                name="mock",
+                builder=lambda: MockDocumentDetectorAdapter(),
+                availability_check=lambda: True,
+            ),
+            "pil": StageBackendSpec(
+                name="pil",
+                builder=lambda: PillowDocumentDetectorAdapter(),
+                availability_check=lambda: PillowDocumentDetectorAdapter.is_available(),
+                unavailable_message="Detector backend 'pil' is unavailable. Install Pillow to enable image-aware document localization.",
+            ),
+        },
+        "rectify": {
+            "mock": StageBackendSpec(
+                name="mock",
+                builder=lambda: MockRectifyPipeline(),
+                availability_check=lambda: True,
+                display_name="MockRectifyPipeline",
+            ),
+            "pil": StageBackendSpec(
+                name="pil",
+                builder=lambda: PillowRectifyPipeline(),
+                availability_check=lambda: PillowRectifyPipeline.is_available(),
+                unavailable_message="Rectify backend 'pil' is unavailable. Install Pillow to enable image-aware rectify and quality scoring.",
+                display_name="PillowRectifyPipeline",
+            ),
+        },
     }
 
     def __init__(
         self,
         ocr_backend: str = "mock",
         vlm_backend: str = "auto",
+        detector_backend: str = "mock",
+        rectify_backend: str = "mock",
         failure_dir: str | None = None,
     ) -> None:
+        self.backend_selection = {
+            "ocr": ocr_backend,
+            "vlm": vlm_backend,
+            "detector": detector_backend,
+            "rectify": rectify_backend,
+        }
         self.ocr_backend = ocr_backend
         self.vlm_backend = vlm_backend
+        self.detector_backend = detector_backend
+        self.rectify_backend = rectify_backend
         self.failure_dir = failure_dir
-        self.ocr = self._build_ocr_backend(ocr_backend)
-        self.vlm = self._build_vlm_backend(vlm_backend)
-        self.detector = MockDocumentDetectorAdapter()
+        self.ocr = self._build_stage_backend("ocr", ocr_backend)
+        self.vlm = self._build_stage_backend("vlm", vlm_backend)
+        self.detector = self._build_stage_backend("detector", detector_backend)
         self.region_ocr = MockGOTOCRAdapter()
-        self.rectify = MockRectifyPipeline()
+        self.rectify = self._build_stage_backend("rectify", rectify_backend)
 
     @classmethod
-    def validate_backend_selection(cls, *, ocr_backend: str, vlm_backend: str) -> None:
-        cls._validate_ocr_backend(ocr_backend)
-        cls._validate_vlm_backend(vlm_backend)
+    def stage_backend_names(cls, stage: str) -> list[str]:
+        return sorted(cls.STAGE_BACKENDS[stage])
 
     @classmethod
-    def _validate_ocr_backend(cls, ocr_backend: str) -> None:
-        if ocr_backend not in cls.OCR_BACKENDS:
-            raise BackendSelectionError(
-                f"Unknown OCR backend: {ocr_backend}. Supported values: {', '.join(sorted(cls.OCR_BACKENDS))}"
-            )
-        if ocr_backend == "paddleocr" and not PaddleOCRAdapter.is_available():
-            raise BackendSelectionError(
-                "OCR backend 'paddleocr' is unavailable. See docs/paddleocr-setup.md for local setup instructions."
-            )
+    def build_stage_inventory(cls) -> dict[str, list[dict[str, Any]]]:
+        inventory: dict[str, list[dict[str, Any]]] = {}
+        for stage, stage_specs in cls.STAGE_BACKENDS.items():
+            inventory[stage] = []
+            for backend_name in cls.stage_backend_names(stage):
+                spec = stage_specs[backend_name]
+                availability = {"available": bool(spec.availability_check())}
+                info = None
+                instance = None
+                try:
+                    if availability["available"]:
+                        instance = spec.builder()
+                        info = getattr(instance, "info", None)
+                except Exception:
+                    info = None
+                inventory[stage].append(
+                    {
+                        "name": getattr(info, "name", None) or spec.display_name or (instance.__class__.__name__ if instance is not None else None) or backend_name,
+                        "kind": getattr(info, "kind", None) or stage,
+                        "description": getattr(info, "description", None) or "",
+                        "version": getattr(info, "version", None),
+                        "available": availability["available"],
+                        "availability": availability,
+                    }
+                )
+        return inventory
 
     @classmethod
-    def _validate_vlm_backend(cls, vlm_backend: str) -> None:
-        if vlm_backend not in cls.VLM_BACKENDS:
-            raise BackendSelectionError(
-                f"Unknown VLM backend: {vlm_backend}. Supported values: {', '.join(sorted(cls.VLM_BACKENDS))}"
-            )
-        if vlm_backend in {"paddleocr_vl", "auto"} and not PaddleOCRVLAdapter.is_runtime_available():
-            raise BackendSelectionError(
-                f"VLM backend '{vlm_backend}' is unavailable. Install optional PaddleOCR-VL runtime dependencies first."
-            )
+    def validate_backend_selection(
+        cls,
+        *,
+        ocr_backend: str,
+        vlm_backend: str,
+        detector_backend: str = "mock",
+        rectify_backend: str = "mock",
+    ) -> None:
+        selections = {
+            "ocr": ocr_backend,
+            "vlm": vlm_backend,
+            "detector": detector_backend,
+            "rectify": rectify_backend,
+        }
+        for stage, backend_name in selections.items():
+            cls._validate_stage_backend(stage, backend_name)
 
-    def _build_ocr_backend(self, ocr_backend: str) -> Any:
-        return self.OCR_BACKENDS[ocr_backend]()
+    @classmethod
+    def _validate_stage_backend(cls, stage: str, backend_name: str) -> None:
+        stage_specs = cls.STAGE_BACKENDS[stage]
+        stage_label = cls.STAGE_LABELS.get(stage, stage)
+        if backend_name not in stage_specs:
+            raise BackendSelectionError(
+                f"Unknown {stage_label} backend: {backend_name}. Supported values: {', '.join(sorted(stage_specs))}"
+            )
+        spec = stage_specs[backend_name]
+        if not spec.availability_check() and spec.unavailable_message:
+            raise BackendSelectionError(spec.unavailable_message)
 
-    def _build_vlm_backend(self, vlm_backend: str) -> Any:
-        return self.VLM_BACKENDS[vlm_backend]()
+    def _build_stage_backend(self, stage: str, backend_name: str) -> Any:
+        return self.STAGE_BACKENDS[stage][backend_name].builder()
 
     def run(
         self,
@@ -125,6 +243,8 @@ class DemoPipelineRunner:
             "schema": plugin.get_schema_name(),
             "ocr_backend": self.ocr_backend,
             "vlm_backend": vlm_backend_name,
+            "detector_backend": self.detector_backend,
+            "rectify_backend": self.rectify_backend,
             "detector": detector_result.model_dump(),
             "rectify": rectify_payload,
             "quality": {
@@ -157,6 +277,8 @@ class DemoPipelineRunner:
                     "plugin": plugin.metadata.name,
                     "ocr_backend": self.ocr_backend,
                     "vlm_backend": vlm_backend_name,
+                    "detector_backend": self.detector_backend,
+                    "rectify_backend": self.rectify_backend,
                     "source_kind": resolved_source_kind,
                     "source_name": resolved_source_name,
                 },
