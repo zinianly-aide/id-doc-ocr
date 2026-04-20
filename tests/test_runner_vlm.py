@@ -25,4 +25,6 @@ def test_demo_runner_exposes_stage_backend_registry_inventory():
     assert DemoPipelineRunner.stage_backend_names("ocr") == ["mock", "paddleocr", "rapidocr"]
     assert DemoPipelineRunner.stage_backend_names("detector") == ["mock", "pil"]
     assert {item["name"] for item in inventory["rectify"]} >= {"MockRectifyPipeline", "PillowRectifyPipeline"}
+    assert {item["backend"] for item in inventory["detector"]} == {"mock", "pil"}
+    assert {item["backend"] for item in inventory["rectify"]} == {"mock", "pil"}
     assert all("available" in item for stage in inventory.values() for item in stage)

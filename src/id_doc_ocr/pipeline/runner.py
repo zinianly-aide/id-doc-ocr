@@ -158,6 +158,7 @@ class DemoPipelineRunner:
                     info = None
                 inventory[stage].append(
                     {
+                        "backend": backend_name,
                         "name": getattr(info, "name", None) or spec.display_name or (instance.__class__.__name__ if instance is not None else None) or backend_name,
                         "kind": getattr(info, "kind", None) or stage,
                         "description": getattr(info, "description", None) or "",

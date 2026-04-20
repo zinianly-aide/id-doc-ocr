@@ -248,7 +248,7 @@
       function renderBackendOptions(select, items, preferred, kind) {
         const availableItems = items.filter((item) => item.available);
         const optionItems = availableItems.map((item) => ({
-          value: item.name,
+          value: item.backend || item.name,
           label: item.name,
           disabled: false,
         }));
