@@ -68,6 +68,59 @@ Default local addresses when using Compose:
 - API: `http://127.0.0.1:8000`
 - UI lab: `http://127.0.0.1:8080`
 
+### Verified full Paddle Docker build
+
+The following full-image workflow was re-verified locally on this repo:
+
+- full test suite passes: `113 passed`
+- `docker compose --env-file .env.example config` expands successfully
+- full Paddle image builds successfully when Docker Hub base-image pulls are avoided by reusing a locally cached Python image
+- `/health`, `/capabilities`, and `/infer` all succeed against the built container
+- sample boarding-pass inference returns `passenger_name=ZHANGQIWEI` and `flight_number=MU2379`
+
+Commands:
+
+```bash
+docker info
+/opt/homebrew/bin/python3.11 -m pytest -q
+docker compose --env-file .env.example config
+
+# If python:3.11-slim-bookworm cannot be pulled from Docker Hub in your environment,
+# reuse a locally cached python:3.11-slim image as the build base.
+docker build \
+  --build-arg ID_DOC_OCR_PYTHON_BASE_IMAGE=python:3.11-slim \
+  --build-arg ID_DOC_OCR_INSTALL_PADDLE=1 \
+  --build-arg ID_DOC_OCR_APT_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/debian \
+  --build-arg ID_DOC_OCR_APT_SECURITY_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/debian-security \
+  --build-arg ID_DOC_OCR_PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple \
+  -t id-doc-ocr:full-verify .
+
+docker run -d --name id-doc-ocr-full-verify-run \
+  -p 18001:8000 \
+  -e ID_DOC_OCR_DEFAULT_OCR_BACKEND=paddleocr \
+  -e ID_DOC_OCR_DEFAULT_VLM_BACKEND=mock \
+  -e ID_DOC_OCR_DEFAULT_DETECTOR_BACKEND=pil \
+  -e ID_DOC_OCR_DEFAULT_RECTIFY_BACKEND=pil \
+  id-doc-ocr:full-verify
+
+curl http://127.0.0.1:18001/health
+curl http://127.0.0.1:18001/capabilities
+curl -X POST http://127.0.0.1:18001/infer \
+  -F plugin=boarding_pass \
+  -F ocr_backend=paddleocr \
+  -F vlm_backend=mock \
+  -F detector_backend=pil \
+  -F rectify_backend=pil \
+  -F file=@examples/assets/paddle_sample_doc_00006737.jpg
+
+docker rm -f id-doc-ocr-full-verify-run
+```
+
+Note:
+
+- if `python:3.11-slim` is not already cached locally, pull/tag availability becomes a separate Docker Hub/network problem rather than an `id-doc-ocr` code problem
+- for long-lived local usage, `docker compose up --build` plus the mounted Paddle model cache remains the better default than repeatedly rebuilding the standalone verification image
+
 For Docker-specific PaddleOCR notes, Apple Silicon caveats, and the `ID_DOC_OCR_INSTALL_PADDLE` fallback switch, see [docs/deployment.md](docs/deployment.md).
 
 ## Regression track

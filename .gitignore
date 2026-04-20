@@ -14,3 +14,4 @@ htmlcov/
 
 # local runtime artifacts
 data/failures/
+data/paddle-model-cache/

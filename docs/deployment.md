@@ -46,8 +46,8 @@ Useful knobs:
 
 - `ID_DOC_OCR_PYTHON_BASE_IMAGE=python:3.11-slim-bookworm`: default base image for normal builds
 - if Docker Hub pulls time out but you already have a compatible Python base image cached locally, tag it (for example `docker tag python:3.11-slim local/python:3.11-slim`) and set `ID_DOC_OCR_PYTHON_BASE_IMAGE=local/python:3.11-slim`
-- `ID_DOC_OCR_APT_MIRROR=http://deb.debian.org/debian`: main Debian package mirror used during image build
-- `ID_DOC_OCR_APT_SECURITY_MIRROR=http://deb.debian.org/debian-security`: Debian security mirror used during image build
+- `ID_DOC_OCR_APT_MIRROR=http://deb.debian.org/debian`: main Debian package mirror used during image build (HTTPS mirrors are preferred when available for safer transport)
+- `ID_DOC_OCR_APT_SECURITY_MIRROR=http://deb.debian.org/debian-security`: Debian security mirror used during image build (HTTPS mirrors are preferred when available for safer transport)
 - `ID_DOC_OCR_PIP_INDEX_URL=https://pypi.org/simple`: pip package index used during image build
 - `ID_DOC_OCR_PIP_EXTRA_INDEX_URL`: optional secondary package index
 - `ID_DOC_OCR_PIP_TRUSTED_HOST`: only needed for non-default trust scenarios; avoid unless required
@@ -66,17 +66,17 @@ Mirror troubleshooting:
 - on this machine, Docker already has daemon-level proxy settings (`http.docker.internal:3128`), so adding another system proxy is usually not the first fix
 - the more promising mitigation is switching Debian mirrors when `apt-get update` / `apt-get install` is slow or returns transient 502s
 - two candidate mirrors that responded faster than `deb.debian.org` in local checks were:
-  - `http://mirrors.tuna.tsinghua.edu.cn/debian`
-  - `http://mirrors.aliyun.com/debian`
+  - `https://mirrors.tuna.tsinghua.edu.cn/debian`
+  - `https://mirrors.aliyun.com/debian`
 - matching security mirrors:
-  - `http://mirrors.tuna.tsinghua.edu.cn/debian-security`
-  - `http://mirrors.aliyun.com/debian-security`
+  - `https://mirrors.tuna.tsinghua.edu.cn/debian-security`
+  - `https://mirrors.aliyun.com/debian-security`
 
 Example `.env` override for mainland-friendly mirrors:
 
 ```bash
-ID_DOC_OCR_APT_MIRROR=http://mirrors.tuna.tsinghua.edu.cn/debian
-ID_DOC_OCR_APT_SECURITY_MIRROR=http://mirrors.tuna.tsinghua.edu.cn/debian-security
+ID_DOC_OCR_APT_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/debian
+ID_DOC_OCR_APT_SECURITY_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/debian-security
 ID_DOC_OCR_PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
@@ -94,6 +94,48 @@ Apple Silicon / ARM notes:
 - the first real PaddleOCR request may download model assets, so expect the first `/infer?ocr_backend=paddleocr` call to be slower than later calls
 - if your host / mirror cannot resolve compatible Paddle wheels, rebuild with `ID_DOC_OCR_INSTALL_PADDLE=0` and use `rapidocr` or `mock` as the OCR backend
 - if you specifically need x86 wheels on Apple Silicon, run compose with emulation, for example `DOCKER_DEFAULT_PLATFORM=linux/amd64 docker compose up --build`
+
+## Re-verified full Paddle build path
+
+This exact fallback path was re-tested locally after Docker Hub timeouts blocked `python:3.11-slim-bookworm` metadata fetches:
+
+```bash
+/opt/homebrew/bin/python3.11 -m pytest -q
+docker compose --env-file .env.example config
+
+docker build \
+  --build-arg ID_DOC_OCR_PYTHON_BASE_IMAGE=python:3.11-slim \
+  --build-arg ID_DOC_OCR_INSTALL_PADDLE=1 \
+  --build-arg ID_DOC_OCR_APT_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/debian \
+  --build-arg ID_DOC_OCR_APT_SECURITY_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/debian-security \
+  --build-arg ID_DOC_OCR_PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple \
+  -t id-doc-ocr:full-verify .
+
+docker run -d --name id-doc-ocr-full-verify-run \
+  -p 18001:8000 \
+  -e ID_DOC_OCR_DEFAULT_OCR_BACKEND=paddleocr \
+  -e ID_DOC_OCR_DEFAULT_VLM_BACKEND=mock \
+  -e ID_DOC_OCR_DEFAULT_DETECTOR_BACKEND=pil \
+  -e ID_DOC_OCR_DEFAULT_RECTIFY_BACKEND=pil \
+  id-doc-ocr:full-verify
+
+curl http://127.0.0.1:18001/health
+curl http://127.0.0.1:18001/capabilities
+curl -X POST http://127.0.0.1:18001/infer \
+  -F plugin=boarding_pass \
+  -F ocr_backend=paddleocr \
+  -F vlm_backend=mock \
+  -F detector_backend=pil \
+  -F rectify_backend=pil \
+  -F file=@examples/assets/paddle_sample_doc_00006737.jpg
+
+docker rm -f id-doc-ocr-full-verify-run
+```
+
+Observed successful result from the real sample inference:
+
+- `passenger_name=ZHANGQIWEI`
+- `flight_number=MU2379`
 
 ## Recommended performance optimizations for full Paddle deployments
 
@@ -114,8 +156,8 @@ If you want the image itself to arrive pre-warmed for first-use demos or CI imag
 ID_DOC_OCR_INSTALL_PADDLE=1 \
 ID_DOC_OCR_PREFETCH_PADDLE_MODELS=1 \
 ID_DOC_OCR_PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple \
-ID_DOC_OCR_APT_MIRROR=http://mirrors.tuna.tsinghua.edu.cn/debian \
-ID_DOC_OCR_APT_SECURITY_MIRROR=http://mirrors.tuna.tsinghua.edu.cn/debian-security \
+ID_DOC_OCR_APT_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/debian \
+ID_DOC_OCR_APT_SECURITY_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/debian-security \
   docker compose build api
 ```
 
