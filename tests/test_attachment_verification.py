@@ -98,3 +98,44 @@ def test_verify_attachment_returns_reject_for_attachment_type_mismatch():
     assert result["verify_status"] == "REJECT"
     assert result["risk_level"] == "HIGH"
     assert any(rule["rule_code"] == "attachment_type_match" and rule["severity"] == "error" for rule in result["rule_results"])
+
+
+
+def test_verify_attachment_accepts_multiple_expected_attachment_types():
+    analysis = _build_analysis(
+        attachment_label="BIRTH_CERTIFICATE",
+        extracted_fields={"child_name": "小宝", "date_of_birth": "2024-03-16"},
+    )
+
+    result = verify_attachment(
+        analysis,
+        {
+            "expected_attachment_types": ["MEDICAL_CERTIFICATE", "BIRTH_CERTIFICATE"],
+            "applicant_name": "张三",
+        },
+    )
+
+    assert result["verify_status"] != "REJECT"
+    assert any(rule["rule_code"] == "attachment_type_match" and rule["passed"] is True for rule in result["rule_results"])
+    assert result["evidence"]["request"]["resolved_expected_attachment_types"] == ["MEDICAL_CERTIFICATE", "BIRTH_CERTIFICATE"]
+
+
+
+def test_verify_attachment_uses_leave_type_default_attachment_matrix():
+    analysis = _build_analysis(
+        attachment_label="MARRIAGE_CERTIFICATE",
+        extracted_fields={"holder_name": "张三", "registration_date": "2024-05-20"},
+    )
+
+    result = verify_attachment(
+        analysis,
+        {
+            "leave_type": "MARRIAGE",
+            "applicant_name": "张三",
+            "leave_start_date": "2024-05-20",
+            "leave_end_date": "2024-05-20",
+        },
+    )
+
+    assert result["verify_status"] == "PASS"
+    assert result["evidence"]["request"]["resolved_expected_attachment_types"] == ["MARRIAGE_CERTIFICATE"]

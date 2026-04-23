@@ -12,6 +12,11 @@ NAME_FIELD_CANDIDATES = (
 )
 START_DATE_FIELD_CANDIDATES = ("rest_start_date", "registration_date", "issue_date", "date_of_birth")
 END_DATE_FIELD_CANDIDATES = ("rest_end_date", "registration_date", "issue_date", "date_of_birth")
+LEAVE_TYPE_ATTACHMENT_MATRIX = {
+    "SICK": ["MEDICAL_CERTIFICATE"],
+    "MARRIAGE": ["MARRIAGE_CERTIFICATE"],
+    "MATERNITY": ["BIRTH_CERTIFICATE", "MEDICAL_CERTIFICATE"],
+}
 
 
 
@@ -41,6 +46,18 @@ def _build_rule(rule_code: str, passed: bool, severity: str, score_delta: int, m
 
 
 
+def _resolve_expected_attachment_types(request: dict[str, Any]) -> list[str]:
+    if isinstance(request.get("expected_attachment_types"), list):
+        return [str(item) for item in request["expected_attachment_types"] if item]
+    if isinstance(request.get("expected_attachment_types"), str) and request.get("expected_attachment_types").strip():
+        return [item.strip() for item in request["expected_attachment_types"].split(",") if item.strip()]
+    if request.get("expected_attachment_type"):
+        return [str(request["expected_attachment_type"])]
+    leave_type = str(request.get("leave_type") or "").upper()
+    return LEAVE_TYPE_ATTACHMENT_MATRIX.get(leave_type, [])
+
+
+
 def _risk_level(score: int) -> str:
     if score >= 70:
         return "HIGH"
@@ -54,7 +71,7 @@ def verify_attachment(analysis: dict[str, Any], request: dict[str, Any]) -> dict
     fields = _field_map(analysis)
     classification = analysis.get("classification_evidence") or {}
     predicted_type = classification.get("attachment_label") or "UNKNOWN"
-    expected_type = request.get("expected_attachment_type") or _pick_first(request, ("expected_attachment_type",))
+    expected_types = _resolve_expected_attachment_types(request)
     applicant_name = request.get("applicant_name")
     extracted_name = _pick_first(fields, NAME_FIELD_CANDIDATES)
     leave_start_date = request.get("leave_start_date")
@@ -64,7 +81,7 @@ def verify_attachment(analysis: dict[str, Any], request: dict[str, Any]) -> dict
 
     rule_results: list[dict[str, Any]] = []
 
-    type_match = (not expected_type) or predicted_type == expected_type
+    type_match = (not expected_types) or predicted_type in expected_types
     rule_results.append(
         _build_rule(
             "attachment_type_match",
@@ -72,7 +89,7 @@ def verify_attachment(analysis: dict[str, Any], request: dict[str, Any]) -> dict
             "error" if not type_match else "info",
             80 if not type_match else 0,
             "attachment type matches expected leave attachment" if type_match else "attachment type does not match expected leave attachment",
-            {"expected_attachment_type": expected_type, "predicted_attachment_type": predicted_type},
+            {"expected_attachment_types": expected_types, "predicted_attachment_type": predicted_type},
         )
     )
 
@@ -122,6 +139,8 @@ def verify_attachment(analysis: dict[str, Any], request: dict[str, Any]) -> dict
         verify_status = "PASS"
 
     warnings = [rule["message"] for rule in rule_results if not rule["passed"]]
+    request_evidence = dict(request)
+    request_evidence["resolved_expected_attachment_types"] = expected_types
     return {
         "verify_status": verify_status,
         "risk_score": total_risk,
@@ -132,9 +151,9 @@ def verify_attachment(analysis: dict[str, Any], request: dict[str, Any]) -> dict
         "warnings": warnings,
         "evidence": {
             "classification": classification,
-            "request": request,
+            "request": request_evidence,
             "fields": fields,
         },
         "needs_manual_review": verify_status != "PASS",
-        "summary_message": f"{verify_status}: {predicted_type} vs expected {expected_type or 'UNSPECIFIED'}",
+        "summary_message": f"{verify_status}: {predicted_type} vs expected {expected_types or ['UNSPECIFIED']}",
     }
