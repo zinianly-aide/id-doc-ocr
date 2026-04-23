@@ -10,6 +10,11 @@ NAME_FIELD_CANDIDATES = (
     "person_b_name",
     "child_name",
 )
+RELATED_PERSON_FIELD_CANDIDATES = (
+    "person_b_name",
+    "father_name",
+    "mother_name",
+)
 START_DATE_FIELD_CANDIDATES = ("rest_start_date", "registration_date", "issue_date", "date_of_birth")
 END_DATE_FIELD_CANDIDATES = ("rest_end_date", "registration_date", "issue_date", "date_of_birth")
 LEAVE_TYPE_ATTACHMENT_MATRIX = {
@@ -73,7 +78,10 @@ def verify_attachment(analysis: dict[str, Any], request: dict[str, Any]) -> dict
     predicted_type = classification.get("attachment_label") or "UNKNOWN"
     expected_types = _resolve_expected_attachment_types(request)
     applicant_name = request.get("applicant_name")
+    related_person_name = request.get("related_person_name")
+    related_person_relation = request.get("related_person_relation")
     extracted_name = _pick_first(fields, NAME_FIELD_CANDIDATES)
+    extracted_related_person_name = _pick_first(fields, RELATED_PERSON_FIELD_CANDIDATES)
     leave_start_date = request.get("leave_start_date")
     leave_end_date = request.get("leave_end_date")
     extracted_start_date = _pick_first(fields, START_DATE_FIELD_CANDIDATES)
@@ -122,6 +130,22 @@ def verify_attachment(analysis: dict[str, Any], request: dict[str, Any]) -> dict
                 "leave_end_date": leave_end_date,
                 "extracted_start_date": extracted_start_date,
                 "extracted_end_date": extracted_end_date,
+            },
+        )
+    )
+
+    related_person_match = (not related_person_name) or (extracted_related_person_name == related_person_name)
+    rule_results.append(
+        _build_rule(
+            "related_person_match",
+            related_person_match,
+            "warning" if not related_person_match else "info",
+            30 if not related_person_match else 0,
+            "related person matches extracted document relationship party" if related_person_match else "related person does not match extracted document relationship party",
+            {
+                "related_person_name": related_person_name,
+                "related_person_relation": related_person_relation,
+                "extracted_related_person_name": extracted_related_person_name,
             },
         )
     )

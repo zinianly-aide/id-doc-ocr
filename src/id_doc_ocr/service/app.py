@@ -319,6 +319,54 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
             )
         )
 
+    @app.post("/analyze-document")
+    async def analyze_document_endpoint(
+        request: Request,
+        plugin_name: str | None = Form(None),
+        plugin: str | None = Form(None),
+        file: UploadFile = File(...),
+        ocr_backend: str | None = Form(None),
+        vlm_backend: str | None = Form(None),
+        detector_backend: str | None = Form(None),
+        rectify_backend: str | None = Form(None),
+        failure_dir: str | None = Form(None),
+    ) -> JSONResponse:
+        form = await request.form()
+        reserved_keys = {
+            "plugin_name",
+            "plugin",
+            "file",
+            "ocr_backend",
+            "vlm_backend",
+            "detector_backend",
+            "rectify_backend",
+            "failure_dir",
+        }
+        provided_fields = {str(key): value for key, value in form.items() if key not in reserved_keys and not hasattr(value, "filename")}
+
+        result, _, _ = await _run_inference_request(
+            plugin_name=plugin_name,
+            plugin=plugin,
+            file=file,
+            ocr_backend=ocr_backend,
+            vlm_backend=vlm_backend,
+            detector_backend=detector_backend,
+            rectify_backend=rectify_backend,
+            failure_dir=failure_dir,
+            service_settings=service_settings,
+            fields=provided_fields,
+        )
+        return JSONResponse(
+            content=jsonable_encoder(
+                {
+                    "filename": file.filename,
+                    "content_type": file.content_type,
+                    "result": result,
+                    "analysis": result["analysis"],
+                }
+            )
+        )
+
     @app.post("/verify-attachment")
     async def verify_attachment_endpoint(
         request: Request,
@@ -331,11 +379,15 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
         rectify_backend: str | None = Form(None),
         failure_dir: str | None = Form(None),
         expected_attachment_type: str | None = Form(None),
+        expected_attachment_types: str | None = Form(None),
+        leave_type: str | None = Form(None),
         applicant_name: str | None = Form(None),
+        related_person_name: str | None = Form(None),
+        related_person_relation: str | None = Form(None),
         leave_start_date: str | None = Form(None),
         leave_end_date: str | None = Form(None),
     ) -> JSONResponse:
-        if not expected_attachment_type:
+        if not any([expected_attachment_type, expected_attachment_types, leave_type]):
             raise HTTPException(status_code=422, detail="expected_attachment_type is required")
 
         form = await request.form()
@@ -349,7 +401,11 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
             "rectify_backend",
             "failure_dir",
             "expected_attachment_type",
+            "expected_attachment_types",
+            "leave_type",
             "applicant_name",
+            "related_person_name",
+            "related_person_relation",
             "leave_start_date",
             "leave_end_date",
         }
@@ -371,7 +427,11 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
             result["analysis"],
             {
                 "expected_attachment_type": expected_attachment_type,
+                "expected_attachment_types": expected_attachment_types,
+                "leave_type": leave_type,
                 "applicant_name": applicant_name,
+                "related_person_name": related_person_name,
+                "related_person_relation": related_person_relation,
                 "leave_start_date": leave_start_date,
                 "leave_end_date": leave_end_date,
             },

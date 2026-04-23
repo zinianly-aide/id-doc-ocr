@@ -30,6 +30,41 @@ Returns the fuller machine-readable inventory used for readiness checks and UI b
 - runtime information
 - aggregate counts (`plugin_count`, `backbone_count`, `available_backbone_count`, detector / rectify totals)
 
+### `POST /analyze-document`
+
+Multipart form upload endpoint for recognition-only analysis.
+
+Purpose:
+- frontend debugging
+- attachment preview pages
+- OCR/result inspection without business verification
+
+Fields:
+
+- `plugin_name` (required; `plugin` alias accepted)
+- `file` (required)
+- `ocr_backend` / `vlm_backend` / `detector_backend` / `rectify_backend` (optional)
+- optional extracted-field overrides such as `patient_name`, `rest_start_date`, `rest_end_date`, `issue_date`
+
+Response shape:
+
+- `result` — full pipeline output
+- `analysis` — normalized analysis object for UI rendering
+
+Example:
+
+```bash
+curl -X POST http://127.0.0.1:8000/analyze-document \
+  -F plugin_name=diagnosis_proof \
+  -F ocr_backend=mock \
+  -F vlm_backend=mock \
+  -F patient_name=张三 \
+  -F rest_start_date=2026-04-01 \
+  -F rest_end_date=2026-04-03 \
+  -F issue_date=2026-04-01 \
+  -F file=@examples/assets/paddle_sample_doc_00006737.jpg
+```
+
 ### `POST /infer`
 
 Multipart form upload endpoint.
@@ -98,14 +133,19 @@ Required fields:
 
 - `plugin_name` (or `plugin` alias)
 - `file`
-- `expected_attachment_type`
+- one of:
+  - `expected_attachment_type`
+  - `expected_attachment_types`
+  - `leave_type`
 
 Common request fields:
 
 - `applicant_name`
+- `related_person_name`
+- `related_person_relation`
 - `leave_start_date`
 - `leave_end_date`
-- any additional extracted-field overrides, such as `patient_name`, `rest_start_date`, `rest_end_date`, `issue_date`
+- any additional extracted-field overrides, such as `patient_name`, `rest_start_date`, `rest_end_date`, `issue_date`, `holder_name`, `person_a_name`, `person_b_name`
 
 Response shape:
 
@@ -127,7 +167,7 @@ curl -X POST http://127.0.0.1:8000/verify-attachment \
   -F plugin_name=diagnosis_proof \
   -F ocr_backend=mock \
   -F vlm_backend=mock \
-  -F expected_attachment_type=MEDICAL_CERTIFICATE \
+  -F leave_type=SICK \
   -F applicant_name=张三 \
   -F leave_start_date=2026-04-01 \
   -F leave_end_date=2026-04-03 \
@@ -135,6 +175,24 @@ curl -X POST http://127.0.0.1:8000/verify-attachment \
   -F rest_start_date=2026-04-01 \
   -F rest_end_date=2026-04-03 \
   -F issue_date=2026-04-01 \
+  -F file=@examples/assets/paddle_sample_doc_00006737.jpg
+```
+
+Marriage example:
+
+```bash
+curl -X POST http://127.0.0.1:8000/verify-attachment \
+  -F plugin_name=marriage_certificate \
+  -F ocr_backend=mock \
+  -F vlm_backend=mock \
+  -F leave_type=MARRIAGE \
+  -F applicant_name=张三 \
+  -F related_person_name=李四 \
+  -F related_person_relation=spouse \
+  -F holder_name=张三 \
+  -F person_a_name=张三 \
+  -F person_b_name=李四 \
+  -F registration_date=2024-05-20 \
   -F file=@examples/assets/paddle_sample_doc_00006737.jpg
 ```
 

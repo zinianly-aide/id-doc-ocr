@@ -197,6 +197,92 @@ def test_verify_attachment_rejects_missing_expected_type():
     assert response.json()["detail"] == "expected_attachment_type is required"
 
 
+
+def test_verify_attachment_accepts_leave_type_without_explicit_expected_type():
+    client = build_client()
+    response = client.post(
+        "/verify-attachment",
+        data={
+            "plugin_name": "marriage_certificate",
+            "ocr_backend": "mock",
+            "vlm_backend": "mock",
+            "leave_type": "MARRIAGE",
+            "applicant_name": "张三",
+            "leave_start_date": "2024-05-20",
+            "leave_end_date": "2024-05-20",
+            "holder_name": "张三",
+            "registration_date": "2024-05-20",
+        },
+        files={"file": ("sample.jpg", b"fake-image-bytes", "image/jpeg")},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["verification"]["verify_status"] == "PASS"
+    assert payload["verification"]["evidence"]["request"]["resolved_expected_attachment_types"] == ["MARRIAGE_CERTIFICATE"]
+
+
+
+def test_verify_attachment_accepts_expected_attachment_types_csv_and_relation_fields():
+    client = build_client()
+    response = client.post(
+        "/verify-attachment",
+        data={
+            "plugin_name": "marriage_certificate",
+            "ocr_backend": "mock",
+            "vlm_backend": "mock",
+            "expected_attachment_types": "BIRTH_CERTIFICATE,MARRIAGE_CERTIFICATE",
+            "applicant_name": "张三",
+            "related_person_name": "李四",
+            "related_person_relation": "spouse",
+            "holder_name": "张三",
+            "person_a_name": "张三",
+            "person_b_name": "李四",
+            "registration_date": "2024-05-20",
+        },
+        files={"file": ("sample.jpg", b"fake-image-bytes", "image/jpeg")},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["verification"]["evidence"]["request"]["resolved_expected_attachment_types"] == ["BIRTH_CERTIFICATE", "MARRIAGE_CERTIFICATE"]
+    assert any(rule["rule_code"] == "related_person_match" and rule["passed"] is True for rule in payload["verification"]["rule_results"])
+
+
+
+def test_analyze_document_success_returns_analysis_only_payload():
+    client = build_client()
+    response = client.post(
+        "/analyze-document",
+        data={
+            "plugin_name": "diagnosis_proof",
+            "ocr_backend": "mock",
+            "vlm_backend": "mock",
+            "patient_name": "张三",
+            "rest_start_date": "2026-04-01",
+            "rest_end_date": "2026-04-03",
+            "issue_date": "2026-04-01",
+        },
+        files={"file": ("sample.jpg", b"fake-image-bytes", "image/jpeg")},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["analysis"]["doc_type"] == "diagnosis_proof"
+    assert payload["result"]["analysis"] == payload["analysis"]
+    assert "verification" not in payload
+
+
+
+def test_analyze_document_rejects_missing_plugin_name():
+    client = build_client()
+    response = client.post(
+        "/analyze-document",
+        data={"ocr_backend": "mock", "vlm_backend": "mock"},
+        files={"file": ("sample.jpg", b"fake-image-bytes", "image/jpeg")},
+    )
+    assert response.status_code == 422
+    assert response.json()["detail"] == "plugin_name is required"
+
+
+
 def test_infer_uses_service_default_backends_when_request_omits_them():
     client = build_client(
         default_ocr_backend="mock",

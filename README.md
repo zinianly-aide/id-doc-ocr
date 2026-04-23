@@ -41,6 +41,7 @@ A minimal HTTP service and UI lab are now available with:
 - `GET /health`
 - `GET /capabilities`
 - `POST /infer`
+- `POST /analyze-document`
 - `POST /verify-attachment`
 - local CLI serve entrypoint
 - a minimal browser UI for upload + backbone comparison
@@ -57,6 +58,7 @@ What the service now exposes beyond a bare liveness probe:
 - normalized quality / routing summary (`quality.summary`, `quality.flags`)
 - review-oriented decision output (`decision`, `review`, `warnings`, `evidence`)
 - unified document `analysis` payload with extracted fields, classification evidence, validation/review, and risk summary
+- recognition-only analysis flow via `/analyze-document`
 - leave-attachment verification output (`PASS / REVIEW / REJECT`) via `/verify-attachment`
 - optional failure-case persistence via `failure_dir`
 
