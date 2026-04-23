@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Approval Verification Prototype</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --line: #d9e0ea;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --blue: #2563eb;
+      --green: #16a34a;
+      --amber: #d97706;
+      --red: #dc2626;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .page { padding: 24px; }
+    .header, .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; }
+    .header { padding: 20px; margin-bottom: 16px; }
+    .title-row, .meta-row, .status-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .title-row { justify-content: space-between; }
+    .meta-chip, .status-chip { padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+    .meta-chip { background: #eff6ff; color: #1d4ed8; }
+    .status-pass { background: #dcfce7; color: #166534; }
+    .status-review { background: #fef3c7; color: #92400e; }
+    .status-reject { background: #fee2e2; color: #991b1b; }
+    .grid { display: grid; grid-template-columns: 0.95fr 1.15fr 1.1fr; gap: 16px; }
+    .card { padding: 16px; min-height: 620px; }
+    h1 { margin: 0 0 10px; font-size: 24px; }
+    h2 { margin: 0 0 14px; font-size: 18px; }
+    h3 { margin: 16px 0 10px; font-size: 14px; }
+    p { margin: 0; color: var(--muted); }
+    .attachment-item, .rule-item, .field-row, .pair-row {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 10px;
+      background: #fff;
+    }
+    .attachment-item.active { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(37,99,235,0.08); }
+    .button-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-weight: 600;
+      cursor: pointer;
+      color: white;
+      background: var(--blue);
+    }
+    button.secondary { background: #475569; }
+    .kv { display: grid; grid-template-columns: 120px 1fr; gap: 8px; font-size: 13px; }
+    .label { color: var(--muted); }
+    .field-row { display: grid; grid-template-columns: 120px 1fr 90px 100px; gap: 10px; align-items: center; }
+    .small { font-size: 12px; color: var(--muted); }
+    .rule-item.pass { border-left: 4px solid var(--green); }
+    .rule-item.review { border-left: 4px solid var(--amber); }
+    .rule-item.reject { border-left: 4px solid var(--red); }
+    .summary-box { border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+    .summary-pass { background: #ecfdf5; border: 1px solid #bbf7d0; }
+    .summary-review { background: #fffbeb; border: 1px solid #fde68a; }
+    .summary-reject { background: #fef2f2; border: 1px solid #fecaca; }
+    code { background: #eff2f7; padding: 2px 6px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="header">
+      <div class="title-row">
+        <div>
+          <h1>Attachment Verification</h1>
+          <p>Leave request header + three-column verification workspace</p>
+        </div>
+        <span class="status-chip status-review">REVIEW</span>
+      </div>
+      <div class="meta-row" style="margin-top: 14px;">
+        <span class="meta-chip">REQ-2026-0424-001</span>
+        <span class="meta-chip">张三</span>
+        <span class="meta-chip">研发中心</span>
+        <span class="meta-chip">MARRIAGE</span>
+        <span class="meta-chip">2024-05-20 ~ 2024-05-20</span>
+      </div>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <h2>Attachment</h2>
+        <div class="attachment-item active">
+          <div class="kv">
+            <div class="label">Filename</div><div>marriage-proof.jpg</div>
+            <div class="label">Type</div><div>image/jpeg</div>
+            <div class="label">Status</div><div>verified / REVIEW</div>
+            <div class="label">Doc type</div><div>marriage_certificate</div>
+            <div class="label">Attachment label</div><div>MARRIAGE_CERTIFICATE</div>
+          </div>
+        </div>
+
+        <h3>Upload area</h3>
+        <div class="attachment-item">
+          Drag file here or click to upload.<br />
+          <span class="small">MVP: image/jpeg, image/png, application/pdf</span>
+        </div>
+
+        <div class="button-row">
+          <button>Analyze document</button>
+          <button class="secondary">Verify attachment</button>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>OCR / Analysis</h2>
+        <div class="summary-box summary-review">
+          <strong>marriage_certificate</strong><br />
+          Attachment label: <code>MARRIAGE_CERTIFICATE</code><br />
+          Detector confidence: 0.96 / Attachment confidence: 0.51
+        </div>
+
+        <h3>Extracted fields</h3>
+        <div class="field-row"><strong>field</strong><strong>value</strong><strong>confidence</strong><strong>source</strong></div>
+        <div class="field-row"><div>holder_name</div><div>张三</div><div>-</div><div>parsed_field</div></div>
+        <div class="field-row"><div>person_a_name</div><div>张三</div><div>-</div><div>parsed_field</div></div>
+        <div class="field-row"><div>person_b_name</div><div>李四</div><div>-</div><div>parsed_field</div></div>
+        <div class="field-row"><div>registration_date</div><div>2024-05-20</div><div>-</div><div>parsed_field</div></div>
+
+        <h3>Analysis warnings</h3>
+        <div class="attachment-item">
+          <div>review_action: <code>review</code></div>
+          <div class="small">Show `analysis.validation.issues` and `analysis.review.warnings` here.</div>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>Verification</h2>
+        <div class="summary-box summary-review">
+          <strong>REVIEW</strong><br />
+          Risk score: 30 / Risk level: MEDIUM<br />
+          related person does not match extracted document relationship party
+        </div>
+
+        <h3>Rule results</h3>
+        <div class="rule-item pass">
+          <strong>attachment_type_match</strong><br />
+          passed · info · +0
+        </div>
+        <div class="rule-item pass">
+          <strong>applicant_name_match</strong><br />
+          passed · info · +0
+        </div>
+        <div class="rule-item review">
+          <strong>related_person_match</strong><br />
+          failed · warning · +30
+        </div>
+
+        <h3>Request vs document evidence</h3>
+        <div class="pair-row">
+          <div class="kv">
+            <div class="label">related_person_name</div><div>王五</div>
+            <div class="label">extracted_related_person_name</div><div>李四</div>
+            <div class="label">resolved expected types</div><div>[MARRIAGE_CERTIFICATE]</div>
+          </div>
+        </div>
+      </article>
+    </section>
+  </div>
+</body>
+</html>

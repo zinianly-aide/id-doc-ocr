@@ -1,0 +1,342 @@
+{
+  "requestHeader": {
+    "requestId": "REQ-2026-0424-002",
+    "applicantName": "张三",
+    "department": "研发中心",
+    "leaveType": "MARRIAGE",
+    "leaveDateRange": "2024-05-20 ~ 2024-05-20",
+    "approvalStatus": "Pending Review"
+  },
+  "attachments": [
+    {
+      "id": "att-1",
+      "filename": "marriage-proof.jpg",
+      "contentType": "image/jpeg",
+      "uploadTime": "2026-04-24T08:05:00+08:00",
+      "sizeLabel": "412 KB",
+      "status": "verified",
+      "docType": "marriage_certificate",
+      "attachmentLabel": "MARRIAGE_CERTIFICATE",
+      "verifyStatus": "REVIEW"
+    }
+  ],
+  "selectedAttachmentId": "att-1",
+  "analyzeResponse": {
+    "filename": "marriage-proof.jpg",
+    "content_type": "image/jpeg",
+    "result": {
+      "sample_id": "marriage-proof",
+      "plugin": "marriage_certificate",
+      "ocr_backend": "mock",
+      "vlm_backend": "paddleocr_vl",
+      "detector_backend": "mock",
+      "rectify_backend": "mock",
+      "decision": {
+        "action": "review",
+        "review_recommended": true,
+        "risk_score": 0.25
+      },
+      "quality": {
+        "routing": {
+          "hint": "review",
+          "review_recommended": true
+        }
+      }
+    },
+    "analysis": {
+      "doc_type": "marriage_certificate",
+      "doc_type_confidence": 0.96,
+      "classification_evidence": {
+        "plugin": "marriage_certificate",
+        "detector_doc_type": "marriage_certificate",
+        "ocr_backend": "mock",
+        "vlm_backend": "paddleocr_vl",
+        "attachment_label": "MARRIAGE_CERTIFICATE",
+        "attachment_confidence": 0.51,
+        "matched_keywords": []
+      },
+      "extracted_fields": [
+        {
+          "name": "holder_name",
+          "value": "张三",
+          "confidence": null,
+          "source": "parsed_field",
+          "bbox": null,
+          "evidence_text": null,
+          "matched": false
+        },
+        {
+          "name": "person_a_name",
+          "value": "张三",
+          "confidence": null,
+          "source": "parsed_field",
+          "bbox": null,
+          "evidence_text": null,
+          "matched": false
+        },
+        {
+          "name": "person_b_name",
+          "value": "李四",
+          "confidence": null,
+          "source": "parsed_field",
+          "bbox": null,
+          "evidence_text": null,
+          "matched": false
+        },
+        {
+          "name": "registration_date",
+          "value": "2024-05-20",
+          "confidence": null,
+          "source": "parsed_field",
+          "bbox": null,
+          "evidence_text": null,
+          "matched": false
+        }
+      ],
+      "validation": {
+        "accepted": true,
+        "score": 1.0,
+        "issues": []
+      },
+      "review": {
+        "decision": {
+          "action": "review",
+          "review_recommended": true,
+          "auto_accepted": false,
+          "quality_passed": true,
+          "validation_accepted": true,
+          "risk_score": 0.25
+        },
+        "warnings": [],
+        "evidence": {
+          "summary": {
+            "ocr_line_count": 0,
+            "field_count": 4,
+            "validator_issue_count": 0,
+            "quality_flag_count": 0
+          }
+        }
+      },
+      "risk": {
+        "score": 0.25,
+        "review_action": "review",
+        "review_recommended": true,
+        "quality_passed": true,
+        "validation_accepted": true
+      },
+      "raw_artifacts": {
+        "ocr_line_count": 0,
+        "warning_count": 0,
+        "merged_field_count": 4
+      }
+    }
+  },
+  "verifyResponse": {
+    "filename": "marriage-proof.jpg",
+    "content_type": "image/jpeg",
+    "result": {
+      "sample_id": "marriage-proof",
+      "plugin": "marriage_certificate",
+      "ocr_backend": "mock",
+      "vlm_backend": "paddleocr_vl",
+      "detector_backend": "mock",
+      "rectify_backend": "mock",
+      "decision": {
+        "action": "review",
+        "review_recommended": true,
+        "risk_score": 0.25
+      },
+      "quality": {
+        "routing": {
+          "hint": "review",
+          "review_recommended": true
+        }
+      }
+    },
+    "analysis": {
+      "doc_type": "marriage_certificate",
+      "doc_type_confidence": 0.96,
+      "classification_evidence": {
+        "plugin": "marriage_certificate",
+        "detector_doc_type": "marriage_certificate",
+        "ocr_backend": "mock",
+        "vlm_backend": "paddleocr_vl",
+        "attachment_label": "MARRIAGE_CERTIFICATE",
+        "attachment_confidence": 0.51,
+        "matched_keywords": []
+      },
+      "extracted_fields": [
+        {
+          "name": "holder_name",
+          "value": "张三",
+          "confidence": null,
+          "source": "parsed_field",
+          "bbox": null,
+          "evidence_text": null,
+          "matched": false
+        },
+        {
+          "name": "person_a_name",
+          "value": "张三",
+          "confidence": null,
+          "source": "parsed_field",
+          "bbox": null,
+          "evidence_text": null,
+          "matched": false
+        },
+        {
+          "name": "person_b_name",
+          "value": "李四",
+          "confidence": null,
+          "source": "parsed_field",
+          "bbox": null,
+          "evidence_text": null,
+          "matched": false
+        },
+        {
+          "name": "registration_date",
+          "value": "2024-05-20",
+          "confidence": null,
+          "source": "parsed_field",
+          "bbox": null,
+          "evidence_text": null,
+          "matched": false
+        }
+      ],
+      "validation": {
+        "accepted": true,
+        "score": 1.0,
+        "issues": []
+      },
+      "review": {
+        "decision": {
+          "action": "review",
+          "review_recommended": true,
+          "auto_accepted": false,
+          "quality_passed": true,
+          "validation_accepted": true,
+          "risk_score": 0.25
+        },
+        "warnings": [],
+        "evidence": {
+          "summary": {
+            "ocr_line_count": 0,
+            "field_count": 4,
+            "validator_issue_count": 0,
+            "quality_flag_count": 0
+          }
+        }
+      },
+      "risk": {
+        "score": 0.25,
+        "review_action": "review",
+        "review_recommended": true,
+        "quality_passed": true,
+        "validation_accepted": true
+      },
+      "raw_artifacts": {
+        "ocr_line_count": 0,
+        "warning_count": 0,
+        "merged_field_count": 4
+      }
+    },
+    "verification": {
+      "verify_status": "REVIEW",
+      "risk_score": 30,
+      "risk_level": "MEDIUM",
+      "matched_attachment_type": "MARRIAGE_CERTIFICATE",
+      "extracted_fields": {
+        "holder_name": "张三",
+        "person_a_name": "张三",
+        "person_b_name": "李四",
+        "registration_date": "2024-05-20"
+      },
+      "rule_results": [
+        {
+          "rule_code": "attachment_type_match",
+          "passed": true,
+          "severity": "info",
+          "score_delta": 0,
+          "message": "attachment type matches expected leave attachment",
+          "evidence": {
+            "expected_attachment_types": [
+              "MARRIAGE_CERTIFICATE"
+            ],
+            "predicted_attachment_type": "MARRIAGE_CERTIFICATE"
+          }
+        },
+        {
+          "rule_code": "applicant_name_match",
+          "passed": true,
+          "severity": "info",
+          "score_delta": 0,
+          "message": "applicant name matches extracted document identity",
+          "evidence": {
+            "applicant_name": "张三",
+            "extracted_name": "张三"
+          }
+        },
+        {
+          "rule_code": "leave_date_match",
+          "passed": true,
+          "severity": "info",
+          "score_delta": 0,
+          "message": "leave dates align with extracted document dates",
+          "evidence": {
+            "leave_start_date": "2024-05-20",
+            "leave_end_date": "2024-05-20",
+            "extracted_start_date": "2024-05-20",
+            "extracted_end_date": "2024-05-20"
+          }
+        },
+        {
+          "rule_code": "related_person_match",
+          "passed": false,
+          "severity": "warning",
+          "score_delta": 30,
+          "message": "related person does not match extracted document relationship party",
+          "evidence": {
+            "related_person_name": "王五",
+            "related_person_relation": "spouse",
+            "extracted_related_person_name": "李四"
+          }
+        }
+      ],
+      "warnings": [
+        "related person does not match extracted document relationship party"
+      ],
+      "evidence": {
+        "classification": {
+          "plugin": "marriage_certificate",
+          "detector_doc_type": "marriage_certificate",
+          "ocr_backend": "mock",
+          "vlm_backend": "paddleocr_vl",
+          "attachment_label": "MARRIAGE_CERTIFICATE",
+          "attachment_confidence": 0.51,
+          "matched_keywords": []
+        },
+        "request": {
+          "expected_attachment_type": null,
+          "expected_attachment_types": null,
+          "leave_type": "MARRIAGE",
+          "applicant_name": "张三",
+          "related_person_name": "王五",
+          "related_person_relation": "spouse",
+          "leave_start_date": "2024-05-20",
+          "leave_end_date": "2024-05-20",
+          "resolved_expected_attachment_types": [
+            "MARRIAGE_CERTIFICATE"
+          ]
+        },
+        "fields": {
+          "holder_name": "张三",
+          "person_a_name": "张三",
+          "person_b_name": "李四",
+          "registration_date": "2024-05-20"
+        }
+      },
+      "needs_manual_review": true,
+      "summary_message": "REVIEW: MARRIAGE_CERTIFICATE vs expected ['MARRIAGE_CERTIFICATE']"
+    }
+  }
+}

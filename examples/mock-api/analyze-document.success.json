@@ -1,0 +1,137 @@
+{
+  "filename": "diagnosis-proof.jpg",
+  "content_type": "image/jpeg",
+  "result": {
+    "sample_id": "diagnosis-proof",
+    "plugin": "diagnosis_proof",
+    "ocr_backend": "mock",
+    "vlm_backend": "paddleocr_vl",
+    "detector_backend": "mock",
+    "rectify_backend": "mock",
+    "decision": {
+      "action": "review",
+      "review_recommended": true,
+      "risk_score": 0.25
+    },
+    "quality": {
+      "routing": {
+        "hint": "review",
+        "review_recommended": true
+      }
+    }
+  },
+  "analysis": {
+    "doc_type": "diagnosis_proof",
+    "doc_type_confidence": 0.96,
+    "classification_evidence": {
+      "plugin": "diagnosis_proof",
+      "detector_doc_type": "diagnosis_proof",
+      "ocr_backend": "mock",
+      "vlm_backend": "paddleocr_vl",
+      "attachment_label": "MEDICAL_CERTIFICATE",
+      "attachment_confidence": 0.51,
+      "matched_keywords": []
+    },
+    "extracted_fields": [
+      {
+        "name": "patient_name",
+        "value": "张三",
+        "confidence": null,
+        "source": "parsed_field",
+        "bbox": null,
+        "evidence_text": null,
+        "matched": false
+      },
+      {
+        "name": "rest_start_date",
+        "value": "2026-04-01",
+        "confidence": null,
+        "source": "parsed_field",
+        "bbox": null,
+        "evidence_text": null,
+        "matched": false
+      },
+      {
+        "name": "rest_end_date",
+        "value": "2026-04-03",
+        "confidence": null,
+        "source": "parsed_field",
+        "bbox": null,
+        "evidence_text": null,
+        "matched": false
+      },
+      {
+        "name": "issue_date",
+        "value": "2026-04-01",
+        "confidence": null,
+        "source": "parsed_field",
+        "bbox": null,
+        "evidence_text": null,
+        "matched": false
+      }
+    ],
+    "validation": {
+      "accepted": false,
+      "score": 0.0,
+      "issues": [
+        {
+          "code": "missing_hospital_name",
+          "message": "missing hospital_name",
+          "severity": "error",
+          "field_name": "hospital_name"
+        },
+        {
+          "code": "missing_diagnosis",
+          "message": "missing diagnosis",
+          "severity": "error",
+          "field_name": "diagnosis"
+        }
+      ]
+    },
+    "review": {
+      "decision": {
+        "action": "review",
+        "review_recommended": true,
+        "auto_accepted": false,
+        "quality_passed": true,
+        "validation_accepted": false,
+        "risk_score": 0.25
+      },
+      "warnings": [
+        {
+          "code": "weak_perspective_confidence",
+          "severity": "warning",
+          "message": "Perspective correction confidence is weak; warped crops may need review.",
+          "stage": "quality"
+        },
+        {
+          "code": "missing_hospital_name",
+          "severity": "error",
+          "message": "missing hospital_name",
+          "stage": "validation",
+          "field_name": "hospital_name"
+        }
+      ],
+      "evidence": {
+        "summary": {
+          "ocr_line_count": 0,
+          "field_count": 4,
+          "validator_issue_count": 2,
+          "quality_flag_count": 1
+        }
+      }
+    },
+    "risk": {
+      "score": 0.25,
+      "review_action": "review",
+      "review_recommended": true,
+      "quality_passed": true,
+      "validation_accepted": false
+    },
+    "raw_artifacts": {
+      "ocr_line_count": 0,
+      "warning_count": 3,
+      "merged_field_count": 4
+    }
+  }
+}

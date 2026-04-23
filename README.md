@@ -61,6 +61,7 @@ What the service now exposes beyond a bare liveness probe:
 - recognition-only analysis flow via `/analyze-document`
 - leave-attachment verification output (`PASS / REVIEW / REJECT`) via `/verify-attachment`
 - optional failure-case persistence via `failure_dir`
+- frontend-facing integration docs and mock payloads under `docs/frontend-api-contract.md`, `docs/frontend-binding-guide.md`, `examples/mock-api/`, and `examples/mock-ui/`
 
 Docs:
 
