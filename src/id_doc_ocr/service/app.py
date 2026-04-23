@@ -22,6 +22,7 @@ from id_doc_ocr.backbones.rapidocr import RapidOCRAdapter
 from id_doc_ocr.core.registry import registry
 from id_doc_ocr.pipeline.runner import BackendSelectionError, DemoPipelineRunner
 from id_doc_ocr.tools.plugin_inventory import build_plugin_inventory
+from id_doc_ocr.verification.rules import verify_attachment
 
 logger = logging.getLogger(__name__)
 
@@ -162,6 +163,66 @@ def build_capabilities(settings: ServiceSettings) -> dict[str, Any]:
     }
 
 
+async def _run_inference_request(
+    *,
+    plugin_name: str | None,
+    plugin: str | None,
+    file: UploadFile,
+    ocr_backend: str | None,
+    vlm_backend: str | None,
+    detector_backend: str | None,
+    rectify_backend: str | None,
+    failure_dir: str | None,
+    service_settings: ServiceSettings,
+    fields: dict[str, Any] | None = None,
+) -> tuple[dict[str, Any], bytes, str]:
+    selected_plugin = plugin_name or plugin
+    if not selected_plugin:
+        raise HTTPException(status_code=422, detail="plugin_name is required")
+    if selected_plugin not in registry.list_plugins():
+        raise HTTPException(status_code=404, detail=f"Unknown plugin: {selected_plugin}")
+
+    payload = await file.read()
+    if not payload:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty")
+
+    effective_failure_dir = failure_dir or service_settings.default_failure_dir
+    effective_ocr_backend = ocr_backend or service_settings.default_ocr_backend
+    effective_vlm_backend = vlm_backend or service_settings.default_vlm_backend
+    effective_detector_backend = detector_backend or service_settings.default_detector_backend
+    effective_rectify_backend = rectify_backend or service_settings.default_rectify_backend
+    try:
+        DemoPipelineRunner.validate_backend_selection(
+            ocr_backend=effective_ocr_backend,
+            vlm_backend=effective_vlm_backend,
+            detector_backend=effective_detector_backend,
+            rectify_backend=effective_rectify_backend,
+        )
+        runner = DemoPipelineRunner(
+            ocr_backend=effective_ocr_backend,
+            vlm_backend=effective_vlm_backend,
+            detector_backend=effective_detector_backend,
+            rectify_backend=effective_rectify_backend,
+            failure_dir=effective_failure_dir,
+        )
+        result = runner.run(
+            plugin_name=selected_plugin,
+            image=payload,
+            fields=fields or {},
+            sample_id=os.path.splitext(file.filename or "in_memory_sample")[0],
+            source_name=file.filename,
+            source_kind="path",
+        )
+    except BackendSelectionError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except Exception as exc:  # pragma: no cover
+        raise HTTPException(status_code=500, detail=f"Inference failed [{exc.__class__.__name__}]: {exc}") from exc
+
+    return result, payload, selected_plugin
+
+
 def create_app(settings: ServiceSettings | None = None) -> FastAPI:
     service_settings = settings or ServiceSettings.from_env()
     app = FastAPI(title=service_settings.service_name, version=service_settings.service_version)
@@ -237,54 +298,92 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
         rectify_backend: str | None = Form(None),
         failure_dir: str | None = Form(None),
     ) -> JSONResponse:
-        selected_plugin = plugin_name or plugin
-        if not selected_plugin:
-            raise HTTPException(status_code=422, detail="plugin_name is required")
-        if selected_plugin not in registry.list_plugins():
-            raise HTTPException(status_code=404, detail=f"Unknown plugin: {selected_plugin}")
-
-        payload = await file.read()
-        if not payload:
-            raise HTTPException(status_code=400, detail="Uploaded file is empty")
-
-        effective_failure_dir = failure_dir or service_settings.default_failure_dir
-        effective_ocr_backend = ocr_backend or service_settings.default_ocr_backend
-        effective_vlm_backend = vlm_backend or service_settings.default_vlm_backend
-        effective_detector_backend = detector_backend or service_settings.default_detector_backend
-        effective_rectify_backend = rectify_backend or service_settings.default_rectify_backend
-        try:
-            DemoPipelineRunner.validate_backend_selection(
-                ocr_backend=effective_ocr_backend,
-                vlm_backend=effective_vlm_backend,
-                detector_backend=effective_detector_backend,
-                rectify_backend=effective_rectify_backend,
-            )
-            runner = DemoPipelineRunner(
-                ocr_backend=effective_ocr_backend,
-                vlm_backend=effective_vlm_backend,
-                detector_backend=effective_detector_backend,
-                rectify_backend=effective_rectify_backend,
-                failure_dir=effective_failure_dir,
-            )
-            result = runner.run(
-                plugin_name=selected_plugin,
-                image=payload,
-                sample_id=os.path.splitext(file.filename or "in_memory_sample")[0],
-                source_name=file.filename,
-                source_kind="path",
-            )
-        except BackendSelectionError as exc:
-            raise HTTPException(status_code=422, detail=str(exc)) from exc
-        except RuntimeError as exc:
-            raise HTTPException(status_code=422, detail=str(exc)) from exc
-        except Exception as exc:  # pragma: no cover
-            raise HTTPException(status_code=500, detail=f"Inference failed [{exc.__class__.__name__}]: {exc}") from exc
+        result, _, _ = await _run_inference_request(
+            plugin_name=plugin_name,
+            plugin=plugin,
+            file=file,
+            ocr_backend=ocr_backend,
+            vlm_backend=vlm_backend,
+            detector_backend=detector_backend,
+            rectify_backend=rectify_backend,
+            failure_dir=failure_dir,
+            service_settings=service_settings,
+        )
         return JSONResponse(
             content=jsonable_encoder(
                 {
                     "filename": file.filename,
                     "content_type": file.content_type,
                     "result": result,
+                }
+            )
+        )
+
+    @app.post("/verify-attachment")
+    async def verify_attachment_endpoint(
+        request: Request,
+        plugin_name: str | None = Form(None),
+        plugin: str | None = Form(None),
+        file: UploadFile = File(...),
+        ocr_backend: str | None = Form(None),
+        vlm_backend: str | None = Form(None),
+        detector_backend: str | None = Form(None),
+        rectify_backend: str | None = Form(None),
+        failure_dir: str | None = Form(None),
+        expected_attachment_type: str | None = Form(None),
+        applicant_name: str | None = Form(None),
+        leave_start_date: str | None = Form(None),
+        leave_end_date: str | None = Form(None),
+    ) -> JSONResponse:
+        if not expected_attachment_type:
+            raise HTTPException(status_code=422, detail="expected_attachment_type is required")
+
+        form = await request.form()
+        reserved_keys = {
+            "plugin_name",
+            "plugin",
+            "file",
+            "ocr_backend",
+            "vlm_backend",
+            "detector_backend",
+            "rectify_backend",
+            "failure_dir",
+            "expected_attachment_type",
+            "applicant_name",
+            "leave_start_date",
+            "leave_end_date",
+        }
+        provided_fields = {str(key): value for key, value in form.items() if key not in reserved_keys and not hasattr(value, "filename")}
+
+        result, _, _ = await _run_inference_request(
+            plugin_name=plugin_name,
+            plugin=plugin,
+            file=file,
+            ocr_backend=ocr_backend,
+            vlm_backend=vlm_backend,
+            detector_backend=detector_backend,
+            rectify_backend=rectify_backend,
+            failure_dir=failure_dir,
+            service_settings=service_settings,
+            fields=provided_fields,
+        )
+        verification = verify_attachment(
+            result["analysis"],
+            {
+                "expected_attachment_type": expected_attachment_type,
+                "applicant_name": applicant_name,
+                "leave_start_date": leave_start_date,
+                "leave_end_date": leave_end_date,
+            },
+        )
+        return JSONResponse(
+            content=jsonable_encoder(
+                {
+                    "filename": file.filename,
+                    "content_type": file.content_type,
+                    "result": result,
+                    "analysis": result["analysis"],
+                    "verification": verification,
                 }
             )
         )

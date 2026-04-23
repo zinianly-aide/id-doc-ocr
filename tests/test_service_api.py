@@ -152,6 +152,51 @@ def test_infer_accepts_plugin_alias_field():
     assert response.json()["result"]["plugin"] == "boarding_pass"
 
 
+
+def test_verify_attachment_success():
+    client = build_client()
+    response = client.post(
+        "/verify-attachment",
+        data={
+            "plugin_name": "diagnosis_proof",
+            "ocr_backend": "mock",
+            "vlm_backend": "mock",
+            "expected_attachment_type": "MEDICAL_CERTIFICATE",
+            "applicant_name": "张三",
+            "leave_start_date": "2026-04-01",
+            "leave_end_date": "2026-04-03",
+            "patient_name": "张三",
+            "rest_start_date": "2026-04-01",
+            "rest_end_date": "2026-04-03",
+            "issue_date": "2026-04-01",
+        },
+        files={"file": ("sample.jpg", b"fake-image-bytes", "image/jpeg")},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["verification"]["verify_status"] == "PASS"
+    assert payload["verification"]["matched_attachment_type"] == "MEDICAL_CERTIFICATE"
+    assert payload["analysis"]["classification_evidence"]["attachment_label"] == "MEDICAL_CERTIFICATE"
+    assert payload["result"]["analysis"] == payload["analysis"]
+
+
+
+def test_verify_attachment_rejects_missing_expected_type():
+    client = build_client()
+    response = client.post(
+        "/verify-attachment",
+        data={
+            "plugin_name": "diagnosis_proof",
+            "ocr_backend": "mock",
+            "vlm_backend": "mock",
+            "applicant_name": "张三",
+        },
+        files={"file": ("sample.jpg", b"fake-image-bytes", "image/jpeg")},
+    )
+    assert response.status_code == 422
+    assert response.json()["detail"] == "expected_attachment_type is required"
+
+
 def test_infer_uses_service_default_backends_when_request_omits_them():
     client = build_client(
         default_ocr_backend="mock",

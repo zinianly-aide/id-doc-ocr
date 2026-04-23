@@ -1,0 +1,36 @@
+{
+  "plugin": "marriage_certificate",
+  "sample": "de-identified marriage certificate text fixture",
+  "ocr_result": {
+    "lines": [
+      {"text": "中华人民共和国"},
+      {"text": "结婚证"},
+      {"text": "持证人：张三"},
+      {"text": "登记日期：2024年05月20日"},
+      {"text": "结婚证字号：J310000-2024-000321"},
+      {"text": "姓名：张三"},
+      {"text": "国籍：中国"},
+      {"text": "身份证件号：310101199001011234"},
+      {"text": "姓名：李四"},
+      {"text": "国籍：中国"},
+      {"text": "身份证件号：310101199202023456"},
+      {"text": "婚姻登记员：王敏"},
+      {"text": "登记机关：上海市民政局"}
+    ]
+  },
+  "expected_fields": {
+    "doc_type": "marriage_certificate",
+    "certificate_title": "结婚证",
+    "holder_name": "张三",
+    "registration_date": "2024-05-20",
+    "certificate_number": "J310000-2024-000321",
+    "person_a_name": "张三",
+    "person_a_nationality": "中国",
+    "person_a_id_number": "310101199001011234",
+    "person_b_name": "李四",
+    "person_b_nationality": "中国",
+    "person_b_id_number": "310101199202023456",
+    "registration_officer": "王敏",
+    "registration_authority": "上海市民政局"
+  }
+}

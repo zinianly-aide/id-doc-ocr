@@ -50,3 +50,25 @@ def test_runner_includes_medical_record_sick_note_check_in_review_evidence():
 
     assert result["merged_fields"]["sick_note_check"]["is_sick_note_like"] is True
     assert any(field["field_name"] == "sick_note_check" for field in result["evidence"]["fields"])
+
+
+
+def test_runner_emits_unified_analysis_contract():
+    runner = DemoPipelineRunner()
+    result = runner.run(
+        "diagnosis_proof",
+        b"demo",
+        fields={"hospital_name": "华山医院", "diagnosis": "上呼吸道感染", "issue_date": "2026-04-01"},
+    )
+
+    analysis = result["analysis"]
+
+    assert analysis["doc_type"] == "diagnosis_proof"
+    assert analysis["doc_type_confidence"] == result["detector"]["primary"]["confidence"]
+    assert analysis["classification_evidence"]["plugin"] == result["plugin"]
+    assert analysis["validation"] == result["validation"]
+    assert analysis["review"] == result["review"]
+    assert analysis["risk"]["review_action"] == result["decision"]["action"]
+    assert analysis["risk"]["score"] == result["decision"]["risk_score"]
+    assert analysis["extracted_fields"]
+    assert any(field["name"] == "hospital_name" for field in analysis["extracted_fields"])

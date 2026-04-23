@@ -58,3 +58,32 @@ class ValidationReport(BaseModel):
     accepted: bool
     score: float | None = None
     issues: list[ValidationIssue] = Field(default_factory=list)
+
+
+class ExtractedField(BaseModel):
+    name: str
+    value: Any = None
+    confidence: float | None = None
+    source: str
+    bbox: list[float] | None = None
+    evidence_text: str | None = None
+    matched: bool = False
+
+
+class AnalysisRisk(BaseModel):
+    score: float = 0.0
+    review_action: str
+    review_recommended: bool = False
+    quality_passed: bool = True
+    validation_accepted: bool = True
+
+
+class DocumentAnalysisResult(BaseModel):
+    doc_type: str
+    doc_type_confidence: float | None = None
+    classification_evidence: dict[str, Any] = Field(default_factory=dict)
+    extracted_fields: list[ExtractedField] = Field(default_factory=list)
+    validation: dict[str, Any] = Field(default_factory=dict)
+    review: dict[str, Any] = Field(default_factory=dict)
+    risk: AnalysisRisk
+    raw_artifacts: dict[str, Any] = Field(default_factory=dict)

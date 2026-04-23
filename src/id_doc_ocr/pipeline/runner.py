@@ -10,6 +10,7 @@ from id_doc_ocr import plugins as _plugins  # noqa: F401
 from id_doc_ocr.backbones.mock import MockGOTOCRAdapter, MockPaddleOCRAdapter, MockPaddleOCRVLAdapter
 from id_doc_ocr.backbones.paddleocr import PaddleOCRAdapter
 from id_doc_ocr.backbones.paddleocr_vl import PaddleOCRVLAdapter
+from id_doc_ocr.classification.leave_attachment import classify_leave_attachment
 from id_doc_ocr.core.registry import registry
 from id_doc_ocr.datasets.schema import FieldAnnotation, InternalAnnotation, RegionAnnotation
 from id_doc_ocr.detector.mock import MockDocumentDetectorAdapter
@@ -17,6 +18,7 @@ from id_doc_ocr.detector.pillow import PillowDocumentDetectorAdapter
 from id_doc_ocr.rectify.mock import MockRectifyPipeline
 from id_doc_ocr.rectify.pillow import PillowRectifyPipeline
 from id_doc_ocr.review import ReviewDecision, ReviewEvidence, ReviewEvidenceItem, ReviewReadyPayload, ReviewWarning
+from id_doc_ocr.schemas.types import AnalysisRisk, DocumentAnalysisResult, ExtractedField
 from id_doc_ocr.tools.failure_log import write_failure_case
 
 
@@ -31,6 +33,15 @@ class StageBackendSpec:
     availability_check: Callable[[], bool]
     unavailable_message: str | None = None
     display_name: str | None = None
+
+
+PLUGIN_ATTACHMENT_LABELS = {
+    "diagnosis_proof": "MEDICAL_CERTIFICATE",
+    "medical_record": "MEDICAL_CERTIFICATE",
+    "marriage_certificate": "MARRIAGE_CERTIFICATE",
+    "birth_certificate": "BIRTH_CERTIFICATE",
+    "train_ticket": "TRAIN_TICKET",
+}
 
 
 class DemoPipelineRunner:
@@ -240,6 +251,16 @@ class DemoPipelineRunner:
             "preview": None if isinstance(rectified_image, (bytes, bytearray)) else str(rectified_image),
         }
 
+        analysis = self.build_analysis_payload(
+            plugin_name=plugin.metadata.name,
+            detector_result=detector_result.model_dump(),
+            merged_fields=merged_fields,
+            review_ready=review_ready,
+            validation=validation,
+            ocr_backend=self.ocr_backend,
+            vlm_backend=vlm_backend_name,
+        )
+
         result = {
             "sample_id": resolved_sample_id,
             "plugin": plugin.metadata.name,
@@ -269,6 +290,7 @@ class DemoPipelineRunner:
             "decision": review_ready.decision.model_dump(),
             "evidence": review_ready.evidence.model_dump(),
             "review": review_ready.model_dump(),
+            "analysis": analysis,
         }
         if self.failure_dir and not result["validation"].get("accepted", False):
             write_failure_case(
@@ -293,6 +315,68 @@ class DemoPipelineRunner:
         if callable(parse_fn):
             return parse_fn(ocr_result)
         return {}
+
+    def build_analysis_payload(
+        self,
+        *,
+        plugin_name: str,
+        detector_result: dict[str, Any],
+        merged_fields: dict[str, Any],
+        review_ready: ReviewReadyPayload,
+        validation: dict[str, Any],
+        ocr_backend: str,
+        vlm_backend: str,
+    ) -> dict[str, Any]:
+        detector_primary = detector_result.get("primary") or {}
+        attachment_classification = classify_leave_attachment({"lines": review_ready.evidence.ocr_lines})
+        if attachment_classification["label"] == "UNKNOWN" and plugin_name in PLUGIN_ATTACHMENT_LABELS:
+            attachment_classification = {
+                "label": PLUGIN_ATTACHMENT_LABELS[plugin_name],
+                "confidence": max(float(attachment_classification.get("confidence") or 0.0), 0.51),
+                "matched_keywords": attachment_classification.get("matched_keywords", []),
+            }
+        extracted_fields = [
+            ExtractedField(
+                name=field.field_name,
+                value=field.value,
+                confidence=field.confidence,
+                source=field.source,
+                bbox=field.bbox,
+                evidence_text=field.text,
+                matched=field.matched,
+            )
+            for field in review_ready.evidence.fields
+        ]
+        analysis = DocumentAnalysisResult(
+            doc_type=plugin_name,
+            doc_type_confidence=detector_primary.get("confidence"),
+            classification_evidence={
+                "plugin": plugin_name,
+                "detector_doc_type": detector_primary.get("doc_type"),
+                "ocr_backend": ocr_backend,
+                "vlm_backend": vlm_backend,
+                "attachment_label": attachment_classification["label"],
+                "attachment_confidence": attachment_classification["confidence"],
+                "matched_keywords": attachment_classification["matched_keywords"],
+            },
+            extracted_fields=extracted_fields,
+            validation=validation,
+            review=review_ready.model_dump(),
+            risk=AnalysisRisk(
+                score=review_ready.decision.risk_score,
+                review_action=review_ready.decision.action,
+                review_recommended=review_ready.decision.review_recommended,
+                quality_passed=review_ready.decision.quality_passed,
+                validation_accepted=review_ready.decision.validation_accepted,
+            ),
+            raw_artifacts={
+                "detector": detector_result,
+                "ocr_line_count": len(review_ready.evidence.ocr_lines),
+                "warning_count": len(review_ready.warnings),
+                "merged_field_count": len(merged_fields),
+            },
+        )
+        return analysis.model_dump()
 
     def _resolve_sample_id(self, image: bytes | str | Path) -> str:
         return Path(str(image)).stem if isinstance(image, (str, Path)) else "in_memory_sample"

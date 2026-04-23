@@ -9,6 +9,7 @@ from id_doc_ocr.plugins.hukou_booklet import plugin as hukou_booklet_plugin
 from id_doc_ocr.plugins.birth_certificate import plugin as birth_certificate_plugin
 from id_doc_ocr.plugins.only_child_certificate import plugin as only_child_certificate_plugin
 from id_doc_ocr.plugins.custody_relationship_certificate import plugin as custody_relationship_certificate_plugin
+from id_doc_ocr.plugins.marriage_certificate import plugin as marriage_certificate_plugin
 
 for plugin in [
     china_id_plugin,
@@ -21,6 +22,7 @@ for plugin in [
     birth_certificate_plugin,
     only_child_certificate_plugin,
     custody_relationship_certificate_plugin,
+    marriage_certificate_plugin,
 ]:
     registry.register(plugin)
 

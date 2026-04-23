@@ -71,6 +71,7 @@ Current registered plugins include:
 - `custody_relationship_certificate`
 - `diagnosis_proof`
 - `hukou_booklet`
+- `marriage_certificate`
 - `medical_record`
 - `only_child_certificate`
 - `passport`
@@ -81,7 +82,61 @@ Current registered plugins include:
 - `quality.summary` and `quality.flags`
 - `decision.action` (`accept`, `review`, or `reject`)
 - `review.decision`, `review.warnings`, `review.evidence`
+- unified `analysis` payload with:
+  - `doc_type`
+  - `doc_type_confidence`
+  - `classification_evidence` (including rule-based leave-attachment label)
+  - `extracted_fields`
+  - `validation`, `review`, `risk`, `raw_artifacts`
 - persisted failure-case metadata when `failure_dir` is configured and validation is not accepted
+
+### `POST /verify-attachment`
+
+Multipart form upload endpoint for leave-attachment verification.
+
+Required fields:
+
+- `plugin_name` (or `plugin` alias)
+- `file`
+- `expected_attachment_type`
+
+Common request fields:
+
+- `applicant_name`
+- `leave_start_date`
+- `leave_end_date`
+- any additional extracted-field overrides, such as `patient_name`, `rest_start_date`, `rest_end_date`, `issue_date`
+
+Response shape:
+
+- `result` — the underlying pipeline result (same structure as `/infer`)
+- `analysis` — the unified analysis payload copied from `result.analysis`
+- `verification` — leave-business verification result with:
+  - `verify_status` (`PASS`, `REVIEW`, `REJECT`)
+  - `risk_score`, `risk_level`
+  - `matched_attachment_type`
+  - `rule_results`
+  - `warnings`
+  - `needs_manual_review`
+  - `summary_message`
+
+Example:
+
+```bash
+curl -X POST http://127.0.0.1:8000/verify-attachment \
+  -F plugin_name=diagnosis_proof \
+  -F ocr_backend=mock \
+  -F vlm_backend=mock \
+  -F expected_attachment_type=MEDICAL_CERTIFICATE \
+  -F applicant_name=张三 \
+  -F leave_start_date=2026-04-01 \
+  -F leave_end_date=2026-04-03 \
+  -F patient_name=张三 \
+  -F rest_start_date=2026-04-01 \
+  -F rest_end_date=2026-04-03 \
+  -F issue_date=2026-04-01 \
+  -F file=@examples/assets/paddle_sample_doc_00006737.jpg
+```
 
 ## Run locally
 

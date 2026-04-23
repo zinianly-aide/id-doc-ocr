@@ -1,0 +1,140 @@
+from __future__ import annotations
+
+from typing import Any
+
+
+NAME_FIELD_CANDIDATES = (
+    "patient_name",
+    "holder_name",
+    "person_a_name",
+    "person_b_name",
+    "child_name",
+)
+START_DATE_FIELD_CANDIDATES = ("rest_start_date", "registration_date", "issue_date", "date_of_birth")
+END_DATE_FIELD_CANDIDATES = ("rest_end_date", "registration_date", "issue_date", "date_of_birth")
+
+
+
+def _field_map(analysis: dict[str, Any]) -> dict[str, Any]:
+    return {field.get("name"): field.get("value") for field in analysis.get("extracted_fields", []) if isinstance(field, dict)}
+
+
+
+def _pick_first(fields: dict[str, Any], names: tuple[str, ...]) -> Any:
+    for name in names:
+        value = fields.get(name)
+        if value not in (None, "", []):
+            return value
+    return None
+
+
+
+def _build_rule(rule_code: str, passed: bool, severity: str, score_delta: int, message: str, evidence: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "rule_code": rule_code,
+        "passed": passed,
+        "severity": severity,
+        "score_delta": score_delta,
+        "message": message,
+        "evidence": evidence,
+    }
+
+
+
+def _risk_level(score: int) -> str:
+    if score >= 70:
+        return "HIGH"
+    if score >= 30:
+        return "MEDIUM"
+    return "LOW"
+
+
+
+def verify_attachment(analysis: dict[str, Any], request: dict[str, Any]) -> dict[str, Any]:
+    fields = _field_map(analysis)
+    classification = analysis.get("classification_evidence") or {}
+    predicted_type = classification.get("attachment_label") or "UNKNOWN"
+    expected_type = request.get("expected_attachment_type") or _pick_first(request, ("expected_attachment_type",))
+    applicant_name = request.get("applicant_name")
+    extracted_name = _pick_first(fields, NAME_FIELD_CANDIDATES)
+    leave_start_date = request.get("leave_start_date")
+    leave_end_date = request.get("leave_end_date")
+    extracted_start_date = _pick_first(fields, START_DATE_FIELD_CANDIDATES)
+    extracted_end_date = _pick_first(fields, END_DATE_FIELD_CANDIDATES)
+
+    rule_results: list[dict[str, Any]] = []
+
+    type_match = (not expected_type) or predicted_type == expected_type
+    rule_results.append(
+        _build_rule(
+            "attachment_type_match",
+            type_match,
+            "error" if not type_match else "info",
+            80 if not type_match else 0,
+            "attachment type matches expected leave attachment" if type_match else "attachment type does not match expected leave attachment",
+            {"expected_attachment_type": expected_type, "predicted_attachment_type": predicted_type},
+        )
+    )
+
+    name_match = (not applicant_name) or (extracted_name == applicant_name)
+    rule_results.append(
+        _build_rule(
+            "applicant_name_match",
+            name_match,
+            "warning" if not name_match else "info",
+            35 if not name_match else 0,
+            "applicant name matches extracted document identity" if name_match else "applicant name does not match extracted document identity",
+            {"applicant_name": applicant_name, "extracted_name": extracted_name},
+        )
+    )
+
+    date_match = True
+    if leave_start_date and extracted_start_date and leave_start_date != extracted_start_date:
+        date_match = False
+    if leave_end_date and extracted_end_date and leave_end_date != extracted_end_date:
+        date_match = False
+    rule_results.append(
+        _build_rule(
+            "leave_date_match",
+            date_match,
+            "warning" if not date_match else "info",
+            25 if not date_match else 0,
+            "leave dates align with extracted document dates" if date_match else "leave dates do not align with extracted document dates",
+            {
+                "leave_start_date": leave_start_date,
+                "leave_end_date": leave_end_date,
+                "extracted_start_date": extracted_start_date,
+                "extracted_end_date": extracted_end_date,
+            },
+        )
+    )
+
+    base_risk = int(round(float((analysis.get("risk") or {}).get("score") or 0)))
+    total_risk = min(100, base_risk + sum(rule["score_delta"] for rule in rule_results if not rule["passed"]))
+    has_error = any((not rule["passed"]) and rule["severity"] == "error" for rule in rule_results)
+    has_warning = any((not rule["passed"]) and rule["severity"] == "warning" for rule in rule_results)
+
+    if has_error:
+        verify_status = "REJECT"
+    elif has_warning:
+        verify_status = "REVIEW"
+    else:
+        verify_status = "PASS"
+
+    warnings = [rule["message"] for rule in rule_results if not rule["passed"]]
+    return {
+        "verify_status": verify_status,
+        "risk_score": total_risk,
+        "risk_level": _risk_level(total_risk),
+        "matched_attachment_type": predicted_type,
+        "extracted_fields": fields,
+        "rule_results": rule_results,
+        "warnings": warnings,
+        "evidence": {
+            "classification": classification,
+            "request": request,
+            "fields": fields,
+        },
+        "needs_manual_review": verify_status != "PASS",
+        "summary_message": f"{verify_status}: {predicted_type} vs expected {expected_type or 'UNSPECIFIED'}",
+    }
