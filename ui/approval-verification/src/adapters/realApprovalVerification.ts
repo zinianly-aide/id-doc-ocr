@@ -3,7 +3,12 @@ import type {
   MockScenario,
   RawVerifyResponse,
 } from "@/types";
-import { buildAnalyzeDemoFormData, buildVerifyDemoFormData } from "./demoRequestBuilders";
+import {
+  buildAnalyzeDemoFormData,
+  buildAnalyzeSelectedFileFormData,
+  buildVerifyDemoFormData,
+  buildVerifySelectedFileFormData,
+} from "./demoRequestBuilders";
 import { getScenarioRawPageModel } from "./mockApprovalVerification";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
@@ -19,8 +24,11 @@ async function requestJson<T>(path: string, init: RequestInit): Promise<T> {
 
 export async function analyzeDocumentReal(
   scenario: MockScenario = "pass",
+  selectedFile: File | null = null,
 ): Promise<RawAnalyzeResponse> {
-  const formData = await buildAnalyzeDemoFormData(scenario);
+  const formData = selectedFile
+    ? buildAnalyzeSelectedFileFormData(scenario, selectedFile)
+    : await buildAnalyzeDemoFormData(scenario);
   return requestJson<RawAnalyzeResponse>("/analyze-document", {
     method: "POST",
     body: formData,
@@ -29,8 +37,11 @@ export async function analyzeDocumentReal(
 
 export async function verifyAttachmentReal(
   scenario: MockScenario = "pass",
+  selectedFile: File | null = null,
 ): Promise<RawVerifyResponse> {
-  const formData = await buildVerifyDemoFormData(scenario);
+  const formData = selectedFile
+    ? buildVerifySelectedFileFormData(scenario, selectedFile)
+    : await buildVerifyDemoFormData(scenario);
   return requestJson<RawVerifyResponse>("/verify-attachment", {
     method: "POST",
     body: formData,

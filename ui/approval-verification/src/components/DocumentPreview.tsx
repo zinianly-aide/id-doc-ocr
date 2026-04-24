@@ -4,22 +4,39 @@ interface DocumentPreviewProps {
   header: RequestHeader;
   attachment?: AttachmentViewModel;
   analysis?: AnalysisViewModel | null;
+  previewUrl: string | null;
+  selectedFile: File | null;
+  mode: "mock" | "real";
 }
 
-export function DocumentPreview({ header, attachment, analysis }: DocumentPreviewProps) {
+export function DocumentPreview({ header, attachment, analysis, previewUrl, selectedFile, mode }: DocumentPreviewProps) {
+  const usingDemoSample = mode === "real" && !selectedFile;
+
   return (
     <section className="panel panel--preview">
       <div className="panel__header">
         <div>
           <h2>DocumentPreview</h2>
-          <p>本阶段只提供 mock 预览占位和请求头摘要。</p>
+          <p>本阶段增加本地图片预览壳；未选文件时仍可使用 demo sample。</p>
         </div>
       </div>
 
       <div className="preview-placeholder">
-        <div className="preview-placeholder__file">{attachment?.filename ?? "未选择附件"}</div>
-        <div className="preview-placeholder__meta">{attachment?.contentType ?? "-"}</div>
-        <div className="preview-placeholder__hint">后续接真实上传/图片预览时，优先替换这一块。</div>
+        {previewUrl ? (
+          <>
+            <img className="preview-image" src={previewUrl} alt={selectedFile?.name ?? "selected preview"} />
+            <div className="preview-placeholder__file">{selectedFile?.name ?? attachment?.filename ?? "未选择附件"}</div>
+            <div className="preview-placeholder__meta">{selectedFile?.type ?? attachment?.contentType ?? "-"}</div>
+          </>
+        ) : (
+          <>
+            <div className="preview-placeholder__file">{attachment?.filename ?? "未选择附件"}</div>
+            <div className="preview-placeholder__meta">{attachment?.contentType ?? "-"}</div>
+            <div className="preview-placeholder__hint">
+              {usingDemoSample ? "未选择文件，real adapter 将 fallback 到 demo sample。" : "后续接真实上传/图片预览时，优先替换这一块。"}
+            </div>
+          </>
+        )}
       </div>
 
       <div className="info-card">

@@ -121,8 +121,8 @@ export default function App() {
       <ApprovalVerificationPage
         initialViewModel={initialViewModel}
         mode={mode}
-        onAnalyze={() => analyzeDocument(mode, scenario)}
-        onVerify={() => verifyAttachment(mode, scenario)}
+        onAnalyze={(selectedFile) => analyzeDocument(mode, scenario, selectedFile)}
+        onVerify={(selectedFile) => verifyAttachment(mode, scenario, selectedFile)}
         buildNextViewModel={buildNextViewModel}
       />
     </div>

@@ -31,9 +31,10 @@ export async function getApprovalVerificationPageModel(
 export async function analyzeDocument(
   mode: DataSourceMode,
   scenario: MockScenario,
+  selectedFile: File | null = null,
 ): Promise<RawAnalyzeResponse> {
   if (mode === "real") {
-    return analyzeDocumentReal(scenario);
+    return analyzeDocumentReal(scenario, selectedFile);
   }
   return analyzeDocumentMock(scenario);
 }
@@ -41,9 +42,10 @@ export async function analyzeDocument(
 export async function verifyAttachment(
   mode: DataSourceMode,
   scenario: MockScenario,
+  selectedFile: File | null = null,
 ): Promise<RawVerifyResponse> {
   if (mode === "real") {
-    return verifyAttachmentReal(scenario);
+    return verifyAttachmentReal(scenario, selectedFile);
   }
   return verifyAttachmentMock(scenario);
 }

@@ -74,6 +74,10 @@ button { font: inherit; }
   gap: 10px;
 }
 
+.hidden-file-input {
+  display: none;
+}
+
 .scenario-button,
 .action-button,
 .attachment-card {
@@ -182,6 +186,37 @@ button { font: inherit; }
 .badge--reject, .badge--high { color: #ffb0b0; border-color: rgba(220,38,38,0.36); background: rgba(220,38,38,0.14); }
 .badge--info { color: #cbd5e1; }
 
+.upload-shell {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(15, 23, 42, 0.68);
+}
+
+.upload-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+}
+
+.upload-hint {
+  margin: 0;
+}
+
+.upload-meta {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.upload-error {
+  margin: 0;
+  color: #ffb0b0;
+  font-weight: 600;
+}
+
 .attachment-list {
   display: grid;
   gap: 12px;
@@ -263,6 +298,14 @@ button { font: inherit; }
 .preview-placeholder__meta,
 .preview-placeholder__hint {
   color: var(--muted);
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+  border-radius: 14px;
+  margin-bottom: 12px;
 }
 
 .info-card {

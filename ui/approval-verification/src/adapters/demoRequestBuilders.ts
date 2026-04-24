@@ -44,14 +44,17 @@ function getScenarioRequestConfig(scenario: MockScenario): DemoRequestConfig {
   };
 }
 
-async function buildBaseDemoFormData(config: DemoRequestConfig): Promise<FormData> {
+async function fetchDemoFile(config: DemoRequestConfig): Promise<File> {
   const response = await fetch(config.sampleFileUrl);
   if (!response.ok) {
     throw new Error(`failed to load sample file: ${config.sampleFileUrl}`);
   }
 
   const blob = await response.blob();
-  const file = new File([blob], config.sampleFilename, { type: config.sampleContentType });
+  return new File([blob], config.sampleFilename, { type: config.sampleContentType });
+}
+
+function buildBaseFormData(config: DemoRequestConfig, file: File): FormData {
   const formData = new FormData();
   formData.set("plugin_name", config.plugin_name);
   formData.set("file", file);
@@ -68,15 +71,7 @@ async function buildBaseDemoFormData(config: DemoRequestConfig): Promise<FormDat
   return formData;
 }
 
-export async function buildAnalyzeDemoFormData(scenario: MockScenario): Promise<FormData> {
-  const config = getScenarioRequestConfig(scenario);
-  return buildBaseDemoFormData(config);
-}
-
-export async function buildVerifyDemoFormData(scenario: MockScenario): Promise<FormData> {
-  const config = getScenarioRequestConfig(scenario);
-  const formData = await buildBaseDemoFormData(config);
-
+function appendVerifyFields(formData: FormData, config: DemoRequestConfig): FormData {
   if (config.expected_attachment_type) formData.set("expected_attachment_type", config.expected_attachment_type);
   if (config.expected_attachment_types) formData.set("expected_attachment_types", config.expected_attachment_types);
   if (config.leave_type) formData.set("leave_type", config.leave_type);
@@ -85,6 +80,33 @@ export async function buildVerifyDemoFormData(scenario: MockScenario): Promise<F
   if (config.related_person_relation) formData.set("related_person_relation", config.related_person_relation);
   if (config.leave_start_date) formData.set("leave_start_date", config.leave_start_date);
   if (config.leave_end_date) formData.set("leave_end_date", config.leave_end_date);
-
   return formData;
+}
+
+export async function buildAnalyzeDemoFormData(scenario: MockScenario): Promise<FormData> {
+  const config = getScenarioRequestConfig(scenario);
+  const demoFile = await fetchDemoFile(config);
+  return buildBaseFormData(config, demoFile);
+}
+
+export async function buildVerifyDemoFormData(scenario: MockScenario): Promise<FormData> {
+  const config = getScenarioRequestConfig(scenario);
+  const demoFile = await fetchDemoFile(config);
+  return appendVerifyFields(buildBaseFormData(config, demoFile), config);
+}
+
+export function buildAnalyzeSelectedFileFormData(
+  scenario: MockScenario,
+  selectedFile: File,
+): FormData {
+  const config = getScenarioRequestConfig(scenario);
+  return buildBaseFormData(config, selectedFile);
+}
+
+export function buildVerifySelectedFileFormData(
+  scenario: MockScenario,
+  selectedFile: File,
+): FormData {
+  const config = getScenarioRequestConfig(scenario);
+  return appendVerifyFields(buildBaseFormData(config, selectedFile), config);
 }
