@@ -1,12 +1,15 @@
-import type { VerificationViewModel } from "@/types";
+import type { AsyncStatus, VerificationViewModel } from "@/types";
 import { RiskBadge } from "./RiskBadge";
 import { RuleResultList } from "./RuleResultList";
 
 interface VerificationPanelProps {
   verification: VerificationViewModel | null;
+  verifyStatus: AsyncStatus;
+  errorMessage?: string | null;
+  inconsistencyMessage?: string | null;
 }
 
-export function VerificationPanel({ verification }: VerificationPanelProps) {
+export function VerificationPanel({ verification, verifyStatus, errorMessage, inconsistencyMessage }: VerificationPanelProps) {
   if (!verification) {
     return (
       <section className="panel">
@@ -26,6 +29,50 @@ export function VerificationPanel({ verification }: VerificationPanelProps) {
         <div className="status-stack">
           <RiskBadge label={verification.verifyStatus} tone={verification.verifyStatus} />
           <RiskBadge label={verification.riskLevel} tone={verification.riskLevel} />
+        </div>
+      </div>
+
+      {verifyStatus === "error" ? (
+        <div className="panel-alert panel-alert--error">
+          <strong>Verification request failed.</strong>
+          <p>{errorMessage ?? "verify 调用失败。"}</p>
+          <p>当前显示的是上一次结果。</p>
+        </div>
+      ) : null}
+
+      {inconsistencyMessage ? (
+        <div className="panel-alert panel-alert--warning">
+          <strong>Analysis / verification mismatch</strong>
+          <p>{inconsistencyMessage}</p>
+        </div>
+      ) : null}
+
+      <div className="info-card info-card--emphasis">
+        <div className="section-heading-row">
+          <h3>Verification decision</h3>
+          <div className="status-stack">
+            <RiskBadge label={verification.verifyStatus} tone={verification.verifyStatus} />
+            <RiskBadge label={verification.riskLevel} tone={verification.riskLevel} />
+          </div>
+        </div>
+        <p className="muted">这是业务规则核验结论；当与左侧分析建议不一致时，请以业务核验结论为主，并结合分析风险人工复核。</p>
+        <div className="summary-grid">
+          <div className="summary-tile">
+            <span className="summary-tile__label">verification.verify_status</span>
+            <strong>{verification.verifyStatus}</strong>
+          </div>
+          <div className="summary-tile">
+            <span className="summary-tile__label">verification.risk_level</span>
+            <strong>{verification.riskLevel}</strong>
+          </div>
+          <div className="summary-tile">
+            <span className="summary-tile__label">verification.risk_score</span>
+            <strong>{verification.riskScore}</strong>
+          </div>
+          <div className="summary-tile">
+            <span className="summary-tile__label">needs_manual_review</span>
+            <strong>{String(verification.needsManualReview)}</strong>
+          </div>
         </div>
       </div>
 

@@ -1,11 +1,19 @@
-import type { AnalysisViewModel } from "@/types";
+import type { AnalysisViewModel, AsyncStatus } from "@/types";
 import { RiskBadge } from "./RiskBadge";
 
 interface AnalysisPanelProps {
   analysis: AnalysisViewModel | null;
+  analyzeStatus: AsyncStatus;
+  errorMessage?: string | null;
 }
 
-export function AnalysisPanel({ analysis }: AnalysisPanelProps) {
+function getAnalysisRiskLevel(riskScore: number): "LOW" | "MEDIUM" | "HIGH" {
+  if (riskScore >= 0.75) return "HIGH";
+  if (riskScore >= 0.35) return "MEDIUM";
+  return "LOW";
+}
+
+export function AnalysisPanel({ analysis, analyzeStatus, errorMessage }: AnalysisPanelProps) {
   if (!analysis) {
     return (
       <section className="panel">
@@ -15,6 +23,8 @@ export function AnalysisPanel({ analysis }: AnalysisPanelProps) {
     );
   }
 
+  const riskLevel = getAnalysisRiskLevel(analysis.riskScore);
+
   return (
     <section className="panel">
       <div className="panel__header">
@@ -23,6 +33,43 @@ export function AnalysisPanel({ analysis }: AnalysisPanelProps) {
           <p>组件层只消费 ViewModel，不直接读取 raw analyze response。</p>
         </div>
         <RiskBadge label={analysis.riskAction} tone="INFO" />
+      </div>
+
+      {analyzeStatus === "error" ? (
+        <div className="panel-alert panel-alert--error">
+          <strong>Analysis request failed.</strong>
+          <p>{errorMessage ?? "analyze 调用失败。"}</p>
+          <p>当前显示的是上一次结果。</p>
+        </div>
+      ) : null}
+
+      <div className="info-card info-card--emphasis">
+        <div className="section-heading-row">
+          <h3>Analysis suggestion</h3>
+          <div className="status-stack">
+            <RiskBadge label={analysis.reviewAction} tone="INFO" />
+            <RiskBadge label={riskLevel} tone={riskLevel} />
+          </div>
+        </div>
+        <p className="muted">这是识别 / 质量 / 解析层建议，不等同于右侧业务规则核验结论。</p>
+        <div className="summary-grid">
+          <div className="summary-tile">
+            <span className="summary-tile__label">analysis.review.action</span>
+            <strong>{analysis.reviewAction}</strong>
+          </div>
+          <div className="summary-tile">
+            <span className="summary-tile__label">analysis.risk.level</span>
+            <strong>{riskLevel}</strong>
+          </div>
+          <div className="summary-tile">
+            <span className="summary-tile__label">analysis.risk.score</span>
+            <strong>{analysis.riskScore}</strong>
+          </div>
+          <div className="summary-tile">
+            <span className="summary-tile__label">review_recommended</span>
+            <strong>{String(analysis.reviewRecommended)}</strong>
+          </div>
+        </div>
       </div>
 
       <div className="summary-grid">

@@ -5,6 +5,7 @@ import type {
   DataSourceMode,
   RawAnalyzeResponse,
   RawVerifyResponse,
+  VerifyStatus,
 } from "@/types";
 import { AttachmentList } from "./AttachmentList";
 import { DocumentPreview } from "./DocumentPreview";
@@ -27,6 +28,22 @@ function getImageSelectionError(file: File): string | null {
     return "当前仅支持 image/*，暂不支持 PDF 或其他文件类型。";
   }
   return null;
+}
+
+function normalizeAnalysisAction(action: string): "PASS" | "REVIEW" | "REJECT" {
+  const normalized = action.trim().toUpperCase();
+  if (normalized === "AUTO_ACCEPT" || normalized === "PASS") return "PASS";
+  if (normalized === "REJECT") return "REJECT";
+  return "REVIEW";
+}
+
+function buildInconsistencyMessage(analysisAction: string, verifyStatus: VerifyStatus): string | null {
+  const normalizedAnalysisAction = normalizeAnalysisAction(analysisAction);
+  if (normalizedAnalysisAction === verifyStatus) {
+    return null;
+  }
+
+  return `识别分析建议 (${analysisAction}) 与业务核验结论 (${verifyStatus}) 不一致，请以业务核验结论为主，并人工复核分析风险。`;
 }
 
 export function ApprovalVerificationPage({ initialViewModel, mode, onAnalyze, onVerify, buildNextViewModel }: ApprovalVerificationPageProps) {
@@ -67,6 +84,14 @@ export function ApprovalVerificationPage({ initialViewModel, mode, onAnalyze, on
     () => viewModel.attachments.find((item) => item.id === selectedAttachmentId) ?? viewModel.attachments[0],
     [viewModel.attachments, selectedAttachmentId],
   );
+
+  const inconsistencyMessage = useMemo(
+    () => buildInconsistencyMessage(viewModel.analysis.reviewAction, viewModel.verification.verifyStatus),
+    [viewModel.analysis.reviewAction, viewModel.verification.verifyStatus],
+  );
+
+  const analysisErrorMessage = analyzeStatus === "error" ? error : null;
+  const verificationErrorMessage = verifyStatus === "error" ? error : null;
 
   const actionLabel = mode === "real" ? "API demo" : "mock";
 
@@ -183,11 +208,20 @@ export function ApprovalVerificationPage({ initialViewModel, mode, onAnalyze, on
             selectedFile={selectedFile}
             mode={mode}
           />
-          <AnalysisPanel analysis={viewModel.analysis} />
+          <AnalysisPanel
+            analysis={viewModel.analysis}
+            analyzeStatus={analyzeStatus}
+            errorMessage={analysisErrorMessage}
+          />
         </div>
 
         <div className="column column--right">
-          <VerificationPanel verification={viewModel.verification} />
+          <VerificationPanel
+            verification={viewModel.verification}
+            verifyStatus={verifyStatus}
+            errorMessage={verificationErrorMessage}
+            inconsistencyMessage={inconsistencyMessage}
+          />
         </div>
       </div>
     </div>
