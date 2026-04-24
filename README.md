@@ -66,6 +66,9 @@ What the service now exposes beyond a bare liveness probe:
 Docs:
 
 - API quickstart: [docs/api.md](docs/api.md)
+- frontend API contract: [docs/frontend-api-contract.md](docs/frontend-api-contract.md)
+- frontend binding guide: [docs/frontend-binding-guide.md](docs/frontend-binding-guide.md)
+- React page skeleton: [docs/approval-verification-react-skeleton.md](docs/approval-verification-react-skeleton.md)
 - plugin maturity inventory: [docs/plugin-maturity.md](docs/plugin-maturity.md)
 - deployment / ops runbook: [docs/deployment.md](docs/deployment.md)
 
