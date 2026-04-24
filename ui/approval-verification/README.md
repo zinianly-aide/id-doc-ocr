@@ -109,6 +109,8 @@ Meaning:
 - adapter layer reads raw backend response
 - builder layer maps raw response into a stable page ViewModel
 - components consume only ViewModel fields
+- `/verify-attachment` returns the latest `analysis` for that verification run
+- when the frontend receives `rawVerifyResponse`, it should refresh both the analysis panel and verification panel from that same response
 - when real upload is added later, only the request builder should need to change first
 
 ## Build

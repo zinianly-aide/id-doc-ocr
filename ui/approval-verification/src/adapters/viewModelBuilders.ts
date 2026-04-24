@@ -29,7 +29,14 @@ function humanizeKey(key: string): string {
     .replace(/\w/g, (char) => char.toUpperCase());
 }
 
-function buildAttachmentViewModel(attachment: RawAttachmentItem): AttachmentViewModel {
+function buildAttachmentViewModel(
+  attachment: RawAttachmentItem,
+  overrides?: {
+    docType?: string;
+    attachmentLabel?: string;
+    verifyStatus?: AttachmentViewModel["verifyStatus"];
+  },
+): AttachmentViewModel {
   return {
     id: attachment.id,
     filename: attachment.filename,
@@ -37,9 +44,9 @@ function buildAttachmentViewModel(attachment: RawAttachmentItem): AttachmentView
     uploadTime: attachment.uploadTime,
     sizeLabel: attachment.sizeLabel,
     status: attachment.status,
-    docType: attachment.docType ?? null,
-    attachmentLabel: attachment.attachmentLabel ?? null,
-    verifyStatus: attachment.verifyStatus ?? null,
+    docType: overrides?.docType ?? attachment.docType ?? null,
+    attachmentLabel: overrides?.attachmentLabel ?? attachment.attachmentLabel ?? null,
+    verifyStatus: overrides?.verifyStatus ?? attachment.verifyStatus ?? null,
   };
 }
 
@@ -115,12 +122,24 @@ export function buildApprovalPageModel(input: {
   rawAnalyzeResponse?: RawAnalyzeResponse;
   rawVerifyResponse?: RawVerifyResponse;
 }): ApprovalVerificationViewModel {
-  const analyzeResponse = input.rawAnalyzeResponse ?? input.rawPageModel.analyzeResponse;
+  const analyzeResponse = input.rawVerifyResponse ?? input.rawAnalyzeResponse ?? input.rawPageModel.analyzeResponse;
   const verifyResponse = input.rawVerifyResponse ?? input.rawPageModel.verifyResponse;
+
+  const latestDocType = analyzeResponse.analysis.doc_type;
+  const latestAttachmentLabel = analyzeResponse.analysis.classification_evidence.attachment_label;
+  const latestVerifyStatus = verifyResponse.verification.verify_status;
 
   return {
     requestHeader: input.rawPageModel.requestHeader,
-    attachments: input.rawPageModel.attachments.map(buildAttachmentViewModel),
+    attachments: input.rawPageModel.attachments.map((attachment) =>
+      attachment.id === input.rawPageModel.selectedAttachmentId
+        ? buildAttachmentViewModel(attachment, {
+            docType: latestDocType,
+            attachmentLabel: latestAttachmentLabel,
+            verifyStatus: latestVerifyStatus,
+          })
+        : buildAttachmentViewModel(attachment),
+    ),
     selectedAttachmentId: input.rawPageModel.selectedAttachmentId,
     analysis: buildAnalysisViewModel(analyzeResponse),
     verification: buildVerificationViewModel(verifyResponse),

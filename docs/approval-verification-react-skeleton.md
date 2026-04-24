@@ -169,6 +169,13 @@ to:
 - analysis panel model for the middle column
 - verification panel model for the right column
 
+Current precedence rules:
+- if `rawVerifyResponse` exists, use `rawVerifyResponse.analysis` as the latest analysis source
+- otherwise use `rawAnalyzeResponse`
+- otherwise fall back to `rawPageModel.analyzeResponse`
+- verification still prefers `rawVerifyResponse.verification`, then falls back to `rawPageModel.verifyResponse`
+- the selected attachment card is lightly refreshed from the latest analysis classification and latest verification status
+
 ### Request builders
 The real adapter no longer assembles FormData inside page components.
 
