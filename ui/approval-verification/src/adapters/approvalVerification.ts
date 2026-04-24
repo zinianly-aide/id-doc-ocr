@@ -1,9 +1,10 @@
 import type {
-  AnalysisResponse,
-  ApprovalVerificationMockPage,
+  ApprovalVerificationViewModel,
   DataSourceMode,
   MockScenario,
-  VerificationResponse,
+  RawAnalyzeResponse,
+  RawApprovalVerificationPageModel,
+  RawVerifyResponse,
 } from "@/types";
 import {
   analyzeDocumentMock,
@@ -15,11 +16,12 @@ import {
   getApprovalVerificationRealShell,
   verifyAttachmentReal,
 } from "./realApprovalVerification";
+import { buildApprovalPageModel } from "./viewModelBuilders";
 
 export async function getApprovalVerificationPageModel(
   mode: DataSourceMode,
   scenario: MockScenario,
-): Promise<ApprovalVerificationMockPage> {
+): Promise<RawApprovalVerificationPageModel> {
   if (mode === "real") {
     return getApprovalVerificationRealShell(scenario);
   }
@@ -29,7 +31,7 @@ export async function getApprovalVerificationPageModel(
 export async function analyzeDocument(
   mode: DataSourceMode,
   scenario: MockScenario,
-): Promise<AnalysisResponse> {
+): Promise<RawAnalyzeResponse> {
   if (mode === "real") {
     return analyzeDocumentReal(scenario);
   }
@@ -39,9 +41,17 @@ export async function analyzeDocument(
 export async function verifyAttachment(
   mode: DataSourceMode,
   scenario: MockScenario,
-): Promise<VerificationResponse> {
+): Promise<RawVerifyResponse> {
   if (mode === "real") {
     return verifyAttachmentReal(scenario);
   }
   return verifyAttachmentMock(scenario);
+}
+
+export function buildPageViewModel(input: {
+  rawPageModel: RawApprovalVerificationPageModel;
+  rawAnalyzeResponse?: RawAnalyzeResponse;
+  rawVerifyResponse?: RawVerifyResponse;
+}): ApprovalVerificationViewModel {
+  return buildApprovalPageModel(input);
 }

@@ -1,9 +1,9 @@
-import type { VerificationResponse } from "@/types";
+import type { VerificationViewModel } from "@/types";
 import { RiskBadge } from "./RiskBadge";
 import { RuleResultList } from "./RuleResultList";
 
 interface VerificationPanelProps {
-  verification: VerificationResponse["verification"] | null;
+  verification: VerificationViewModel | null;
 }
 
 export function VerificationPanel({ verification }: VerificationPanelProps) {
@@ -21,46 +21,46 @@ export function VerificationPanel({ verification }: VerificationPanelProps) {
       <div className="panel__header">
         <div>
           <h2>VerificationPanel</h2>
-          <p>优先展示 summary_message、risk_level、rule_results。</p>
+          <p>组件层只消费 ViewModel，不直接读取 raw verify response。</p>
         </div>
         <div className="status-stack">
-          <RiskBadge label={verification.verify_status} tone={verification.verify_status} />
-          <RiskBadge label={verification.risk_level} tone={verification.risk_level} />
+          <RiskBadge label={verification.verifyStatus} tone={verification.verifyStatus} />
+          <RiskBadge label={verification.riskLevel} tone={verification.riskLevel} />
         </div>
       </div>
 
       <div className="summary-grid">
         <div className="summary-tile">
           <span className="summary-tile__label">summary_message</span>
-          <strong>{verification.summary_message}</strong>
+          <strong>{verification.summaryMessage}</strong>
         </div>
         <div className="summary-tile">
           <span className="summary-tile__label">matched_attachment_type</span>
-          <strong>{verification.matched_attachment_type}</strong>
+          <strong>{verification.matchedAttachmentType}</strong>
         </div>
         <div className="summary-tile">
           <span className="summary-tile__label">risk_score</span>
-          <strong>{verification.risk_score}</strong>
+          <strong>{verification.riskScore}</strong>
         </div>
         <div className="summary-tile">
           <span className="summary-tile__label">needs_manual_review</span>
-          <strong>{String(verification.needs_manual_review)}</strong>
+          <strong>{String(verification.needsManualReview)}</strong>
         </div>
       </div>
 
       <div className="info-card">
         <h3>RuleResultList</h3>
-        <RuleResultList ruleResults={verification.rule_results} />
+        <RuleResultList ruleResults={verification.ruleResults} />
       </div>
 
       <div className="split-grid">
         <div className="info-card">
           <h3>request evidence</h3>
           <dl className="detail-kv">
-            {Object.entries(verification.evidence.request).map(([key, value]) => (
-              <div key={key}>
-                <dt>{key}</dt>
-                <dd>{Array.isArray(value) ? value.join(", ") : String(value)}</dd>
+            {verification.requestEvidence.map((entry) => (
+              <div key={entry.key}>
+                <dt>{entry.label}</dt>
+                <dd>{entry.value}</dd>
               </div>
             ))}
           </dl>

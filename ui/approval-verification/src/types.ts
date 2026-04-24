@@ -13,7 +13,7 @@ export interface RequestHeader {
   approvalStatus: string;
 }
 
-export interface AttachmentItem {
+export interface RawAttachmentItem {
   id: string;
   filename: string;
   contentType: string;
@@ -25,7 +25,7 @@ export interface AttachmentItem {
   verifyStatus?: VerifyStatus;
 }
 
-export interface ExtractedField {
+export interface RawExtractedField {
   name: string;
   value: unknown;
   confidence: number | null;
@@ -35,14 +35,14 @@ export interface ExtractedField {
   matched: boolean;
 }
 
-export interface ValidationIssue {
+export interface RawValidationIssue {
   code: string;
   severity: string;
   message: string;
   field_name?: string | null;
 }
 
-export interface ReviewWarning {
+export interface RawReviewWarning {
   code: string;
   severity: string;
   message: string;
@@ -50,7 +50,7 @@ export interface ReviewWarning {
   field_name?: string | null;
 }
 
-export interface AnalysisResponse {
+export interface RawAnalyzeResponse {
   filename: string;
   content_type: string;
   result: Record<string, unknown>;
@@ -66,11 +66,11 @@ export interface AnalysisResponse {
       attachment_confidence: number | null;
       matched_keywords: string[];
     };
-    extracted_fields: ExtractedField[];
+    extracted_fields: RawExtractedField[];
     validation: {
       accepted: boolean;
       score: number;
-      issues: ValidationIssue[];
+      issues: RawValidationIssue[];
     };
     review: {
       decision: {
@@ -81,7 +81,7 @@ export interface AnalysisResponse {
         validation_accepted: boolean;
         risk_score: number;
       };
-      warnings: ReviewWarning[];
+      warnings: RawReviewWarning[];
       evidence: Record<string, unknown>;
     };
     risk: {
@@ -95,7 +95,7 @@ export interface AnalysisResponse {
   };
 }
 
-export interface RuleResult {
+export interface RawRuleResult {
   rule_code: string;
   passed: boolean;
   severity: "info" | "warning" | "error";
@@ -104,14 +104,14 @@ export interface RuleResult {
   evidence: Record<string, unknown>;
 }
 
-export interface VerificationResponse extends AnalysisResponse {
+export interface RawVerifyResponse extends RawAnalyzeResponse {
   verification: {
     verify_status: VerifyStatus;
     risk_score: number;
     risk_level: RiskLevel;
     matched_attachment_type: string;
     extracted_fields: Record<string, unknown>;
-    rule_results: RuleResult[];
+    rule_results: RawRuleResult[];
     warnings: string[];
     evidence: {
       request: Record<string, unknown>;
@@ -123,12 +123,12 @@ export interface VerificationResponse extends AnalysisResponse {
   };
 }
 
-export interface ApprovalVerificationMockPage {
+export interface RawApprovalVerificationPageModel {
   requestHeader: RequestHeader;
-  attachments: AttachmentItem[];
+  attachments: RawAttachmentItem[];
   selectedAttachmentId: string;
-  analyzeResponse: AnalysisResponse;
-  verifyResponse: VerificationResponse;
+  analyzeResponse: RawAnalyzeResponse;
+  verifyResponse: RawVerifyResponse;
 }
 
 export interface DemoRequestConfig {
@@ -149,4 +149,91 @@ export interface DemoRequestConfig {
   sampleFileUrl: string;
   sampleFilename: string;
   sampleContentType: string;
+}
+
+export interface AttachmentViewModel {
+  id: string;
+  filename: string;
+  contentType: string;
+  uploadTime: string;
+  sizeLabel: string;
+  status: string;
+  docType: string | null;
+  attachmentLabel: string | null;
+  verifyStatus: VerifyStatus | null;
+}
+
+export interface ExtractedFieldViewModel {
+  name: string;
+  value: unknown;
+  displayValue: string;
+  confidence: number | null;
+  source: string | null;
+  matched: boolean;
+}
+
+export interface ValidationIssueViewModel {
+  code: string;
+  severity: string;
+  message: string;
+  fieldName: string | null;
+}
+
+export interface ReviewWarningViewModel {
+  code: string;
+  severity: string;
+  message: string;
+  stage: string | null;
+  fieldName: string | null;
+}
+
+export interface AnalysisViewModel {
+  docType: string;
+  docTypeConfidence: number | null;
+  attachmentLabel: string;
+  attachmentConfidence: number | null;
+  matchedKeywords: string[];
+  extractedFields: ExtractedFieldViewModel[];
+  validationAccepted: boolean;
+  validationScore: number;
+  validationIssues: ValidationIssueViewModel[];
+  reviewAction: string;
+  reviewWarnings: ReviewWarningViewModel[];
+  reviewRecommended: boolean;
+  riskScore: number;
+  riskAction: string;
+}
+
+export interface RuleResultViewModel {
+  ruleCode: string;
+  passed: boolean;
+  severity: "info" | "warning" | "error";
+  scoreDelta: number;
+  message: string;
+}
+
+export interface EvidenceEntryViewModel {
+  key: string;
+  label: string;
+  value: string;
+}
+
+export interface VerificationViewModel {
+  verifyStatus: VerifyStatus;
+  riskScore: number;
+  riskLevel: RiskLevel;
+  matchedAttachmentType: string;
+  summaryMessage: string;
+  needsManualReview: boolean;
+  warnings: string[];
+  ruleResults: RuleResultViewModel[];
+  requestEvidence: EvidenceEntryViewModel[];
+}
+
+export interface ApprovalVerificationViewModel {
+  requestHeader: RequestHeader;
+  attachments: AttachmentViewModel[];
+  selectedAttachmentId: string;
+  analysis: AnalysisViewModel;
+  verification: VerificationViewModel;
 }

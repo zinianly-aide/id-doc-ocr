@@ -1,20 +1,24 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ApprovalVerificationPage } from "./components/ApprovalVerificationPage";
 import {
   analyzeDocument,
+  buildPageViewModel,
   getApprovalVerificationPageModel,
   verifyAttachment,
 } from "./adapters/approvalVerification";
 import type {
-  ApprovalVerificationMockPage,
+  ApprovalVerificationViewModel,
   DataSourceMode,
   MockScenario,
+  RawApprovalVerificationPageModel,
+  RawAnalyzeResponse,
+  RawVerifyResponse,
 } from "./types";
 
 export default function App() {
   const [scenario, setScenario] = useState<MockScenario>("pass");
   const [mode, setMode] = useState<DataSourceMode>("mock");
-  const [pageModel, setPageModel] = useState<ApprovalVerificationMockPage | null>(null);
+  const [rawPageModel, setRawPageModel] = useState<RawApprovalVerificationPageModel | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,13 +29,13 @@ export default function App() {
     getApprovalVerificationPageModel(mode, scenario)
       .then((payload) => {
         if (active) {
-          setPageModel(payload);
+          setRawPageModel(payload);
           setLoading(false);
         }
       })
       .catch((caughtError) => {
         if (active) {
-          setError(caughtError instanceof Error ? caughtError.message : "failed to load page model");
+          setError(caughtError instanceof Error ? caughtError.message : "failed to load raw page model");
           setLoading(false);
         }
       });
@@ -41,11 +45,28 @@ export default function App() {
     };
   }, [mode, scenario]);
 
+  const initialViewModel: ApprovalVerificationViewModel | null = useMemo(() => {
+    if (!rawPageModel) {
+      return null;
+    }
+    return buildPageViewModel({ rawPageModel });
+  }, [rawPageModel]);
+
+  const buildNextViewModel = (input: {
+    rawAnalyzeResponse?: RawAnalyzeResponse;
+    rawVerifyResponse?: RawVerifyResponse;
+  }): ApprovalVerificationViewModel => {
+    if (!rawPageModel) {
+      throw new Error("raw page model is missing");
+    }
+    return buildPageViewModel({ rawPageModel, ...input });
+  };
+
   if (loading) {
     return <div className="app-loading">Loading page...</div>;
   }
 
-  if (error || !pageModel) {
+  if (error || !rawPageModel || !initialViewModel) {
     return <div className="app-error">{error ?? "missing page model"}</div>;
   }
 
@@ -98,10 +119,11 @@ export default function App() {
       </header>
 
       <ApprovalVerificationPage
-        pageModel={pageModel}
+        initialViewModel={initialViewModel}
         mode={mode}
         onAnalyze={() => analyzeDocument(mode, scenario)}
         onVerify={() => verifyAttachment(mode, scenario)}
+        buildNextViewModel={buildNextViewModel}
       />
     </div>
   );

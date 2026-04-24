@@ -59,6 +59,8 @@ In `real adapter mode`, the same scenario also controls which demo request paylo
 Current adapter files:
 - `src/adapters/mockApprovalVerification.ts`
 - `src/adapters/realApprovalVerification.ts`
+- `src/adapters/demoRequestBuilders.ts`
+- `src/adapters/viewModelBuilders.ts`
 - `src/adapters/approvalVerification.ts`
 
 ## Real adapter mode requirements
@@ -82,6 +84,32 @@ Notes:
 - Vite dev server proxies `/api/*` to `http://127.0.0.1:8000`
 - `real adapter mode` uses a built-in sample image under `public/samples/`
 - this is only for adapter integration; it is not real upload UI yet
+
+## Raw response vs ViewModel boundary
+
+The page now separates raw API shapes from UI-facing shapes.
+
+Raw types:
+- `RawAnalyzeResponse`
+- `RawVerifyResponse`
+- `RawApprovalVerificationPageModel`
+
+UI ViewModel types:
+- `ApprovalVerificationViewModel`
+- `AttachmentViewModel`
+- `AnalysisViewModel`
+- `VerificationViewModel`
+
+Builder functions:
+- `buildApprovalPageModel()`
+- `buildAnalyzeDemoFormData()`
+- `buildVerifyDemoFormData()`
+
+Meaning:
+- adapter layer reads raw backend response
+- builder layer maps raw response into a stable page ViewModel
+- components consume only ViewModel fields
+- when real upload is added later, only the request builder should need to change first
 
 ## Build
 

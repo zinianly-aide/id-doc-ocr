@@ -1,9 +1,9 @@
-import type { AnalysisResponse, AttachmentItem, RequestHeader } from "@/types";
+import type { AnalysisViewModel, AttachmentViewModel, RequestHeader } from "@/types";
 
 interface DocumentPreviewProps {
   header: RequestHeader;
-  attachment?: AttachmentItem;
-  analysis?: AnalysisResponse["analysis"] | null;
+  attachment?: AttachmentViewModel;
+  analysis?: AnalysisViewModel | null;
 }
 
 export function DocumentPreview({ header, attachment, analysis }: DocumentPreviewProps) {
@@ -37,9 +37,9 @@ export function DocumentPreview({ header, attachment, analysis }: DocumentPrevie
       <div className="info-card">
         <h3>可解释信息优先级</h3>
         <ul>
-          <li>doc_type: {analysis?.doc_type ?? "-"}</li>
-          <li>attachment_label: {analysis?.classification_evidence.attachment_label ?? "-"}</li>
-          <li>extracted_fields: {analysis?.extracted_fields.length ?? 0}</li>
+          <li>doc_type: {analysis?.docType ?? "-"}</li>
+          <li>attachment_label: {analysis?.attachmentLabel ?? "-"}</li>
+          <li>extracted_fields: {analysis?.extractedFields.length ?? 0}</li>
         </ul>
       </div>
     </section>

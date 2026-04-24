@@ -1,7 +1,7 @@
-import type { RuleResult } from "@/types";
+import type { RuleResultViewModel } from "@/types";
 
 interface RuleResultListProps {
-  ruleResults: RuleResult[];
+  ruleResults: RuleResultViewModel[];
 }
 
 export function RuleResultList({ ruleResults }: RuleResultListProps) {
@@ -9,16 +9,16 @@ export function RuleResultList({ ruleResults }: RuleResultListProps) {
     <div className="rule-list">
       {ruleResults.map((rule) => (
         <article
-          key={rule.rule_code}
+          key={rule.ruleCode}
           className={`rule-card rule-card--${rule.passed ? "passed" : rule.severity}`}
         >
           <div className="rule-card__top">
-            <strong>{rule.rule_code}</strong>
+            <strong>{rule.ruleCode}</strong>
             <span>{rule.passed ? "passed" : "failed"}</span>
           </div>
           <div className="rule-card__meta">
             <span>severity: {rule.severity}</span>
-            <span>score_delta: {rule.score_delta}</span>
+            <span>score_delta: {rule.scoreDelta}</span>
           </div>
           <p>{rule.message}</p>
         </article>

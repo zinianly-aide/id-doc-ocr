@@ -1,12 +1,12 @@
-import type { AttachmentItem } from "@/types";
+import type { AsyncStatus, AttachmentViewModel, VerifyStatus } from "@/types";
 import { RiskBadge } from "./RiskBadge";
 
 interface AttachmentListProps {
-  attachments: AttachmentItem[];
+  attachments: AttachmentViewModel[];
   selectedAttachmentId: string;
   onSelect: (attachmentId: string) => void;
-  analyzeStatus: string;
-  verifyStatus?: string;
+  analyzeStatus: AsyncStatus;
+  verifyStatus: VerifyStatus | null;
 }
 
 export function AttachmentList({
@@ -25,7 +25,7 @@ export function AttachmentList({
         </div>
         <div className="status-stack">
           <RiskBadge label={`analyze: ${analyzeStatus}`} tone="INFO" />
-          {verifyStatus ? <RiskBadge label={`verify: ${verifyStatus}`} tone={verifyStatus as "PASS" | "REVIEW" | "REJECT"} /> : null}
+          {verifyStatus ? <RiskBadge label={`verify: ${verifyStatus}`} tone={verifyStatus} /> : null}
         </div>
       </div>
 

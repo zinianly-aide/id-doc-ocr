@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import type {
-  AnalysisResponse,
-  ApprovalVerificationMockPage,
+  ApprovalVerificationViewModel,
   AsyncStatus,
   DataSourceMode,
-  VerificationResponse,
+  RawAnalyzeResponse,
+  RawVerifyResponse,
 } from "@/types";
 import { AttachmentList } from "./AttachmentList";
 import { DocumentPreview } from "./DocumentPreview";
@@ -12,32 +12,34 @@ import { AnalysisPanel } from "./AnalysisPanel";
 import { VerificationPanel } from "./VerificationPanel";
 
 interface ApprovalVerificationPageProps {
-  pageModel: ApprovalVerificationMockPage;
+  initialViewModel: ApprovalVerificationViewModel;
   mode: DataSourceMode;
-  onAnalyze: () => Promise<AnalysisResponse>;
-  onVerify: () => Promise<VerificationResponse>;
+  onAnalyze: () => Promise<RawAnalyzeResponse>;
+  onVerify: () => Promise<RawVerifyResponse>;
+  buildNextViewModel: (input: {
+    rawAnalyzeResponse?: RawAnalyzeResponse;
+    rawVerifyResponse?: RawVerifyResponse;
+  }) => ApprovalVerificationViewModel;
 }
 
-export function ApprovalVerificationPage({ pageModel, mode, onAnalyze, onVerify }: ApprovalVerificationPageProps) {
-  const [selectedAttachmentId, setSelectedAttachmentId] = useState(pageModel.selectedAttachmentId);
+export function ApprovalVerificationPage({ initialViewModel, mode, onAnalyze, onVerify, buildNextViewModel }: ApprovalVerificationPageProps) {
+  const [selectedAttachmentId, setSelectedAttachmentId] = useState(initialViewModel.selectedAttachmentId);
   const [analyzeStatus, setAnalyzeStatus] = useState<AsyncStatus>("success");
   const [verifyStatus, setVerifyStatus] = useState<AsyncStatus>("success");
-  const [currentAnalysis, setCurrentAnalysis] = useState<AnalysisResponse["analysis"] | null>(pageModel.analyzeResponse.analysis);
-  const [currentVerification, setCurrentVerification] = useState<VerificationResponse["verification"] | null>(pageModel.verifyResponse.verification);
+  const [viewModel, setViewModel] = useState<ApprovalVerificationViewModel>(initialViewModel);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setSelectedAttachmentId(pageModel.selectedAttachmentId);
+    setSelectedAttachmentId(initialViewModel.selectedAttachmentId);
     setAnalyzeStatus("success");
     setVerifyStatus("success");
-    setCurrentAnalysis(pageModel.analyzeResponse.analysis);
-    setCurrentVerification(pageModel.verifyResponse.verification);
+    setViewModel(initialViewModel);
     setError(null);
-  }, [pageModel]);
+  }, [initialViewModel]);
 
   const selectedAttachment = useMemo(
-    () => pageModel.attachments.find((item) => item.id === selectedAttachmentId) ?? pageModel.attachments[0],
-    [pageModel.attachments, selectedAttachmentId],
+    () => viewModel.attachments.find((item) => item.id === selectedAttachmentId) ?? viewModel.attachments[0],
+    [viewModel.attachments, selectedAttachmentId],
   );
 
   const actionLabel = mode === "real" ? "API demo" : "mock";
@@ -46,8 +48,8 @@ export function ApprovalVerificationPage({ pageModel, mode, onAnalyze, onVerify 
     setAnalyzeStatus("loading");
     setError(null);
     try {
-      const response = await onAnalyze();
-      setCurrentAnalysis(response.analysis);
+      const rawAnalyzeResponse = await onAnalyze();
+      setViewModel(buildNextViewModel({ rawAnalyzeResponse }));
       setAnalyzeStatus("success");
     } catch (caughtError) {
       setAnalyzeStatus("error");
@@ -59,9 +61,8 @@ export function ApprovalVerificationPage({ pageModel, mode, onAnalyze, onVerify 
     setVerifyStatus("loading");
     setError(null);
     try {
-      const response = await onVerify();
-      setCurrentAnalysis(response.analysis);
-      setCurrentVerification(response.verification);
+      const rawVerifyResponse = await onVerify();
+      setViewModel(buildNextViewModel({ rawVerifyResponse }));
       setVerifyStatus("success");
     } catch (caughtError) {
       setVerifyStatus("error");
@@ -76,7 +77,7 @@ export function ApprovalVerificationPage({ pageModel, mode, onAnalyze, onVerify 
           <p className="eyebrow">审批附件核验页 / {mode === "real" ? "real-adapter demo" : "mock-first"}</p>
           <h1>ApprovalVerificationPage</h1>
           <p className="hero-copy">
-            当前阶段不接真实上传；按钮使用内置 demo 样本或 mock 数据验证页面编排和字段绑定。
+            当前阶段不接真实上传；按钮使用 request builder + raw→viewModel 映射验证边界清晰度。
           </p>
         </div>
         <div className="toolbar">
@@ -100,25 +101,25 @@ export function ApprovalVerificationPage({ pageModel, mode, onAnalyze, onVerify 
       <div className="three-column-layout">
         <div className="column column--left">
           <AttachmentList
-            attachments={pageModel.attachments}
+            attachments={viewModel.attachments}
             selectedAttachmentId={selectedAttachmentId}
             onSelect={setSelectedAttachmentId}
             analyzeStatus={analyzeStatus}
-            verifyStatus={currentVerification?.verify_status}
+            verifyStatus={viewModel.verification.verifyStatus}
           />
         </div>
 
         <div className="column column--middle">
           <DocumentPreview
-            header={pageModel.requestHeader}
+            header={viewModel.requestHeader}
             attachment={selectedAttachment}
-            analysis={currentAnalysis}
+            analysis={viewModel.analysis}
           />
-          <AnalysisPanel analysis={currentAnalysis} />
+          <AnalysisPanel analysis={viewModel.analysis} />
         </div>
 
         <div className="column column--right">
-          <VerificationPanel verification={currentVerification} />
+          <VerificationPanel verification={viewModel.verification} />
         </div>
       </div>
     </div>

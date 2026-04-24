@@ -138,7 +138,47 @@ Responsibilities:
 - normalize PASS / REVIEW / REJECT / LOW / MEDIUM / HIGH / INFO visual styles
 - keep badge styling consistent across panels
 
-## 2. Data flow
+## 2. Raw response → ViewModel mapping
+
+The page now explicitly separates adapter input from component input.
+
+### Raw response types
+- `RawAnalyzeResponse`
+- `RawVerifyResponse`
+- `RawApprovalVerificationPageModel`
+
+These represent backend-oriented or mock-file-oriented shapes.
+
+### UI-facing ViewModel types
+- `ApprovalVerificationViewModel`
+- `AttachmentViewModel`
+- `AnalysisViewModel`
+- `VerificationViewModel`
+
+These represent the three-column page contract.
+
+### Mapping function
+`buildApprovalPageModel()` now owns the conversion from:
+- mock page model shell
+- raw analyze response
+- raw verify response
+
+to:
+- request header for the page
+- attachment list for the left column
+- analysis panel model for the middle column
+- verification panel model for the right column
+
+### Request builders
+The real adapter no longer assembles FormData inside page components.
+
+Instead it uses:
+- `buildAnalyzeDemoFormData()`
+- `buildVerifyDemoFormData()`
+
+This means that when real upload is added later, the first replacement point should be the request builder layer, not the page components.
+
+## 3. Data flow
 
 ### Initial load
 
