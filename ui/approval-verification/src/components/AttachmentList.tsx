@@ -56,8 +56,8 @@ export function AttachmentList({
         <p className="muted upload-hint">
           {mode === "real"
             ? selectedFile
-              ? "当前 real adapter 将优先使用你选择的图片。"
-              : "未选择文件时仍将 fallback 到 demo sample。"
+              ? "当前使用用户选择文件：real adapter 将优先上传这张图片。"
+              : "当前使用 demo sample：real mode 下未选择文件时会 fallback 到 demo sample。"
             : "mock mode 不会真正上传文件，但你仍可预览本地图像壳层。"}
         </p>
         {selectedFile ? (

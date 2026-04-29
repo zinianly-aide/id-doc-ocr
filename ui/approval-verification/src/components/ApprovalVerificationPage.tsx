@@ -54,7 +54,10 @@ export function ApprovalVerificationPage({ initialViewModel, mode, onAnalyze, on
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploadInputError, setUploadInputError] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [analyzeError, setAnalyzeError] = useState<string | null>(null);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+  const [simulateAnalyzeError, setSimulateAnalyzeError] = useState(false);
+  const [simulateVerifyError, setSimulateVerifyError] = useState(false);
 
   useEffect(() => {
     setSelectedAttachmentId(initialViewModel.selectedAttachmentId);
@@ -63,7 +66,10 @@ export function ApprovalVerificationPage({ initialViewModel, mode, onAnalyze, on
     setViewModel(initialViewModel);
     setSelectedFile(null);
     setUploadInputError(null);
-    setError(null);
+    setAnalyzeError(null);
+    setVerifyError(null);
+    setSimulateAnalyzeError(false);
+    setSimulateVerifyError(false);
   }, [initialViewModel]);
 
   useEffect(() => {
@@ -90,10 +96,11 @@ export function ApprovalVerificationPage({ initialViewModel, mode, onAnalyze, on
     [viewModel.analysis.reviewAction, viewModel.verification.verifyStatus],
   );
 
-  const analysisErrorMessage = analyzeStatus === "error" ? error : null;
-  const verificationErrorMessage = verifyStatus === "error" ? error : null;
+  const analysisErrorMessage = analyzeStatus === "error" ? analyzeError : null;
+  const verificationErrorMessage = verifyStatus === "error" ? verifyError : null;
 
   const actionLabel = mode === "real" ? "API demo" : "mock";
+  const inputSourceLabel = mode === "mock" ? "mock sample" : selectedFile ? `用户选择文件：${selectedFile.name}` : "demo sample（未选择文件）";
 
   function handleFileSelected(file: File | null) {
     if (!file) {
@@ -106,50 +113,58 @@ export function ApprovalVerificationPage({ initialViewModel, mode, onAnalyze, on
     if (imageSelectionError) {
       setSelectedFile(null);
       setUploadInputError(imageSelectionError);
-      setError(imageSelectionError);
+      setAnalyzeError(imageSelectionError);
+      setVerifyError(imageSelectionError);
       return;
     }
 
     setSelectedFile(file);
     setUploadInputError(null);
-    setError(null);
+    setAnalyzeError(null);
+    setVerifyError(null);
   }
 
   async function handleAnalyze() {
     if (mode === "real" && uploadInputError) {
       setAnalyzeStatus("error");
-      setError(uploadInputError);
+      setAnalyzeError(uploadInputError);
       return;
     }
 
     setAnalyzeStatus("loading");
-    setError(null);
+    setAnalyzeError(null);
     try {
+      if (simulateAnalyzeError) {
+        throw new Error("模拟 analyze 失败：用于演示错误提示与旧结果回退状态。");
+      }
       const rawAnalyzeResponse = await onAnalyze(selectedFile);
       setViewModel(buildNextViewModel({ rawAnalyzeResponse }));
       setAnalyzeStatus("success");
     } catch (caughtError) {
       setAnalyzeStatus("error");
-      setError(caughtError instanceof Error ? caughtError.message : `${actionLabel} analyze failed`);
+      setAnalyzeError(caughtError instanceof Error ? caughtError.message : `${actionLabel} analyze failed`);
     }
   }
 
   async function handleVerify() {
     if (mode === "real" && uploadInputError) {
       setVerifyStatus("error");
-      setError(uploadInputError);
+      setVerifyError(uploadInputError);
       return;
     }
 
     setVerifyStatus("loading");
-    setError(null);
+    setVerifyError(null);
     try {
+      if (simulateVerifyError) {
+        throw new Error("模拟 verify 失败：用于演示错误提示与旧结果仅供参考状态。");
+      }
       const rawVerifyResponse = await onVerify(selectedFile);
       setViewModel(buildNextViewModel({ rawVerifyResponse }));
       setVerifyStatus("success");
     } catch (caughtError) {
       setVerifyStatus("error");
-      setError(caughtError instanceof Error ? caughtError.message : `${actionLabel} verify failed`);
+      setVerifyError(caughtError instanceof Error ? caughtError.message : `${actionLabel} verify failed`);
     }
   }
 
@@ -174,6 +189,7 @@ export function ApprovalVerificationPage({ initialViewModel, mode, onAnalyze, on
       </section>
 
       <section className="state-bar">
+        <span>inputSource: {inputSourceLabel}</span>
         <span>mode: {mode}</span>
         <span>selectedAttachmentId: {selectedAttachmentId}</span>
         <span>selectedFile: {selectedFile?.name ?? "none"}</span>
@@ -181,7 +197,16 @@ export function ApprovalVerificationPage({ initialViewModel, mode, onAnalyze, on
         <span>uploadInputError: {uploadInputError ?? "none"}</span>
         <span>analyzeStatus: {analyzeStatus}</span>
         <span>verifyStatus: {verifyStatus}</span>
-        <span>error: {error ?? "none"}</span>
+        <span>analyzeError: {analyzeError ?? "none"}</span>
+        <span>verifyError: {verifyError ?? "none"}</span>
+        <span>simulateAnalyzeError: {simulateAnalyzeError ? "on" : "off"}</span>
+        <span>simulateVerifyError: {simulateVerifyError ? "on" : "off"}</span>
+        <button type="button" className="scenario-button" onClick={() => setSimulateAnalyzeError((value) => !value)}>
+          {simulateAnalyzeError ? "Disable analyze error demo" : "Enable analyze error demo"}
+        </button>
+        <button type="button" className="scenario-button" onClick={() => setSimulateVerifyError((value) => !value)}>
+          {simulateVerifyError ? "Disable verify error demo" : "Enable verify error demo"}
+        </button>
       </section>
 
       <div className="three-column-layout">

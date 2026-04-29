@@ -37,9 +37,9 @@ export function AnalysisPanel({ analysis, analyzeStatus, errorMessage }: Analysi
 
       {analyzeStatus === "error" ? (
         <div className="panel-alert panel-alert--error">
-          <strong>Analysis request failed.</strong>
+          <strong>本次分析调用失败</strong>
           <p>{errorMessage ?? "analyze 调用失败。"}</p>
-          <p>当前显示的是上一次结果。</p>
+          <p>当前展示的是上一次 analysis 结果/旧结果，仅供排查与参考，请勿把它当成本次最新识别结论。</p>
         </div>
       ) : null}
 
@@ -52,6 +52,7 @@ export function AnalysisPanel({ analysis, analyzeStatus, errorMessage }: Analysi
           </div>
         </div>
         <p className="muted">这是识别 / 质量 / 解析层建议，不等同于右侧业务规则核验结论。</p>
+        {analyzeStatus === "error" ? <p className="muted">注意：当前卡片内容来自旧结果，不是本次最新 analyze 返回。</p> : null}
         <div className="summary-grid">
           <div className="summary-tile">
             <span className="summary-tile__label">analysis.review.action</span>

@@ -11,6 +11,7 @@ interface DocumentPreviewProps {
 
 export function DocumentPreview({ header, attachment, analysis, previewUrl, selectedFile, mode }: DocumentPreviewProps) {
   const usingDemoSample = mode === "real" && !selectedFile;
+  const usingSelectedFile = mode === "real" && Boolean(selectedFile);
 
   return (
     <section className="panel panel--preview">
@@ -18,6 +19,13 @@ export function DocumentPreview({ header, attachment, analysis, previewUrl, sele
         <div>
           <h2>DocumentPreview</h2>
           <p>本阶段增加本地图片预览壳；未选文件时仍可使用 demo sample。</p>
+          <p className="muted">
+            {mode === "mock"
+              ? "当前为 mock 展示态。"
+              : usingSelectedFile
+                ? "当前使用用户选择文件。"
+                : "当前使用 demo sample。"}
+          </p>
         </div>
       </div>
 
@@ -33,7 +41,7 @@ export function DocumentPreview({ header, attachment, analysis, previewUrl, sele
             <div className="preview-placeholder__file">{attachment?.filename ?? "未选择附件"}</div>
             <div className="preview-placeholder__meta">{attachment?.contentType ?? "-"}</div>
             <div className="preview-placeholder__hint">
-              {usingDemoSample ? "未选择文件，real adapter 将 fallback 到 demo sample。" : "后续接真实上传/图片预览时，优先替换这一块。"}
+              {usingDemoSample ? "当前未选择文件，因此本次展示与调用都将使用 demo sample。" : "后续接真实上传/图片预览时，优先替换这一块。"}
             </div>
           </>
         )}

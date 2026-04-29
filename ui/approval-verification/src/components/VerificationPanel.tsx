@@ -58,7 +58,7 @@ export function VerificationPanel({ verification, verifyStatus, errorMessage, in
         <div className="panel-alert panel-alert--error">
           <strong>本次业务核验调用失败</strong>
           <p>{errorMessage ?? "verify 调用失败。"}</p>
-          <p>当前仍展示上一次核验结果，仅可作为参考，请勿直接据此完成审批。</p>
+          <p>当前仍展示上一次核验结果，仅供参考，请勿直接据此完成审批。</p>
         </div>
       ) : null}
 
@@ -79,6 +79,7 @@ export function VerificationPanel({ verification, verifyStatus, errorMessage, in
           </div>
         </div>
         <p className="muted">{getDecisionSummary(verification)}</p>
+        {verifyStatus === "error" ? <p className="muted">注意：当前卡片内容来自旧结果，不是本次最新 verify 返回。</p> : null}
         <div className="summary-grid">
           <div className="summary-tile">
             <span className="summary-tile__label">核验状态</span>
