@@ -22,6 +22,16 @@ Use this index before opening individual documents.
 
 ## Default Reading Entry
 
+### PMO / 项目推进常驻文档
+
+- `[CURRENT]` `docs/NOW.md`
+  - 当前阶段、主目标、本周重点、风险、下一检查点
+- `[CURRENT]` `docs/WEEKLY-STATUS.md`
+  - 最近一轮完成事项、遗留问题、下周建议
+- `[CURRENT]` `docs/ROADMAP.md`
+  - 当前里程碑状态与下一阶段路线图
+
+
 ### Executive / management readers
 
 1. `[CURRENT]` `docs/01-executive/pilot-summary-v1.md`
@@ -105,6 +115,9 @@ These folders keep documents that are no longer part of the default reading path
 - `[CURRENT]` `docs/01-executive/pilot-summary-v1.md`
 - `[CURRENT]` `docs/pilot-execution-package-v1.md`
 - `[CURRENT]` `docs/README.md`
+- `[CURRENT]` `docs/NOW.md`
+- `[CURRENT]` `docs/WEEKLY-STATUS.md`
+- `[CURRENT]` `docs/ROADMAP.md`
 
 ### B. Active approval-verification topic documents
 
