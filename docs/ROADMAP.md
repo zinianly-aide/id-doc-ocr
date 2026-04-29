@@ -1,29 +1,61 @@
 # ROADMAP
 
+## 当前阶段定义
+试点准备冲刺期（Pilot Readiness Sprint）
+
+## 30天成功标准
+- 病假场景可试点
+- 婚假场景可灰度
+- contract 冻结
+- 周报机制跑通
+- 管理层材料齐备
+- 可启动小范围试点
+
 ## Milestone 1 — 核验链路 MVP 收口（已完成）
 - `/analyze-document` 与 `/verify-attachment` 可联调
 - Approval Verification UI 三栏结构可运行
 - mock / real adapter 可切换
 - mismatch / error / fallback / manual review 状态已可视化
 
-## Milestone 2 — 文档治理与试点准备（进行中）
+## Milestone 2 — 文档治理与试点准备（已完成）
 - 建立管理层版 / 执行版双层文档体系
 - 建立 docs 生命周期治理与 archive 结构
 - 建立试点执行总包、README 索引、PMO 文档
-- 目标：让项目进入“可启动试点”的治理状态
 
-## Milestone 3 — 试点启动准备（下一阶段）
-- 冻结试点范围（部门 / 场景 / 材料类型）
-- 冻结假勤系统接入 contract
-- 确定试点角色与责任矩阵
-- 准备样本池、周报机制、回滚条件
+## Milestone 3 — P1 冻结真实试点 contract（当前最高优先）
+- 产出 `docs/contract-pilot-v1.md`
+- 明确假勤系统输入字段、输出字段、错误码
+- 明确 REVIEW / PASS / REJECT 业务定义
+- 明确人工复核语义与系统边界
 
-## Milestone 4 — 小范围灰度试点
+## Milestone 4 — P2 病假场景试点 readiness
+- 固化病假场景回归样本集
+- 形成病假试点指标基线
+- 形成病假试点 SOP
+- 使病假场景成为首个稳定试点对象
+
+## Milestone 5 — P3 婚假场景最小稳定闭环
+- 输出 marriage rules gap list
+- 补齐 fixture tests 与风险说明
+- 明确婚假场景灰度边界
+
+## Milestone 6 — P4 试点运营机制落地
+- 持续更新 `docs/WEEKLY-STATUS.md`
+- 建立 `docs/METRICS.md`
+- 建立 `docs/RISKS.md`
+- 让周报、问题台账、指标复盘可运行
+
+## Milestone 7 — P5 管理层决策材料完备
+- 一页纸摘要可直接汇报
+- 试点启动会材料可直接使用
+- 管理层汇报结构可直接转 PPT
+
+## Milestone 8 — 小范围灰度试点
 - 沙箱联调
 - 小规模审批人灰度使用
 - 采集成功率、耗时、REVIEW率、误判案例、业务反馈
 
-## Milestone 5 — 试点评估与扩面决策
+## Milestone 9 — 试点评估与扩面决策
 - 输出试点结论
 - 判断 continue / expand / shrink / pause
 - 若进入扩面前，优先补强规则、样本、误判治理
