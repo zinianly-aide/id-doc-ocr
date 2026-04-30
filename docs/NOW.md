@@ -7,9 +7,9 @@ Sick Leave Pilot Readiness
 未来30天内，把项目推进到“可启动小范围业务试点”的状态，优先完成真实试点 contract 冻结、病假场景 readiness、婚假场景灰度准备、运营机制落地和管理层材料齐备。
 
 ## 本周重点
-- 建立病假场景样本台账：`docs/pilot-sick-leave-samples-v1.md`
-- 将样本体系定义转化为可运营、可回归的样本结构与登记表
-- 补齐 Normal / Abnormal / Edge 三分桶样本登记基线
+- 病假样本台账进入“样本填充中”阶段：`docs/pilot-sick-leave-samples-v1.md`
+- 持续补录 Normal / Abnormal / Edge 三分桶样本
+- 优先补齐真实病假样本与关键样本验证标记
 - 仅推进病假场景，不扩展到婚假，并保持 contract v1 不变
 
 ## 当前风险

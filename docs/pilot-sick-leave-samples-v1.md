@@ -81,11 +81,25 @@ The registry below is the minimum structured ledger template. New samples should
 
 | sample_id | 文件名 | 类型（Normal / Abnormal / Edge） | 场景说明 | 期望 doc_type | 期望 verify_status（PASS / REVIEW / REJECT） | 是否关键样本（Yes/No） | 来源（真实 / 模拟） | 是否已验证（Yes/No） | 备注 |
 |---|---|---|---|---|---|---|---|---|---|
-| SICK-N-001 | sick_normal_placeholder_001.jpg | Normal | 标准清晰病假证明，姓名与日期完整可读 | diagnosis_proof | PASS | Yes | 模拟 | No | 首批 happy-path 基线样本占位 |
-| SICK-N-002 | sick_normal_placeholder_002.jpg | Normal | 标准清晰病假证明，版式与 N-001 不同 | diagnosis_proof | PASS | Yes | 模拟 | No | 用于版式差异覆盖 |
-| SICK-A-001 | sick_abnormal_placeholder_001.jpg | Abnormal | 姓名字段缺失或不可读 | diagnosis_proof | REVIEW | Yes | 模拟 | No | 关键异常样本，占位待真实替换 |
-| SICK-A-002 | sick_abnormal_placeholder_002.jpg | Abnormal | 日期字段部分模糊，影响休假起止判断 | diagnosis_proof | REVIEW | Yes | 模拟 | No | 用于字段缺失/模糊验证 |
-| SICK-E-001 | sick_edge_placeholder_001.jpg | Edge | 轻微模糊但人工仍可识别核心字段 | diagnosis_proof | REVIEW | Yes | 模拟 | No | 用于边界 REVIEW 校准 |
+| SICK-N-001 | diagnosis_certificate_text.expected.json | Normal | 脱敏诊断证明文本 fixture，字段完整，医院/诊断/休假日期齐全 | diagnosis_proof | PASS | Yes | 真实 | Yes | 当前仓库里最接近标准病假证明的稳定基线样本 |
+| SICK-N-002 | verify-attachment.success.pass.json | Normal | mock 完整核验 PASS 场景，申请人与请假日期全部对齐 | diagnosis_proof | PASS | Yes | 模拟 | Yes | 业务结论稳定为 PASS，可作为联调 happy-path |
+| SICK-N-003 | approval-verification-page.pass.json | Normal | 前端页面级 PASS 场景，覆盖 analyze + verify 联合展示 | diagnosis_proof | PASS | No | 模拟 | Yes | 用于 UI 回归，确保审批页能稳定展示 PASS |
+| SICK-A-001 | diagnosis_certificate_minimal.expected.json | Abnormal | 脱敏最小诊断证明文本，休假起止日期与盖章缺失 | diagnosis_proof | REVIEW | Yes | 真实 | Yes | 关键缺口：字段不完整，适合验证人工复核入口 |
+| SICK-A-002 | basic_outpatient_note.expected.json | Abnormal | 门诊病历文本，不是标准诊断证明/病休证明 | medical_record | REVIEW | Yes | 真实 | Yes | 风险点：更像 medical_record，不能直接按标准病假证明放行 |
+| SICK-A-003 | analyze-document.success.json | Abnormal | mock analyze 返回 diagnosis_proof，但 validation 明确缺失医院和诊断 | diagnosis_proof | REVIEW | No | 模拟 | Yes | 识别问题：missing_hospital_name / missing_diagnosis |
+| SICK-A-004 | verify-attachment.error.missing-expected.json | Abnormal | verify 请求缺少 expected attachment type 的错误场景 | diagnosis_proof | REVIEW | No | 模拟 | No | 当前是接口错误样本；运营口径应转人工复核，不可自动放行 |
+| SICK-E-001 | sick_note_like.expected.json | Edge | 病休证明风格明显，但插件仍归类为 medical_record 的边界文本 | medical_record | REVIEW | Yes | 真实 | Yes | 关键边界样本：sick_note_like 命中高，但 attachment 语义仍需人工判断 |
+| SICK-E-002 | analyze-document.boundary.partial-analysis.json | Edge | mock partial-analysis 场景，姓名/日期在，但医院与医师信息不完整 | diagnosis_proof | REVIEW | Yes | 模拟 | Yes | 风险点：partial fields + weak perspective confidence |
+| SICK-E-003 | analyze-document.error.missing-plugin.json | Edge | analyze 请求缺少 plugin_name 的配置错误场景 | diagnosis_proof | REVIEW | No | 模拟 | No | 当前是接入配置边界，不属于文档识别错误；应阻断自动化并人工处理 |
+| SICK-A-005 | online_prescription_laptop.jpg | Abnormal | 公开在线处方截图，diagnosis_proof 路由下无法抽出医院/诊断/日期等核心字段 | diagnosis_proof | PASS | Yes | 真实 | Yes | 关键冲突样本：analysis=reject，但 verify 仍返回 PASS |
+| SICK-A-006 | online_prescription_mobile.jpg | Abnormal | 公开手机在线处方截图，字段抽取几乎为空 | diagnosis_proof | PASS | Yes | 真实 | Yes | 关键冲突样本：missing_hospital_name/missing_diagnosis/missing_seal，但 verify=PASS |
+| SICK-A-007 | handwritten_prescription_1940.jpg | Abnormal | 公开手写处方，真实 OCR 压力高，当前 diagnosis_proof 校验几乎全缺失 | diagnosis_proof | PASS | No | 真实 | Yes | 高风险手写异常样本；analysis=reject 与 verify=PASS 冲突明显 |
+| SICK-A-008 | handwritten_prescription_1935_thumb.jpg | Abnormal | 公开手写处方缩略图，识别质量进一步下降 | diagnosis_proof | PASS | No | 真实 | Yes | 缩略图+手写双重弱质，仍被 verify 判为 PASS |
+| SICK-A-009 | illness_history_thumb.jpg | Abnormal | 公开病史页，medical_record 路由下 not_sick_note_like，不能视为有效病假证明 | medical_record | PASS | Yes | 真实 | Yes | 关键冲突样本：sick_note_check=low 且 not_sick_note_like，但 verify=PASS |
+| SICK-A-010 | medical_care_card_usa_sample.jpg | Abnormal | 公开医疗卡样本，不是病假证明，但被 diagnosis_proof 路由收下 | diagnosis_proof | PASS | No | 真实 | Yes | 非证明类医疗卡，适合作为误判分析样本 |
+| SICK-E-004 | certificado_medico.jpg | Edge | 公开 medical certificate 图片，最接近病假证明外观，但当前字段解析仍不完整 | diagnosis_proof | PASS | Yes | 真实 | Yes | 最接近公开正样本；目前仍出现 analysis=reject / verify=PASS |
+| SICK-E-005 | kassenrezept_at.jpg | Edge | 公开处方单据，具医疗文书外观但与病假证明字段不一致 | diagnosis_proof | PASS | No | 真实 | Yes | 适合验证“附件像医疗单据但不是标准病假证明”的边界情况 |
+| SICK-E-006 | privatrezept_blancorezept_thumb.jpg | Edge | 公开私人处方缩略图，结构像医疗文书但字段不足 | diagnosis_proof | PASS | No | 真实 | Yes | 缩略图处方边界样本；当前 verify 仍偏宽松 |
 
 ### 字段说明
 
@@ -127,6 +141,22 @@ Recommended interpretation:
 Practical rule:
 - before the pilot starts, all three buckets must exist,
 - and at least the key samples should be marked as verified.
+
+### 当前填充状态（repo baseline）
+
+Current evidence-backed population progress in this repository:
+
+- Normal: 3 / 10
+- Abnormal: 10 / 10
+- Edge: 6 / 5
+- Critical cases: 10 / 5+
+- Real-source ratio: 13 / 19 = 68.4%
+
+Interpretation:
+- the registry is now populated enough to cover abnormal and edge pilot stress cases,
+- critical cases and real-source ratio both exceed the minimum target,
+- the remaining gap is concentrated in the Normal bucket,
+- the newly added public samples also exposed an important mismatch pattern: `analysis` often rejects weak public medical-document images while `verify-attachment` still returns `PASS`.
 
 ## D. 使用方式说明
 
