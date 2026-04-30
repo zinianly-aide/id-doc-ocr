@@ -467,3 +467,142 @@ The approval flow is executable for a controlled pilot rehearsal baseline.
 
 However, the remaining launch blocker is no longer SOP ambiguity.
 The remaining blockers are pilot-user assignment, real metric collection continuity, and keeping request_id traceability in the real integrated path.
+
+---
+
+## J. Integration Freeze
+
+### J1. request_id 接入责任边界
+
+Frozen ownership for go-live:
+
+- source owner: leave-system caller or pilot gateway
+- generation owner: caller-side integration layer before any verification request is sent
+- service responsibility: accept the provided `request_id`, echo it in response, and emit it in logs
+- operations responsibility: use the same `request_id` as the primary trace key in incident review and weekly tracking
+
+This means the verification service is not the originator of pilot trace identity in go-live mode.
+The request must arrive with a caller-generated `request_id`.
+
+### J2. request_id 格式规范
+
+Frozen format rule:
+- `LV-SICK-YYYYMMDD-XXXXXX`
+
+Example:
+- `LV-SICK-20260506-000123`
+
+Required properties:
+- unique per verification case
+- generated once by caller-side integration
+- reused across analyze and verify for the same approval case
+- searchable in logs and weekly review records
+
+### J3. analyze / verify 接入方式
+
+The frozen request path is:
+1. caller or pilot gateway generates `request_id`
+2. caller includes `request_id` in `/analyze-document` request payload
+3. caller includes the same `request_id` in `/verify-attachment` request payload
+4. service echoes `request_id` in response body and `X-Request-Id` response header
+5. service logs include the same `request_id` in request access and stage logs
+
+### J4. 日志系统透传方式
+
+The same `request_id` must appear in:
+- caller integration request log
+- service analyze input/result log
+- service verify input/result log
+- API access log
+- weekly issue tracking entry when incidents occur
+
+### J5. Integration Freeze Checklist
+
+1. Caller-side integration owner is explicitly named before launch.
+2. Caller generates `request_id` using the frozen format.
+3. The same `request_id` is passed to both analyze and verify.
+4. `request_id` is searchable in service logs and issue records.
+5. Weekly issue review uses `request_id` as the primary trace key.
+
+---
+
+## K. Metrics Operation
+
+### K1. Operational Ownership
+
+Frozen ownership for the pilot launch window:
+
+- daily recording owner: QA + Pilot Operations Support
+- weekly summary owner: Pilot Operations Support
+- launch decision / rollback decision owner: Business Owner
+
+Supporting roles:
+- Product / Process Lead: checks metric completeness and review readiness
+- Backend / Frontend Engineer: supports trace lookup and failure diagnosis
+
+### K2. Operating cadence
+
+Frozen cadence for go-live:
+
+- daily recording: every pilot business day before `18:00 CST`
+- weekly review: every Wednesday `16:00 CST`
+- weekly reporting source: `docs/WEEKLY-STATUS.md` only
+
+### K3. Weekly review output rule
+
+The only weekly reporting source for pilot operations is:
+- `docs/WEEKLY-STATUS.md`
+
+It must contain at minimum:
+- success rate snapshot
+- REVIEW rate snapshot
+- manual review ratio snapshot
+- notable incident list by `request_id`
+- go / hold / rollback recommendation
+
+---
+
+## L. Pilot Roster & Schedule
+
+### L1. Pilot roster freeze
+
+Frozen pilot roster format for go-live:
+
+- pilot department: `HR Shared Service Center / Leave Approval Team`
+- approver roster:
+  - Approver A (`HR-Approver-01`)
+  - Approver B (`HR-Approver-02`)
+  - Backup Approver (`HR-Backup-01`)
+
+This roster format is the launch placeholder baseline and must be replaced by the real named roster before the launch meeting closes.
+
+### L2. Launch window
+
+Frozen proposed launch window:
+- pilot start date: `2026-05-06`
+- pilot observation window: `2026-05-06` to `2026-05-12`
+- first weekly review: `2026-05-13 16:00 CST`
+
+### L3. Fallback / rollback ownership
+
+If pilot safety or operability becomes unacceptable:
+- rollback trigger is evaluated using `docs/RISKS.md`
+- Pilot Operations Support raises the incident
+- Product / Process Lead prepares the summary
+- Business Owner makes the final go / hold / rollback decision
+
+---
+
+## M. Go-Live Checklist
+
+Final freeze checklist:
+
+- request_id 已接入：Yes
+- 指标采集责任人已确认：Yes
+- 周度 review 已排期：Yes
+- 审批人名单已确认：No
+- fallback 机制已确认：Yes
+
+### M1. Freeze conclusion
+
+The pilot is launch-ready at the process and governance layer except for final confirmation of the real named approver roster.

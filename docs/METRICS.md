@@ -147,7 +147,34 @@ The pilot should not be treated as operationally launched unless all four metric
 
 ---
 
-## 9. 首轮采集样例
+## 9. Operational Ownership
+
+### Ownership freeze
+
+- daily recording owner: QA + Pilot Operations Support
+- weekly summary owner: Pilot Operations Support
+- decision owner: Business Owner
+
+Supporting roles:
+- Product / Process Lead: verifies completeness of weekly reporting
+- Backend / Frontend Engineer: supports request trace lookup and incident diagnosis
+
+### Operating cadence freeze
+
+- daily recording deadline: every pilot business day before `18:00 CST`
+- weekly review time: every Wednesday `16:00 CST`
+- single weekly reporting source: `docs/WEEKLY-STATUS.md`
+
+### Operational rule
+
+The metric process is considered frozen only when:
+- daily records are maintained with `request_id`
+- weekly review is held on the fixed cadence
+- `docs/WEEKLY-STATUS.md` is used as the only pilot weekly summary source
+
+---
+
+## 10. 首轮采集样例
 
 ### Collection setup
 

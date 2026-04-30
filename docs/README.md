@@ -31,9 +31,9 @@ Use this index before opening individual documents.
 - `[CURRENT]` `docs/ROADMAP.md`
   - 当前里程碑状态与下一阶段路线图
 - `[CURRENT]` `docs/pilot-launch-readiness-v1.md`
-  - P3 试点准备主文档：readiness 总结、试点范围冻结、运行方式、request_id、风险与启动清单
+  - P3/P3.2 试点启动主文档：readiness、integration freeze、metrics operation、roster/schedule、go-live checklist
 - `[CURRENT]` `docs/METRICS.md`
-  - 小范围试点启动期核心指标定义：成功率、REVIEW率、P95耗时、人工复核占比
+  - 小范围试点启动期核心指标定义与运营责任：成功率、REVIEW率、P95耗时、人工复核占比、周度 review 机制
 - `[CURRENT]` `docs/RISKS.md`
   - 小范围试点启动期风险与回滚文档：误放行、REVIEW率异常、接口失败、traceability 失败
 - `[CURRENT]` `docs/pilot-sick-leave-samples-v1.md`

@@ -42,16 +42,15 @@
 - 已完成：新增 8 个 Normal 生成样本的 PASS 稳定性验证（PASS=8 / REVIEW=0 / REJECT=0）
 - 已完成：样本三分桶最低基线达标并形成 readiness 判断依据
 
-## Milestone 5 — P3 小范围试点准备（Final Validation In Progress）
+## Milestone 5 — P3 小范围试点准备（Ready for Launch）
 - 新增 `docs/pilot-launch-readiness-v1.md` 作为试点准备主文档
 - 新增 `docs/METRICS.md`，冻结成功率 / REVIEW率 / P95耗时 / 人工复核占比口径
 - 新增 `docs/RISKS.md`，冻结误放行 / REVIEW率异常 / 接口失败 / rollback 触发条件
 - 已完成：request_id 由调用方生成并在 analyze / verify / response / log 中贯通验证
 - 已完成：10 条首轮指标采集与最小采集口径验证
 - 已完成：10 条审批 rehearsal，确认 PASS / REVIEW 与 fallback 语义可执行
-- 待落地：真实业务接入层的 request_id 实施
-- 待落地：持续指标采集责任人与 review cadence 冻结
-- 待落地：试点审批人名单、试点时间窗冻结
+- 已完成：integration freeze、metrics operation、weekly review cadence、pilot roster/schedule 形成 go-live baseline
+- 当前唯一剩余启动前动作：将占位审批人 roster 替换为真实命名名单并完成启动会确认
 
 ## Milestone 6 — P4 婚假场景最小稳定闭环
 - 输出 marriage rules gap list
