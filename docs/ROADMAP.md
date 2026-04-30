@@ -31,11 +31,12 @@
 - 已明确 REVIEW / PASS / REJECT 业务定义
 - 已明确人工复核语义与系统边界
 
-## Milestone 4 — P2 病假场景试点 readiness
-- 固化病假场景回归样本集
-- 形成病假试点指标基线
-- 形成病假试点 SOP
-- 使病假场景成为首个稳定试点对象
+## Milestone 4 — P2 病假场景试点 readiness（In Progress）
+- 已产出 `docs/pilot-sick-leave-readiness-v1.md`
+- 待落地：病假场景回归样本集
+- 待落地：病假试点指标基线真实采集
+- 待落地：病假试点 SOP 执行验证
+- 目标：使病假场景成为首个稳定试点对象
 
 ## Milestone 5 — P3 婚假场景最小稳定闭环
 - 输出 marriage rules gap list

@@ -30,6 +30,8 @@ Use this index before opening individual documents.
   - 最近一轮完成事项、遗留问题、下周建议
 - `[CURRENT]` `docs/ROADMAP.md`
   - 当前里程碑状态与下一阶段路线图
+- `[CURRENT]` `docs/pilot-sick-leave-samples-v1.md`
+  - 病假样本台账、分类结构、最小样本规模、联调/回归/误判分析使用方式
 - `[ACTIVE]` `docs/contract-review-checklist.md`
   - contract 候选版评审检查清单
 - `[ACTIVE]` `docs/contract-review-meeting.md`
@@ -58,18 +60,21 @@ Use this index before opening individual documents.
 
 1. `[CURRENT]` `docs/01-executive/pilot-summary-v1.md`
 2. `[CURRENT]` `docs/contract-pilot-v1.md`
-3. `[ACTIVE]` `docs/contract-review-meeting.md`
-4. `[CURRENT]` `docs/pilot-execution-package-v1.md`
-5. `[ACTIVE]` `docs/leave-verification-matrix-and-demo.md` (only if rule scope detail is needed)
+3. `[CURRENT]` `docs/pilot-sick-leave-readiness-v1.md`
+4. `[CURRENT]` `docs/pilot-sick-leave-samples-v1.md`
+5. `[CURRENT]` `docs/pilot-execution-package-v1.md`
+6. `[ACTIVE]` `docs/leave-verification-matrix-and-demo.md` (only if rule scope detail is needed)
 
 ### If you are a product / process lead
 
 1. `[CURRENT]` `docs/contract-pilot-v1.md`
-2. `[CURRENT]` `docs/pilot-execution-package-v1.md`
-3. `[ACTIVE]` `docs/frontend-api-contract.md`
-4. `[ACTIVE]` `docs/frontend-binding-guide.md`
-5. `[ACTIVE]` `docs/approval-verification-ui.md`
-6. `[ACTIVE]` `docs/leave-verification-matrix-and-demo.md`
+2. `[CURRENT]` `docs/pilot-sick-leave-readiness-v1.md`
+3. `[CURRENT]` `docs/pilot-sick-leave-samples-v1.md`
+4. `[CURRENT]` `docs/pilot-execution-package-v1.md`
+5. `[ACTIVE]` `docs/frontend-api-contract.md`
+6. `[ACTIVE]` `docs/frontend-binding-guide.md`
+7. `[ACTIVE]` `docs/approval-verification-ui.md`
+8. `[ACTIVE]` `docs/leave-verification-matrix-and-demo.md`
 
 ### If you are a backend / frontend engineer
 
@@ -85,10 +90,12 @@ Use this index before opening individual documents.
 ### If you are QA or pilot operations support
 
 1. `[CURRENT]` `docs/contract-pilot-v1.md`
-2. `[CURRENT]` `docs/pilot-execution-package-v1.md`
-3. `[ACTIVE]` `docs/leave-verification-matrix-and-demo.md`
-4. `[ACTIVE]` `docs/regression.md`
-5. `[ACTIVE]` `docs/frontend-api-contract.md`
+2. `[CURRENT]` `docs/pilot-sick-leave-readiness-v1.md`
+3. `[CURRENT]` `docs/pilot-sick-leave-samples-v1.md`
+4. `[CURRENT]` `docs/pilot-execution-package-v1.md`
+5. `[ACTIVE]` `docs/leave-verification-matrix-and-demo.md`
+6. `[ACTIVE]` `docs/regression.md`
+7. `[ACTIVE]` `docs/frontend-api-contract.md`
 
 ---
 
@@ -128,6 +135,8 @@ These folders keep documents that are no longer part of the default reading path
 - `[CURRENT]` `docs/01-executive/pilot-summary-v1.md`
 - `[CURRENT]` `docs/pilot-execution-package-v1.md`
 - `[CURRENT]` `docs/contract-pilot-v1.md`
+- `[CURRENT]` `docs/pilot-sick-leave-readiness-v1.md`
+- `[CURRENT]` `docs/pilot-sick-leave-samples-v1.md`
 - `[CURRENT]` `docs/README.md`
 - `[CURRENT]` `docs/NOW.md`
 - `[CURRENT]` `docs/WEEKLY-STATUS.md`
@@ -203,6 +212,8 @@ The following files should be maintained as the long-term living set for the cur
 - `docs/01-executive/pilot-summary-v{n}.md`
 - `docs/pilot-execution-package-v{n}.md`
 - `docs/contract-pilot-v{n}.md`
+- `docs/pilot-sick-leave-readiness-v{n}.md`
+- `docs/pilot-sick-leave-samples-v{n}.md`
 - `docs/frontend-api-contract.md`
 - `docs/frontend-binding-guide.md`
 - `docs/approval-verification-ui.md`
@@ -242,13 +253,11 @@ Historical, duplicate, presentation-specific, prototype, or transitional plannin
 ### Task: decide whether to approve the pilot
 - Read `[CURRENT]` `docs/01-executive/pilot-summary-v1.md`
 - Then `[CURRENT]` `docs/contract-pilot-v1.md`
+- Then `[CURRENT]` `docs/pilot-sick-leave-readiness-v1.md`
 
 ### Task: prepare kickoff meeting or weekly pilot operation
 - Read `[CURRENT]` `docs/contract-pilot-v1.md`
-- Then `[ACTIVE]` `docs/contract-review-checklist.md`
-- Then `[ACTIVE]` `docs/contract-review-meeting.md`
-- Then `[ACTIVE]` `docs/contract-review-execution.md`
-- Then `[ACTIVE]` `docs/contract-review-blockers.md`
+- Then `[CURRENT]` `docs/pilot-sick-leave-readiness-v1.md`
 - Then read `[CURRENT]` `docs/pilot-execution-package-v1.md`
 
 ### Task: implement or debug approval verification UI/API integration
