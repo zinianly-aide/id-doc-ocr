@@ -22,11 +22,14 @@
 - 建立 docs 生命周期治理与 archive 结构
 - 建立试点执行总包、README 索引、PMO 文档
 
-## Milestone 3 — P1 冻结真实试点 contract（当前最高优先）
-- 产出 `docs/contract-pilot-v1.md`
-- 明确假勤系统输入字段、输出字段、错误码
-- 明确 REVIEW / PASS / REJECT 业务定义
-- 明确人工复核语义与系统边界
+## Milestone 3 — P1 冻结真实试点 contract（已完成）
+- 已产出并确认 `docs/contract-pilot-v1.md`
+- 已完成 `docs/contract-review-checklist.md` 评审结论
+- 已完成 `docs/contract-review-meeting.md` 对齐准备
+- 已确认：业务 / HR / 产品 / 工程当前无 checklist blocker
+- 已明确假勤系统输入字段、输出字段、错误码
+- 已明确 REVIEW / PASS / REJECT 业务定义
+- 已明确人工复核语义与系统边界
 
 ## Milestone 4 — P2 病假场景试点 readiness
 - 固化病假场景回归样本集

@@ -30,6 +30,14 @@ Use this index before opening individual documents.
   - 最近一轮完成事项、遗留问题、下周建议
 - `[CURRENT]` `docs/ROADMAP.md`
   - 当前里程碑状态与下一阶段路线图
+- `[ACTIVE]` `docs/contract-review-checklist.md`
+  - contract 候选版评审检查清单
+- `[ACTIVE]` `docs/contract-review-meeting.md`
+  - contract review 会议简版材料
+- `[ACTIVE]` `docs/contract-review-execution.md`
+  - contract review 会议执行版
+- `[ACTIVE]` `docs/contract-review-blockers.md`
+  - contract review blocker 台账
 
 
 ### Executive / management readers
@@ -49,33 +57,38 @@ Use this index before opening individual documents.
 ### If you are a business owner or HR manager
 
 1. `[CURRENT]` `docs/01-executive/pilot-summary-v1.md`
-2. `[CURRENT]` `docs/pilot-execution-package-v1.md`
-3. `[ACTIVE]` `docs/leave-verification-matrix-and-demo.md` (only if rule scope detail is needed)
+2. `[CURRENT]` `docs/contract-pilot-v1.md`
+3. `[ACTIVE]` `docs/contract-review-meeting.md`
+4. `[CURRENT]` `docs/pilot-execution-package-v1.md`
+5. `[ACTIVE]` `docs/leave-verification-matrix-and-demo.md` (only if rule scope detail is needed)
 
 ### If you are a product / process lead
 
-1. `[CURRENT]` `docs/pilot-execution-package-v1.md`
-2. `[ACTIVE]` `docs/frontend-api-contract.md`
-3. `[ACTIVE]` `docs/frontend-binding-guide.md`
-4. `[ACTIVE]` `docs/approval-verification-ui.md`
-5. `[ACTIVE]` `docs/leave-verification-matrix-and-demo.md`
+1. `[CURRENT]` `docs/contract-pilot-v1.md`
+2. `[CURRENT]` `docs/pilot-execution-package-v1.md`
+3. `[ACTIVE]` `docs/frontend-api-contract.md`
+4. `[ACTIVE]` `docs/frontend-binding-guide.md`
+5. `[ACTIVE]` `docs/approval-verification-ui.md`
+6. `[ACTIVE]` `docs/leave-verification-matrix-and-demo.md`
 
 ### If you are a backend / frontend engineer
 
-1. `[CURRENT]` `docs/pilot-execution-package-v1.md`
-2. `[ACTIVE]` `docs/frontend-api-contract.md`
-3. `[ACTIVE]` `docs/frontend-binding-guide.md`
-4. `[ACTIVE]` `docs/api.md`
-5. `[ACTIVE]` `docs/architecture.md`
-6. `[ACTIVE]` `docs/approval-verification-ui.md`
-7. `[ACTIVE]` `docs/regression.md`
+1. `[CURRENT]` `docs/contract-pilot-v1.md`
+2. `[CURRENT]` `docs/pilot-execution-package-v1.md`
+3. `[ACTIVE]` `docs/frontend-api-contract.md`
+4. `[ACTIVE]` `docs/frontend-binding-guide.md`
+5. `[ACTIVE]` `docs/api.md`
+6. `[ACTIVE]` `docs/architecture.md`
+7. `[ACTIVE]` `docs/approval-verification-ui.md`
+8. `[ACTIVE]` `docs/regression.md`
 
 ### If you are QA or pilot operations support
 
-1. `[CURRENT]` `docs/pilot-execution-package-v1.md`
-2. `[ACTIVE]` `docs/leave-verification-matrix-and-demo.md`
-3. `[ACTIVE]` `docs/regression.md`
-4. `[ACTIVE]` `docs/frontend-api-contract.md`
+1. `[CURRENT]` `docs/contract-pilot-v1.md`
+2. `[CURRENT]` `docs/pilot-execution-package-v1.md`
+3. `[ACTIVE]` `docs/leave-verification-matrix-and-demo.md`
+4. `[ACTIVE]` `docs/regression.md`
+5. `[ACTIVE]` `docs/frontend-api-contract.md`
 
 ---
 
@@ -114,6 +127,7 @@ These folders keep documents that are no longer part of the default reading path
 
 - `[CURRENT]` `docs/01-executive/pilot-summary-v1.md`
 - `[CURRENT]` `docs/pilot-execution-package-v1.md`
+- `[CURRENT]` `docs/contract-pilot-v1.md`
 - `[CURRENT]` `docs/README.md`
 - `[CURRENT]` `docs/NOW.md`
 - `[CURRENT]` `docs/WEEKLY-STATUS.md`
@@ -188,6 +202,7 @@ The following files should be maintained as the long-term living set for the cur
 - `docs/README.md`
 - `docs/01-executive/pilot-summary-v{n}.md`
 - `docs/pilot-execution-package-v{n}.md`
+- `docs/contract-pilot-v{n}.md`
 - `docs/frontend-api-contract.md`
 - `docs/frontend-binding-guide.md`
 - `docs/approval-verification-ui.md`
@@ -226,12 +241,19 @@ Historical, duplicate, presentation-specific, prototype, or transitional plannin
 
 ### Task: decide whether to approve the pilot
 - Read `[CURRENT]` `docs/01-executive/pilot-summary-v1.md`
+- Then `[CURRENT]` `docs/contract-pilot-v1.md`
 
 ### Task: prepare kickoff meeting or weekly pilot operation
-- Read `[CURRENT]` `docs/pilot-execution-package-v1.md`
+- Read `[CURRENT]` `docs/contract-pilot-v1.md`
+- Then `[ACTIVE]` `docs/contract-review-checklist.md`
+- Then `[ACTIVE]` `docs/contract-review-meeting.md`
+- Then `[ACTIVE]` `docs/contract-review-execution.md`
+- Then `[ACTIVE]` `docs/contract-review-blockers.md`
+- Then read `[CURRENT]` `docs/pilot-execution-package-v1.md`
 
 ### Task: implement or debug approval verification UI/API integration
-- Read `[ACTIVE]` `docs/frontend-api-contract.md`
+- Read `[CURRENT]` `docs/contract-pilot-v1.md`
+- Then `[ACTIVE]` `docs/frontend-api-contract.md`
 - Then `[ACTIVE]` `docs/frontend-binding-guide.md`
 - Then `[ACTIVE]` `docs/approval-verification-ui.md`
 - Then `[ACTIVE]` `docs/api.md`
