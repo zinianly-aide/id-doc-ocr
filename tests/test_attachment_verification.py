@@ -1,7 +1,14 @@
 from id_doc_ocr.verification.rules import verify_attachment
 
 
-def _build_analysis(*, attachment_label: str, extracted_fields: dict, review_action: str = "accept_with_warning") -> dict:
+def _build_analysis(
+    *,
+    attachment_label: str,
+    extracted_fields: dict,
+    review_action: str = "accept_with_warning",
+    validation_accepted: bool = True,
+    validation_issues: list[dict] | None = None,
+) -> dict:
     return {
         "doc_type": extracted_fields.get("doc_type", "diagnosis_proof"),
         "classification_evidence": {
@@ -18,10 +25,10 @@ def _build_analysis(*, attachment_label: str, extracted_fields: dict, review_act
             "review_action": review_action,
             "review_recommended": review_action in {"review", "reject"},
             "quality_passed": True,
-            "validation_accepted": True,
+            "validation_accepted": validation_accepted,
         },
         "review": {"warnings": [], "evidence": {"fields": []}},
-        "validation": {"accepted": True, "issues": []},
+        "validation": {"accepted": validation_accepted, "issues": validation_issues or []},
         "raw_artifacts": {},
     }
 
@@ -139,3 +146,109 @@ def test_verify_attachment_uses_leave_type_default_attachment_matrix():
 
     assert result["verify_status"] == "PASS"
     assert result["evidence"]["request"]["resolved_expected_attachment_types"] == ["MARRIAGE_CERTIFICATE"]
+
+
+
+def test_verify_attachment_downgrades_sick_pass_to_review_when_analysis_rejects():
+    analysis = _build_analysis(
+        attachment_label="MEDICAL_CERTIFICATE",
+        extracted_fields={
+            "patient_name": "张三",
+            "rest_start_date": "2026-04-01",
+            "rest_end_date": "2026-04-03",
+            "issue_date": "2026-04-01",
+        },
+        review_action="reject",
+        validation_accepted=False,
+    )
+
+    result = verify_attachment(
+        analysis,
+        {
+            "leave_type": "SICK",
+            "applicant_name": "张三",
+            "leave_start_date": "2026-04-01",
+            "leave_end_date": "2026-04-03",
+        },
+    )
+
+    assert result["verify_status"] == "REVIEW"
+    assert result["needs_manual_review"] is True
+
+
+
+def test_verify_attachment_downgrades_sick_pass_to_review_for_weak_medical_record_signal():
+    analysis = _build_analysis(
+        attachment_label="MEDICAL_CERTIFICATE",
+        extracted_fields={
+            "doc_type": "medical_record",
+            "patient_name": "张三",
+            "issue_date": "2026-04-01",
+        },
+        review_action="review",
+        validation_accepted=False,
+        validation_issues=[
+            {"code": "not_sick_note_like"},
+            {"code": "weak_sick_note_signal"},
+        ],
+    )
+
+    result = verify_attachment(
+        analysis,
+        {
+            "leave_type": "SICK",
+            "applicant_name": "张三",
+            "leave_start_date": "2026-04-01",
+            "leave_end_date": "2026-04-03",
+        },
+    )
+
+    assert result["verify_status"] == "REVIEW"
+    assert result["needs_manual_review"] is True
+
+
+
+def test_verify_attachment_downgrades_sick_pass_to_review_when_minimum_fields_missing():
+    analysis = _build_analysis(
+        attachment_label="MEDICAL_CERTIFICATE",
+        extracted_fields={
+            "patient_name": None,
+            "issue_date": None,
+            "rest_start_date": None,
+            "rest_end_date": None,
+            "rest_days": None,
+        },
+    )
+
+    result = verify_attachment(
+        analysis,
+        {
+            "leave_type": "SICK",
+            "applicant_name": "张三",
+        },
+    )
+
+    assert result["verify_status"] == "REVIEW"
+    assert result["needs_manual_review"] is True
+
+
+
+def test_verify_attachment_gating_does_not_change_non_sick_pass_behavior():
+    analysis = _build_analysis(
+        attachment_label="MARRIAGE_CERTIFICATE",
+        extracted_fields={"holder_name": "张三", "registration_date": "2024-05-20"},
+        review_action="reject",
+        validation_accepted=False,
+    )
+
+    result = verify_attachment(
+        analysis,
+        {
+            "leave_type": "MARRIAGE",
+            "applicant_name": "张三",
+            "leave_start_date": "2024-05-20",
+            "leave_end_date": "2024-05-20",
+        },
+    )
+
+    assert result["verify_status"] == "PASS"

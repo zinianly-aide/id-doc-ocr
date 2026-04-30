@@ -72,6 +72,44 @@ def _risk_level(score: int) -> str:
 
 
 
+def _issue_codes(analysis: dict[str, Any]) -> set[str]:
+    validation = analysis.get("validation") or {}
+    issues = validation.get("issues") or []
+    codes: set[str] = set()
+    for issue in issues:
+        if isinstance(issue, dict) and issue.get("code"):
+            codes.add(str(issue["code"]))
+    return codes
+
+
+
+def _apply_sick_pass_gating(analysis: dict[str, Any], request: dict[str, Any], fields: dict[str, Any], verify_status: str) -> str:
+    if str(request.get("leave_type") or "").upper() != "SICK":
+        return verify_status
+    if verify_status != "PASS":
+        return verify_status
+
+    review_action = str((analysis.get("risk") or {}).get("review_action") or "")
+    if review_action == "reject":
+        return "REVIEW"
+
+    if analysis.get("doc_type") == "medical_record":
+        issue_codes = _issue_codes(analysis)
+        if "not_sick_note_like" in issue_codes or "weak_sick_note_signal" in issue_codes:
+            return "REVIEW"
+
+    patient_name = fields.get("patient_name")
+    has_leave_evidence = any(
+        fields.get(field_name) not in (None, "", [])
+        for field_name in ("rest_start_date", "rest_end_date", "rest_days", "issue_date")
+    )
+    if not patient_name or not has_leave_evidence:
+        return "REVIEW"
+
+    return verify_status
+
+
+
 def verify_attachment(analysis: dict[str, Any], request: dict[str, Any]) -> dict[str, Any]:
     fields = _field_map(analysis)
     classification = analysis.get("classification_evidence") or {}
@@ -161,6 +199,8 @@ def verify_attachment(analysis: dict[str, Any], request: dict[str, Any]) -> dict
         verify_status = "REVIEW"
     else:
         verify_status = "PASS"
+
+    verify_status = _apply_sick_pass_gating(analysis, request, fields, verify_status)
 
     warnings = [rule["message"] for rule in rule_results if not rule["passed"]]
     request_evidence = dict(request)

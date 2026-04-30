@@ -7,15 +7,14 @@ Sick Leave Pilot Readiness
 未来30天内，把项目推进到“可启动小范围业务试点”的状态，优先完成真实试点 contract 冻结、病假场景 readiness、婚假场景灰度准备、运营机制落地和管理层材料齐备。
 
 ## 本周重点
-- 进入“最小规则修复设计（SICK 场景） / Fix Design”阶段
-- 新建并评审 `docs/sick-leave-verification-fix-design-v1.md`
-- 固化最小 gating 策略、执行顺序、影响评估与回归验收标准，不直接改代码
+- 进入“P2.3 最小规则修复实现（SICK PASS gating） / Fix Implementation”阶段
+- 已实现 SICK 场景 PASS gating，阻断 weak PASS 输出
+- 已完成关键回归与全量 pytest 验证
 - 仅推进病假场景，不扩展到婚假，并保持 contract v1 不变
 
 ## 当前风险
-- SICK 场景已出现 `analysis reject/review` 但 `verify PASS` 的真实冲突样本
 - Normal 病假正样本仍不足，当前样本池偏向 Abnormal / Edge
-- 最小修复设计若过严，可能短期抬高 REVIEW 率
+- 最小修复已收紧 PASS，短期可能提高 REVIEW 率
 - request_id 仍需在真实接入实现中按 contract 落地
 - 指标口径已定义，但尚未进入真实采集
 - 试点部门、审批人名单、业务侧实际运行安排尚未冻结

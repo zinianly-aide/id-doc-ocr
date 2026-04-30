@@ -31,13 +31,14 @@
 - 已明确 REVIEW / PASS / REJECT 业务定义
 - 已明确人工复核语义与系统边界
 
-## Milestone 4 — P2 病假场景试点 readiness（Fix Design In Progress）
+## Milestone 4 — P2 病假场景试点 readiness（Fix Implemented）
 - 已产出 `docs/pilot-sick-leave-readiness-v1.md`
 - 已建立并补充 `docs/pilot-sick-leave-samples-v1.md`
 - 已新增 `docs/sick-leave-verification-gap-analysis-v1.md` 用于治理 `analysis reject/review vs verify PASS` 冲突
 - 已新增 `docs/sick-leave-verification-fix-design-v1.md` 用于最小规则修复设计
+- 已完成：SICK 场景 PASS gating 最小代码实现
+- 已完成：关键样本回归（PASS=3 / REVIEW=9 / REJECT=0，Normal 0 误伤）
 - 待落地：病假场景 Normal 正样本继续补齐
-- 待落地：SICK 场景 PASS 偏宽松问题的最小化代码实现
 - 待落地：病假试点指标基线真实采集
 - 待落地：病假试点 SOP 执行验证
 - 目标：使病假场景成为首个稳定试点对象
