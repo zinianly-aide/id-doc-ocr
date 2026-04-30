@@ -606,3 +606,120 @@ Final freeze checklist:
 ### M1. Freeze conclusion
 
 The pilot is launch-ready at the process and governance layer except for final confirmation of the real named approver roster.
+
+---
+
+## N. 审批人图文 SOP
+
+本节用于给试点审批人直接上手，不讨论规则实现，只讲“看到什么、怎么操作、怎么判断”。
+
+### N1. 使用前准备
+
+1. 打开审批附件核验页面。
+2. 确认当前审批单是 `SICK` 场景。
+3. 确认只有单张图片附件进入本次试点范围。
+4. 如页面无法加载、接口报错或附件不是单图，直接走人工处理。
+
+### N2. 页面区域说明（先认识页面）
+
+审批人进入页面后，重点只看 4 个区域：
+
+1. 顶部控制区
+- 用于切换数据源和演示场景
+- 真实试点时，只需要关注当前是否为正式联调模式
+
+2. 附件列表区
+- 确认当前核验的是哪一张图片
+- 确认当前附件状态是 `PASS` / `REVIEW` / `REJECT`
+
+3. AnalysisPanel
+- 这是识别 / 解析 / 质量层建议
+- 只能作为辅助判断，不是最终审批信号
+
+4. VerificationPanel
+- 这是业务核验结论主区域
+- 审批时以这里的 `PASS` / `REVIEW` / `REJECT` 为主
+
+### N3. 图 1：PASS 场景应该怎么看
+
+附图 1：`docs/assets/pilot-sop-pass.png`
+
+阅读顺序：
+1. 先看附件列表，确认当前附件和状态。
+2. 再看 `VerificationPanel`：
+   - 核验状态是否为 `PASS`
+   - 风险等级是否为 `LOW`
+   - 是否显示“无需人工复核”
+3. 如 `PASS` 且无额外 warning：
+   - 继续正常审批
+   - 无需额外附件复核
+4. 如页面同时提示“分析建议与业务核验结论不一致”：
+   - 仍以 `VerificationPanel` 业务核验结论为主
+   - 左侧 analysis 风险只作为补充参考
+
+PASS 场景审批动作：
+- 结论：继续正常审批
+- 记录：无需单独升级
+- 例外：若审批人主观判断材料异常，仍可转人工复核
+
+### N4. 图 2：REVIEW 场景应该怎么看
+
+附图 2：`docs/assets/pilot-sop-review.png`
+
+阅读顺序：
+1. 先看 `VerificationPanel` 是否为 `REVIEW`。
+2. 看“人工复核提示”区域。
+3. 看 warning / 规则核验明细，确认触发原因。
+4. 看“请求侧证据”，确认申请信息与材料信息是否一致。
+
+REVIEW 场景常见触发原因：
+- 姓名不一致
+- 请假日期与材料日期不一致
+- 关系人不一致
+- 材料类型虽匹配，但存在业务风险 warning
+
+REVIEW 场景审批动作：
+- 必须进入人工复核
+- 不得直接放行
+- 根据人工复核结果决定：批准 / 驳回 / 退回补充材料
+
+### N5. 审批动作速查表
+
+1. `PASS`
+- 代表：业务规则核验通过
+- 动作：继续正常审批
+- 是否必须人工复核：否
+
+2. `REVIEW`
+- 代表：系统无法直接放行
+- 动作：进入人工复核
+- 是否必须人工复核：是
+
+3. `REJECT`
+- 代表：当前材料不满足接收条件
+- 动作：驳回、退回或要求补正
+- 是否必须人工复核：按业务流程处理，但不得直接通过
+
+### N6. 异常 / fallback SOP
+
+以下情况一律不要依赖系统结论直接审批：
+
+1. 页面报错
+2. 接口超时
+3. OCR 失败
+4. 页面提示当前结果仅供参考 / stale result
+5. 附件不是单图或超出试点范围
+
+异常场景动作：
+- 第一步：改走人工处理
+- 第二步：记录 `request_id`
+- 第三步：把问题提交给 Pilot Operations Support
+- 第四步：必要时由 Business Owner 决定 go / hold / rollback
+
+### N7. 审批人一句话原则
+
+- 先看右侧 `VerificationPanel`
+- 再看 warning 和证据
+- `PASS` 才走正常审批
+- `REVIEW` 一律进人工复核
+- 出错时一律人工兜底
