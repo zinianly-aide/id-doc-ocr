@@ -1,0 +1,50 @@
+[
+  {
+    "sample_id": "SICK-N-004",
+    "file": "diagnosis_generated_001.png",
+    "source": "模拟",
+    "path": "examples/assets/sick_leave_normal_generated/diagnosis_generated_001.png"
+  },
+  {
+    "sample_id": "SICK-N-005",
+    "file": "diagnosis_generated_002.png",
+    "source": "模拟",
+    "path": "examples/assets/sick_leave_normal_generated/diagnosis_generated_002.png"
+  },
+  {
+    "sample_id": "SICK-N-006",
+    "file": "diagnosis_generated_003.png",
+    "source": "模拟",
+    "path": "examples/assets/sick_leave_normal_generated/diagnosis_generated_003.png"
+  },
+  {
+    "sample_id": "SICK-N-007",
+    "file": "diagnosis_generated_004.png",
+    "source": "模拟",
+    "path": "examples/assets/sick_leave_normal_generated/diagnosis_generated_004.png"
+  },
+  {
+    "sample_id": "SICK-N-008",
+    "file": "diagnosis_generated_005.png",
+    "source": "模拟",
+    "path": "examples/assets/sick_leave_normal_generated/diagnosis_generated_005.png"
+  },
+  {
+    "sample_id": "SICK-N-009",
+    "file": "diagnosis_generated_006.png",
+    "source": "模拟",
+    "path": "examples/assets/sick_leave_normal_generated/diagnosis_generated_006.png"
+  },
+  {
+    "sample_id": "SICK-N-010",
+    "file": "diagnosis_generated_007.png",
+    "source": "模拟",
+    "path": "examples/assets/sick_leave_normal_generated/diagnosis_generated_007.png"
+  },
+  {
+    "sample_id": "SICK-N-011",
+    "file": "diagnosis_generated_008.png",
+    "source": "模拟",
+    "path": "examples/assets/sick_leave_normal_generated/diagnosis_generated_008.png"
+  }
+]

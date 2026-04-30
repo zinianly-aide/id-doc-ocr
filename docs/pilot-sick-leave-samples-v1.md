@@ -84,6 +84,14 @@ The registry below is the minimum structured ledger template. New samples should
 | SICK-N-001 | diagnosis_certificate_text.expected.json | Normal | 脱敏诊断证明文本 fixture，字段完整，医院/诊断/休假日期齐全 | diagnosis_proof | PASS | Yes | 真实 | Yes | 当前仓库里最接近标准病假证明的稳定基线样本 |
 | SICK-N-002 | verify-attachment.success.pass.json | Normal | mock 完整核验 PASS 场景，申请人与请假日期全部对齐 | diagnosis_proof | PASS | Yes | 模拟 | Yes | 业务结论稳定为 PASS，可作为联调 happy-path |
 | SICK-N-003 | approval-verification-page.pass.json | Normal | 前端页面级 PASS 场景，覆盖 analyze + verify 联合展示 | diagnosis_proof | PASS | No | 模拟 | Yes | 用于 UI 回归，确保审批页能稳定展示 PASS |
+| SICK-N-004 | diagnosis_generated_001.png | Normal | 生成版标准门诊诊断证明，字段完整，接近标准病假证明版式 | diagnosis_proof | PASS | Yes | 模拟 | Yes | 实测：analysis.review_action=review，verify=PASS，risk=LOW，未误降 |
+| SICK-N-005 | diagnosis_generated_002.png | Normal | 生成版标准疾病诊断证明，结构完整，轻微缺失印章识别 | diagnosis_proof | PASS | No | 模拟 | Yes | 实测：analysis.review_action=review，issues=missing_seal，verify=PASS，未误降 |
+| SICK-N-006 | diagnosis_generated_003.png | Normal | 生成版门诊疾病诊断证明，医院/诊断/休假日期完整 | diagnosis_proof | PASS | Yes | 模拟 | Yes | 实测：analysis.review_action=review，verify=PASS，risk=LOW，未误降 |
+| SICK-N-007 | diagnosis_generated_004.png | Normal | 生成版疾病诊断证明，消化内科标准病假证明场景 | diagnosis_proof | PASS | No | 模拟 | Yes | 实测：analysis.review_action=review，verify=PASS，risk=LOW，未误降 |
+| SICK-N-008 | diagnosis_generated_005.png | Normal | 生成版门诊诊断证明，耳鼻喉科标准休假建议场景 | diagnosis_proof | PASS | No | 模拟 | Yes | 实测：analysis.review_action=review，verify=PASS，risk=LOW，未误降 |
+| SICK-N-009 | diagnosis_generated_006.png | Normal | 生成版疾病诊断证明，呼吸科标准病假证明场景 | diagnosis_proof | PASS | No | 模拟 | Yes | 实测：analysis.review_action=review，issues=missing_seal，verify=PASS，未误降 |
+| SICK-N-010 | diagnosis_generated_007.png | Normal | 生成版门诊诊断证明，全科医学科标准请假场景 | diagnosis_proof | PASS | Yes | 模拟 | Yes | 实测：analysis.review_action=review，verify=PASS，risk=LOW，未误降 |
+| SICK-N-011 | diagnosis_generated_008.png | Normal | 生成版疾病诊断证明，神经内科标准病假证明场景 | diagnosis_proof | PASS | No | 模拟 | Yes | 实测：analysis.review_action=review，verify=PASS，risk=LOW，未误降 |
 | SICK-A-001 | diagnosis_certificate_minimal.expected.json | Abnormal | 脱敏最小诊断证明文本，休假起止日期与盖章缺失 | diagnosis_proof | REVIEW | Yes | 真实 | Yes | 关键缺口：字段不完整，适合验证人工复核入口 |
 | SICK-A-002 | basic_outpatient_note.expected.json | Abnormal | 门诊病历文本，不是标准诊断证明/病休证明 | medical_record | REVIEW | Yes | 真实 | Yes | 风险点：更像 medical_record，不能直接按标准病假证明放行 |
 | SICK-A-003 | analyze-document.success.json | Abnormal | mock analyze 返回 diagnosis_proof，但 validation 明确缺失医院和诊断 | diagnosis_proof | REVIEW | No | 模拟 | Yes | 识别问题：missing_hospital_name / missing_diagnosis |
@@ -146,17 +154,17 @@ Practical rule:
 
 Current evidence-backed population progress in this repository:
 
-- Normal: 3 / 10
+- Normal: 11 / 10
 - Abnormal: 10 / 10
 - Edge: 6 / 5
-- Critical cases: 10 / 5+
-- Real-source ratio: 13 / 19 = 68.4%
+- Critical cases: 13 / 5+
+- Real-source ratio: 13 / 27 = 48.1%
 
 Interpretation:
-- the registry is now populated enough to cover abnormal and edge pilot stress cases,
-- critical cases and real-source ratio both exceed the minimum target,
-- the remaining gap is concentrated in the Normal bucket,
-- the newly added public samples also exposed an important mismatch pattern: `analysis` often rejects weak public medical-document images while `verify-attachment` still returns `PASS`.
+- the registry now meets the minimum target across all three buckets,
+- the new Normal sample wave confirms that current SICK PASS gating is not excessively conservative on standard diagnosis-proof-like images,
+- newly generated Normal images consistently kept `verify_status = PASS`,
+- public weak-image samples remain valuable as PASS-gating regression cases.
 
 ## D. 使用方式说明
 

@@ -7,9 +7,9 @@
 - 已定义病假场景样本体系、指标基线、运行 SOP、风险说明、验收标准
 - 已建立病假样本结构：Normal / Abnormal / Edge
 - 新增 `docs/pilot-sick-leave-samples-v1.md` 作为样本台账基线
-- 已补录 19 条可证明来源的病假样本案例
-- 已标记 10 个关键样本，真实来源占比 68.4%（13/19）
-- 当前样本填充进度：Normal 3/10，Abnormal 10/10，Edge 6/5
+- 已补录 27 条可证明来源的病假样本案例
+- 已标记 13 个关键样本，真实来源占比 48.1%（13/27）
+- 当前样本填充进度：Normal 11/10，Abnormal 10/10，Edge 6/5
 - 已抓取一批 Wikimedia Commons 公开医疗文档图到 `examples/assets/sick_leave_public/commons/`
 - 已对其中 9 张公开样本跑真实接口验证，并确认存在 `analysis=reject` 但 `verify_status=PASS` 的偏宽松冲突
 - 已新增 `docs/sick-leave-verification-gap-analysis-v1.md` 作为专项治理文档
@@ -18,10 +18,12 @@
 - 已完成回归验证：12 个关键样本中 PASS=3 / REVIEW=9 / REJECT=0
 - 已验证 Type A / Type B 冲突在关键样本集上全部消除
 - 已验证 Normal 控制样本 0 误拦截
+- 已新增 8 个生成版标准诊断证明 Normal 样本并实跑 `/analyze-document` 与 `/verify-attachment`
+- 新增 Normal 样本验证结果：PASS=8 / REVIEW=0 / REJECT=0
 - 已完成全量测试：`135 passed`
 
 ## 遗留问题
-- Normal 桶仍明显不足，尚未达到 10 条目标
+- 新增 Normal 样本目前以模拟生成图片为主，真实公开正样本仍偏少
 - 公开样本虽补足了 Abnormal / Edge，但与真实病假正样本仍有语义差距
 - 修复后 REVIEW 率上升符合预期，但业务侧是否接受仍需确认
 - request_id 仍需在真实接入实现中按 contract 落地
@@ -29,6 +31,6 @@
 - 试点运营文档 `docs/METRICS.md`、`docs/RISKS.md` 尚未建立
 
 ## 下周建议
-- 第一优先：继续补充更接近标准病假证明的公开或脱敏真实 Normal 样本
+- 第一优先：继续补充更接近真实病假证明的公开或脱敏真实 Normal 样本
 - 第二优先：在更大样本集上验证 REVIEW 率与业务接受度
-- 第三优先：若 Normal 样本补齐且指标稳定，再评估是否进入小范围试点
+- 第三优先：若 Normal 样本补齐且指标稳定，再评估是否进入小范围试点准备
