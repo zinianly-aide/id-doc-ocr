@@ -7,13 +7,15 @@ Sick Leave Pilot Readiness
 未来30天内，把项目推进到“可启动小范围业务试点”的状态，优先完成真实试点 contract 冻结、病假场景 readiness、婚假场景灰度准备、运营机制落地和管理层材料齐备。
 
 ## 本周重点
-- 病假样本台账进入“样本填充中”阶段：`docs/pilot-sick-leave-samples-v1.md`
-- 持续补录 Normal / Abnormal / Edge 三分桶样本
-- 优先补齐真实病假样本与关键样本验证标记
+- 进入“最小规则修复设计（SICK 场景） / Fix Design”阶段
+- 新建并评审 `docs/sick-leave-verification-fix-design-v1.md`
+- 固化最小 gating 策略、执行顺序、影响评估与回归验收标准，不直接改代码
 - 仅推进病假场景，不扩展到婚假，并保持 contract v1 不变
 
 ## 当前风险
-- 病假 readiness 文档已建立，但真实样本集尚未正式整理入册
+- SICK 场景已出现 `analysis reject/review` 但 `verify PASS` 的真实冲突样本
+- Normal 病假正样本仍不足，当前样本池偏向 Abnormal / Edge
+- 最小修复设计若过严，可能短期抬高 REVIEW 率
 - request_id 仍需在真实接入实现中按 contract 落地
 - 指标口径已定义，但尚未进入真实采集
 - 试点部门、审批人名单、业务侧实际运行安排尚未冻结

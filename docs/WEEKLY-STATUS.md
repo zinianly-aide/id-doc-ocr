@@ -12,16 +12,20 @@
 - 当前样本填充进度：Normal 3/10，Abnormal 10/10，Edge 6/5
 - 已抓取一批 Wikimedia Commons 公开医疗文档图到 `examples/assets/sick_leave_public/commons/`
 - 已对其中 9 张公开样本跑真实接口验证，并确认存在 `analysis=reject` 但 `verify_status=PASS` 的偏宽松冲突
+- 已新增 `docs/sick-leave-verification-gap-analysis-v1.md` 作为专项治理文档
+- 已新增 `docs/sick-leave-verification-fix-design-v1.md` 作为最小规则修复设计文档
+- 已明确 SICK 最小修复设计：前置 PASS gating、最小字段要求、顺序前移、预估影响范围
 
 ## 遗留问题
 - Normal 桶仍明显不足，尚未达到 10 条目标
 - 公开样本虽补足了 Abnormal / Edge，但与真实病假正样本仍有语义差距
-- `verify-attachment` 对弱质医疗文书样本存在 PASS 偏宽松问题，需后续单独收口
+- 最小修复设计尚未进入代码实现，真实运行效果仍待验证
+- 设计可能短期提高 REVIEW 率，业务侧是否接受仍需确认
 - request_id 仍需在真实接入实现中按 contract 落地
 - 指标基线尚未开始真实采集
 - 试点运营文档 `docs/METRICS.md`、`docs/RISKS.md` 尚未建立
 
 ## 下周建议
-- 第一优先：继续补充更接近标准病假证明的公开或脱敏真实 Normal 样本
-- 第二优先：围绕 `analysis reject` vs `verify PASS` 冲突建立专项误判清单
-- 第三优先：建立试点指标采集文档
+- 第一优先：评审并确认 `docs/sick-leave-verification-fix-design-v1.md`
+- 第二优先：进入最小化代码实现阶段，仅治理 SICK 场景 PASS 偏宽松问题
+- 第三优先：继续补充更接近标准病假证明的公开或脱敏真实 Normal 样本
