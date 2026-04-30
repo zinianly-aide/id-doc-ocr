@@ -7,9 +7,29 @@ import type {
   RawVerifyResponse,
 } from "@/types";
 
+type ScenarioPageJson = Omit<RawApprovalVerificationPageModel, "analyzeResponse" | "verifyResponse"> & {
+  analyzeResponse: Omit<RawAnalyzeResponse, "request_id"> & { request_id?: string };
+  verifyResponse: Omit<RawVerifyResponse, "request_id"> & { request_id?: string };
+};
+
+function normalizeScenarioPage(page: ScenarioPageJson): RawApprovalVerificationPageModel {
+  const requestId = page.requestHeader.requestId;
+  return {
+    ...page,
+    analyzeResponse: {
+      ...page.analyzeResponse,
+      request_id: page.analyzeResponse.request_id ?? requestId,
+    },
+    verifyResponse: {
+      ...page.verifyResponse,
+      request_id: page.verifyResponse.request_id ?? requestId,
+    },
+  };
+}
+
 const scenarioMap: Record<MockScenario, RawApprovalVerificationPageModel> = {
-  pass: passPage as RawApprovalVerificationPageModel,
-  review: reviewPage as RawApprovalVerificationPageModel,
+  pass: normalizeScenarioPage(passPage as ScenarioPageJson),
+  review: normalizeScenarioPage(reviewPage as ScenarioPageJson),
 };
 
 function clone<T>(value: T): T {

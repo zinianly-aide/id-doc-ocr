@@ -31,7 +31,7 @@
 - 已明确 REVIEW / PASS / REJECT 业务定义
 - 已明确人工复核语义与系统边界
 
-## Milestone 4 — P2 病假场景试点 readiness（Normal Stability In Progress）
+## Milestone 4 — P2 病假场景试点 readiness（已完成）
 - 已产出 `docs/pilot-sick-leave-readiness-v1.md`
 - 已建立并补充 `docs/pilot-sick-leave-samples-v1.md`
 - 已新增 `docs/sick-leave-verification-gap-analysis-v1.md` 用于治理 `analysis reject/review vs verify PASS` 冲突
@@ -40,33 +40,40 @@
 - 已完成：关键弱样本回归（PASS=3 / REVIEW=9 / REJECT=0，Normal 控制 0 误伤）
 - 已完成：Normal 样本补齐到 `11/10`
 - 已完成：新增 8 个 Normal 生成样本的 PASS 稳定性验证（PASS=8 / REVIEW=0 / REJECT=0）
-- 待落地：补充更多接近真实病假证明的 Normal 正样本
-- 待落地：病假试点指标基线真实采集
-- 待落地：病假试点 SOP 执行验证
-- 目标：使病假场景成为首个稳定试点对象
+- 已完成：样本三分桶最低基线达标并形成 readiness 判断依据
 
-## Milestone 5 — P3 婚假场景最小稳定闭环
+## Milestone 5 — P3 小范围试点准备（Final Validation In Progress）
+- 新增 `docs/pilot-launch-readiness-v1.md` 作为试点准备主文档
+- 新增 `docs/METRICS.md`，冻结成功率 / REVIEW率 / P95耗时 / 人工复核占比口径
+- 新增 `docs/RISKS.md`，冻结误放行 / REVIEW率异常 / 接口失败 / rollback 触发条件
+- 已完成：request_id 由调用方生成并在 analyze / verify / response / log 中贯通验证
+- 已完成：10 条首轮指标采集与最小采集口径验证
+- 已完成：10 条审批 rehearsal，确认 PASS / REVIEW 与 fallback 语义可执行
+- 待落地：真实业务接入层的 request_id 实施
+- 待落地：持续指标采集责任人与 review cadence 冻结
+- 待落地：试点审批人名单、试点时间窗冻结
+
+## Milestone 6 — P4 婚假场景最小稳定闭环
 - 输出 marriage rules gap list
 - 补齐 fixture tests 与风险说明
 - 明确婚假场景灰度边界
 
-## Milestone 6 — P4 试点运营机制落地
+## Milestone 7 — P5 试点运营机制运行化
 - 持续更新 `docs/WEEKLY-STATUS.md`
-- 建立 `docs/METRICS.md`
-- 建立 `docs/RISKS.md`
+- 让 `docs/METRICS.md` 与 `docs/RISKS.md` 进入真实运营使用
 - 让周报、问题台账、指标复盘可运行
 
-## Milestone 7 — P5 管理层决策材料完备
+## Milestone 8 — P6 管理层决策材料完备
 - 一页纸摘要可直接汇报
 - 试点启动会材料可直接使用
 - 管理层汇报结构可直接转 PPT
 
-## Milestone 8 — 小范围灰度试点
+## Milestone 9 — 小范围灰度试点
 - 沙箱联调
 - 小规模审批人灰度使用
 - 采集成功率、耗时、REVIEW率、误判案例、业务反馈
 
-## Milestone 9 — 试点评估与扩面决策
+## Milestone 10 — 试点评估与扩面决策
 - 输出试点结论
 - 判断 continue / expand / shrink / pause
 - 若进入扩面前，优先补强规则、样本、误判治理

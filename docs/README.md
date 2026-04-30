@@ -30,6 +30,12 @@ Use this index before opening individual documents.
   - 最近一轮完成事项、遗留问题、下周建议
 - `[CURRENT]` `docs/ROADMAP.md`
   - 当前里程碑状态与下一阶段路线图
+- `[CURRENT]` `docs/pilot-launch-readiness-v1.md`
+  - P3 试点准备主文档：readiness 总结、试点范围冻结、运行方式、request_id、风险与启动清单
+- `[CURRENT]` `docs/METRICS.md`
+  - 小范围试点启动期核心指标定义：成功率、REVIEW率、P95耗时、人工复核占比
+- `[CURRENT]` `docs/RISKS.md`
+  - 小范围试点启动期风险与回滚文档：误放行、REVIEW率异常、接口失败、traceability 失败
 - `[CURRENT]` `docs/pilot-sick-leave-samples-v1.md`
   - 病假样本台账、分类结构、最小样本规模、联调/回归/误判分析使用方式
 - `[CURRENT]` `docs/sick-leave-verification-gap-analysis-v1.md`
@@ -146,6 +152,9 @@ These folders keep documents that are no longer part of the default reading path
 - `[CURRENT]` `docs/pilot-execution-package-v1.md`
 - `[CURRENT]` `docs/contract-pilot-v1.md`
 - `[CURRENT]` `docs/pilot-sick-leave-readiness-v1.md`
+- `[CURRENT]` `docs/pilot-launch-readiness-v1.md`
+- `[CURRENT]` `docs/METRICS.md`
+- `[CURRENT]` `docs/RISKS.md`
 - `[CURRENT]` `docs/pilot-sick-leave-samples-v1.md`
 - `[CURRENT]` `docs/sick-leave-verification-gap-analysis-v1.md`
 - `[CURRENT]` `docs/sick-leave-verification-fix-design-v1.md`
@@ -225,6 +234,9 @@ The following files should be maintained as the long-term living set for the cur
 - `docs/pilot-execution-package-v{n}.md`
 - `docs/contract-pilot-v{n}.md`
 - `docs/pilot-sick-leave-readiness-v{n}.md`
+- `docs/pilot-launch-readiness-v{n}.md`
+- `docs/METRICS.md`
+- `docs/RISKS.md`
 - `docs/pilot-sick-leave-samples-v{n}.md`
 - `docs/sick-leave-verification-gap-analysis-v{n}.md`
 - `docs/sick-leave-verification-fix-design-v{n}.md`

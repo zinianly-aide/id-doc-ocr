@@ -1,36 +1,28 @@
 # WEEKLY STATUS
 
 ## 本次完成事项
-- 已 push P1 / P1.5 / P1.6 文档治理与 contract 确认成果
-- 已正式进入 P2：Sick Leave Pilot Readiness
-- 新增 `docs/pilot-sick-leave-readiness-v1.md`
-- 已定义病假场景样本体系、指标基线、运行 SOP、风险说明、验收标准
-- 已建立病假样本结构：Normal / Abnormal / Edge
-- 新增 `docs/pilot-sick-leave-samples-v1.md` 作为样本台账基线
-- 已补录 27 条可证明来源的病假样本案例
-- 已标记 13 个关键样本，真实来源占比 48.1%（13/27）
-- 当前样本填充进度：Normal 11/10，Abnormal 10/10，Edge 6/5
-- 已抓取一批 Wikimedia Commons 公开医疗文档图到 `examples/assets/sick_leave_public/commons/`
-- 已对其中 9 张公开样本跑真实接口验证，并确认存在 `analysis=reject` 但 `verify_status=PASS` 的偏宽松冲突
-- 已新增 `docs/sick-leave-verification-gap-analysis-v1.md` 作为专项治理文档
-- 已新增 `docs/sick-leave-verification-fix-design-v1.md` 作为最小规则修复设计文档
-- 已完成 SICK PASS gating 最小实现，仅在 `leave_type=SICK` 且候选结果为 PASS 时生效
-- 已完成回归验证：12 个关键样本中 PASS=3 / REVIEW=9 / REJECT=0
-- 已验证 Type A / Type B 冲突在关键样本集上全部消除
-- 已验证 Normal 控制样本 0 误拦截
-- 已新增 8 个生成版标准诊断证明 Normal 样本并实跑 `/analyze-document` 与 `/verify-attachment`
-- 新增 Normal 样本验证结果：PASS=8 / REVIEW=0 / REJECT=0
-- 已完成全量测试：`135 passed`
+- 已从 P3 文档准备阶段进入 P3.1：Pre-Launch Validation
+- 已在当前本地验证服务链路打通 request_id
+- 已验证：调用方可生成 request_id，并在 analyze -> verify 两次请求中复用同一个 request_id
+- 已验证：`/analyze-document` 与 `/verify-attachment` response 均回传 top-level `request_id`
+- 已验证：日志中可按 request_id 检索 analyze_input / analyze_result / verify_input / verify_result / request access log
+- 已把 request_id 验证结果写入 `docs/pilot-launch-readiness-v1.md`
+- 已完成 10 条首轮指标采集
+- 首轮采集结果：成功率 100%，REVIEW率 50%，人工复核占比 50%
+- 首轮 `verify_latency_ms` 分布：min 8.31 / median 114.17 / p95 735.89 / max 802.14
+- 已把首轮采集样例写入 `docs/METRICS.md`
+- 已完成 10 条审批 rehearsal（5 PASS + 5 REVIEW）
+- 已确认 PASS / REVIEW 审批动作可理解，fallback 规则在 SOP 层清楚
+- 已把 rehearsal 结果写入 `docs/pilot-launch-readiness-v1.md`
+- 当前阶段仍严格保持：不改规则代码、不改 contract、不扩展功能
 
 ## 遗留问题
-- 新增 Normal 样本目前以模拟生成图片为主，真实公开正样本仍偏少
-- 公开样本虽补足了 Abnormal / Edge，但与真实病假正样本仍有语义差距
-- 修复后 REVIEW 率上升符合预期，但业务侧是否接受仍需确认
-- request_id 仍需在真实接入实现中按 contract 落地
-- 指标基线尚未开始真实采集
-- 试点运营文档 `docs/METRICS.md`、`docs/RISKS.md` 尚未建立
+- 本地验证服务已打通 request_id，但真实业务接入层还需按同样方式落地
+- 首轮指标已可采集，但持续采集机制、责任人和周度 review 归口仍未冻结
+- 试点审批人名单、启动时间窗、首周 review 节奏仍需业务侧最终确认
+- 真实或脱敏真实的 Normal 正样本占比仍可继续提高
 
 ## 下周建议
-- 第一优先：继续补充更接近真实病假证明的公开或脱敏真实 Normal 样本
-- 第二优先：在更大样本集上验证 REVIEW 率与业务接受度
-- 第三优先：若 Normal 样本补齐且指标稳定，再评估是否进入小范围试点准备
+- 第一优先：把同一套 request_id 方案落实到真实业务接入层
+- 第二优先：冻结持续指标采集责任人、review 节奏和 issue tracking 归口
+- 第三优先：完成启动会前的审批人名单与时间窗确认，再决定是否正式开试点

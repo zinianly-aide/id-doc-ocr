@@ -51,6 +51,7 @@ export interface RawReviewWarning {
 }
 
 export interface RawAnalyzeResponse {
+  request_id: string;
   filename: string;
   content_type: string;
   result: Record<string, unknown>;

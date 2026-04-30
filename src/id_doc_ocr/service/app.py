@@ -5,6 +5,7 @@ import os
 import platform
 import sys
 import time
+import uuid
 from dataclasses import asdict, dataclass
 from typing import Any
 
@@ -25,6 +26,12 @@ from id_doc_ocr.tools.plugin_inventory import build_plugin_inventory
 from id_doc_ocr.verification.rules import verify_attachment
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+runtime_logger = logging.getLogger("uvicorn.error")
+runtime_logger.setLevel(logging.INFO)
+
+REQUEST_ID_HEADER = "x-request-id"
+REQUEST_ID_FORM_FIELD = "request_id"
 
 
 @dataclass(slots=True)
@@ -163,6 +170,41 @@ def build_capabilities(settings: ServiceSettings) -> dict[str, Any]:
     }
 
 
+def _serialize_log_value(value: Any) -> str:
+    if value is None:
+        return "-"
+    if isinstance(value, (str, int, float, bool)):
+        return str(value)
+    if isinstance(value, dict):
+        items = ",".join(f"{key}:{_serialize_log_value(val)}" for key, val in sorted(value.items()))
+        return f"{{{items}}}"
+    if isinstance(value, (list, tuple, set)):
+        return "[" + ",".join(_serialize_log_value(item) for item in value) + "]"
+    return str(value)
+
+
+def _resolve_request_id(request: Request, form: Any | None = None) -> str:
+    form_request_id = None
+    if form is not None:
+        form_request_id = form.get(REQUEST_ID_FORM_FIELD)
+    request_id = form_request_id or request.headers.get(REQUEST_ID_HEADER) or f"LV-TEMP-{uuid.uuid4().hex[:12]}"
+    request_id = str(request_id).strip()
+    request.state.request_id = request_id
+    return request_id
+
+
+def _attach_request_id(response: JSONResponse, request_id: str) -> JSONResponse:
+    response.headers["X-Request-Id"] = request_id
+    return response
+
+
+def _log_stage(event: str, request_id: str, **fields: Any) -> None:
+    details = " ".join(f"{key}={_serialize_log_value(value)}" for key, value in sorted(fields.items()))
+    suffix = f" {details}" if details else ""
+    logger.info("%s request_id=%s%s", event, request_id, suffix)
+    runtime_logger.info("%s request_id=%s%s", event, request_id, suffix)
+
+
 async def _run_inference_request(
     *,
     plugin_name: str | None,
@@ -242,12 +284,22 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
         start = time.perf_counter()
         response = await call_next(request)
         elapsed_ms = (time.perf_counter() - start) * 1000.0
+        request_id = getattr(request.state, "request_id", request.headers.get(REQUEST_ID_HEADER) or "-")
         logger.info(
-            "request method=%s path=%s status=%s elapsed_ms=%.2f",
+            "request method=%s path=%s status=%s elapsed_ms=%.2f request_id=%s",
             request.method,
             request.url.path,
             response.status_code,
             elapsed_ms,
+            request_id,
+        )
+        runtime_logger.info(
+            "request method=%s path=%s status=%s elapsed_ms=%.2f request_id=%s",
+            request.method,
+            request.url.path,
+            response.status_code,
+            elapsed_ms,
+            request_id,
         )
         return response
 
@@ -332,10 +384,12 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
         failure_dir: str | None = Form(None),
     ) -> JSONResponse:
         form = await request.form()
+        request_id = _resolve_request_id(request, form)
         reserved_keys = {
             "plugin_name",
             "plugin",
             "file",
+            REQUEST_ID_FORM_FIELD,
             "ocr_backend",
             "vlm_backend",
             "detector_backend",
@@ -343,6 +397,13 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
             "failure_dir",
         }
         provided_fields = {str(key): value for key, value in form.items() if key not in reserved_keys and not hasattr(value, "filename")}
+        _log_stage(
+            "analyze_input",
+            request_id,
+            plugin=plugin_name or plugin,
+            filename=file.filename,
+            fields=sorted(provided_fields.keys()),
+        )
 
         result, _, _ = await _run_inference_request(
             plugin_name=plugin_name,
@@ -356,16 +417,26 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
             service_settings=service_settings,
             fields=provided_fields,
         )
-        return JSONResponse(
+        analysis = result["analysis"]
+        _log_stage(
+            "analyze_result",
+            request_id,
+            doc_type=analysis.get("doc_type"),
+            review_action=analysis.get("risk", {}).get("review_action"),
+            risk_score=analysis.get("risk", {}).get("score"),
+            validation_accepted=analysis.get("validation", {}).get("accepted"),
+        )
+        return _attach_request_id(JSONResponse(
             content=jsonable_encoder(
                 {
+                    "request_id": request_id,
                     "filename": file.filename,
                     "content_type": file.content_type,
                     "result": result,
-                    "analysis": result["analysis"],
+                    "analysis": analysis,
                 }
             )
-        )
+        ), request_id)
 
     @app.post("/verify-attachment")
     async def verify_attachment_endpoint(
@@ -387,14 +458,16 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
         leave_start_date: str | None = Form(None),
         leave_end_date: str | None = Form(None),
     ) -> JSONResponse:
+        form = await request.form()
+        request_id = _resolve_request_id(request, form)
         if not any([expected_attachment_type, expected_attachment_types, leave_type]):
             raise HTTPException(status_code=422, detail="expected_attachment_type is required")
 
-        form = await request.form()
         reserved_keys = {
             "plugin_name",
             "plugin",
             "file",
+            REQUEST_ID_FORM_FIELD,
             "ocr_backend",
             "vlm_backend",
             "detector_backend",
@@ -410,6 +483,17 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
             "leave_end_date",
         }
         provided_fields = {str(key): value for key, value in form.items() if key not in reserved_keys and not hasattr(value, "filename")}
+        _log_stage(
+            "verify_input",
+            request_id,
+            plugin=plugin_name or plugin,
+            filename=file.filename,
+            leave_type=leave_type,
+            applicant_name=applicant_name,
+            expected_attachment_type=expected_attachment_type,
+            expected_attachment_types=expected_attachment_types,
+            fields=sorted(provided_fields.keys()),
+        )
 
         result, _, _ = await _run_inference_request(
             plugin_name=plugin_name,
@@ -436,17 +520,28 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
                 "leave_end_date": leave_end_date,
             },
         )
-        return JSONResponse(
+        analysis = result["analysis"]
+        _log_stage(
+            "verify_result",
+            request_id,
+            doc_type=analysis.get("doc_type"),
+            verify_status=verification.get("verify_status"),
+            matched_attachment_type=verification.get("matched_attachment_type"),
+            risk_score=verification.get("risk_score"),
+            needs_manual_review=verification.get("needs_manual_review"),
+        )
+        return _attach_request_id(JSONResponse(
             content=jsonable_encoder(
                 {
+                    "request_id": request_id,
                     "filename": file.filename,
                     "content_type": file.content_type,
                     "result": result,
-                    "analysis": result["analysis"],
+                    "analysis": analysis,
                     "verification": verification,
                 }
             )
-        )
+        ), request_id)
 
     return app
 

@@ -174,6 +174,8 @@ def test_verify_attachment_success():
     )
     assert response.status_code == 200
     payload = response.json()
+    assert payload["request_id"].startswith("LV-TEMP-")
+    assert response.headers["x-request-id"] == payload["request_id"]
     assert payload["verification"]["verify_status"] == "PASS"
     assert payload["verification"]["matched_attachment_type"] == "MEDICAL_CERTIFICATE"
     assert payload["analysis"]["classification_evidence"]["attachment_label"] == "MEDICAL_CERTIFICATE"
@@ -265,9 +267,64 @@ def test_analyze_document_success_returns_analysis_only_payload():
     )
     assert response.status_code == 200
     payload = response.json()
+    assert payload["request_id"].startswith("LV-TEMP-")
+    assert response.headers["x-request-id"] == payload["request_id"]
     assert payload["analysis"]["doc_type"] == "diagnosis_proof"
     assert payload["result"]["analysis"] == payload["analysis"]
     assert "verification" not in payload
+
+
+def test_request_id_can_be_supplied_by_caller_and_reused_across_analyze_and_verify(caplog: pytest.LogCaptureFixture):
+    caplog.set_level("INFO", logger="id_doc_ocr.service.app")
+    client = build_client()
+    request_id = "LV-SICK-20260429-000123"
+
+    analyze_response = client.post(
+        "/analyze-document",
+        data={
+            "request_id": request_id,
+            "plugin_name": "diagnosis_proof",
+            "ocr_backend": "mock",
+            "vlm_backend": "mock",
+            "patient_name": "张三",
+            "rest_start_date": "2026-04-01",
+            "rest_end_date": "2026-04-03",
+            "issue_date": "2026-04-01",
+        },
+        files={"file": ("sample.jpg", b"fake-image-bytes", "image/jpeg")},
+    )
+
+    verify_response = client.post(
+        "/verify-attachment",
+        data={
+            "request_id": request_id,
+            "plugin_name": "diagnosis_proof",
+            "ocr_backend": "mock",
+            "vlm_backend": "mock",
+            "leave_type": "SICK",
+            "applicant_name": "张三",
+            "leave_start_date": "2026-04-01",
+            "leave_end_date": "2026-04-03",
+            "patient_name": "张三",
+            "rest_start_date": "2026-04-01",
+            "rest_end_date": "2026-04-03",
+            "issue_date": "2026-04-01",
+        },
+        files={"file": ("sample.jpg", b"fake-image-bytes", "image/jpeg")},
+    )
+
+    assert analyze_response.status_code == 200
+    assert verify_response.status_code == 200
+    assert analyze_response.json()["request_id"] == request_id
+    assert verify_response.json()["request_id"] == request_id
+    assert analyze_response.headers["x-request-id"] == request_id
+    assert verify_response.headers["x-request-id"] == request_id
+    log_text = "\n".join(record.getMessage() for record in caplog.records)
+    assert f"request_id={request_id}" in log_text
+    assert "analyze_input" in log_text
+    assert "analyze_result" in log_text
+    assert "verify_input" in log_text
+    assert "verify_result" in log_text
 
 
 
