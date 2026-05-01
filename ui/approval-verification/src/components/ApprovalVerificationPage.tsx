@@ -44,7 +44,7 @@ function buildInconsistencyMessage(analysisAction: string, verifyStatus: VerifyS
   if (normalizedAnalysisAction === verifyStatus) {
     return null;
   }
-  return `识别分析建议 (${analysisAction}) 与业务核验结论 (${verifyStatus}) 不一致，请以业务核验结论为主，并人工复核分析风险。`;
+  return "系统识别提示与业务核验结论不一致，建议优先按业务核验结论处理，并补充人工复核材料风险。";
 }
 
 function getStatusTone(status: string): "pass" | "review" | "reject" {
@@ -62,15 +62,15 @@ function getRiskLabel(level: string): string {
 }
 
 function getDecisionAdvice(status: VerifyStatus): string {
-  if (status === "PASS") return "可直接通过审批";
-  if (status === "REJECT") return "建议驳回或退回补正";
-  return "建议转人工复核";
-}
-
-function getDecisionText(status: VerifyStatus): string {
   if (status === "PASS") return "建议通过";
   if (status === "REJECT") return "建议驳回";
-  return "建议复核";
+  return "建议人工复核";
+}
+
+function getDecisionSubtitle(status: VerifyStatus): string {
+  if (status === "PASS") return "材料满足当前审批要求，可直接完成审批。";
+  if (status === "REJECT") return "材料存在关键问题，建议驳回或退回补正。";
+  return "材料存在待确认风险，建议先转人工复核。";
 }
 
 function formatFieldLabel(name: string): string {
@@ -122,38 +122,31 @@ function buildReasonCards(viewModel: ApprovalVerificationViewModel) {
   const startDate = extractFieldValue(viewModel, "rest_start_date");
   const endDate = extractFieldValue(viewModel, "rest_end_date");
   const hasSeal = extractFieldValue(viewModel, "seal_present") === "是";
-  const warningText = viewModel.verification.warnings[0] ?? "未发现冲突信息";
 
   return [
     {
-      title: "姓名匹配",
-      value: applicant === patientName ? "一致" : "需复核",
-      detail: patientName,
+      title: "申请人是否一致",
+      value: applicant === patientName ? "一致" : "需人工确认",
+      detail: `材料姓名：${patientName}`,
       tone: applicant === patientName ? "pass" : "review",
     },
     {
-      title: "日期有效",
+      title: "请假日期是否覆盖",
       value: `${startDate} - ${endDate}`,
-      detail: viewModel.requestHeader.leaveDateRange,
+      detail: `申请区间：${viewModel.requestHeader.leaveDateRange}`,
       tone: viewModel.verification.verifyStatus === "PASS" ? "pass" : "review",
     },
     {
-      title: "文档类型",
+      title: "材料类型是否匹配",
       value: viewModel.analysis.attachmentLabel,
-      detail: viewModel.analysis.docType,
+      detail: `当前识别：${formatFieldLabel("doc_type")}`,
       tone: viewModel.verification.verifyStatus === "REJECT" ? "reject" : "pass",
     },
     {
-      title: "风险提示",
-      value: hasSeal ? "已检测到盖章" : "未检测到医院盖章",
-      detail: hasSeal ? "已通过" : "可接受",
+      title: "关键盖章是否存在",
+      value: hasSeal ? "已检测到" : "未明确检测到",
+      detail: hasSeal ? "可作为有效凭证继续审批" : "建议人工查看材料原件",
       tone: hasSeal ? "pass" : "review",
-    },
-    {
-      title: "其他校验",
-      value: viewModel.verification.warnings.length ? warningText : "关键字段完整",
-      detail: viewModel.verification.warnings.length ? "需人工关注" : "无冲突信息",
-      tone: viewModel.verification.warnings.length ? "review" : "pass",
     },
   ];
 }
@@ -174,6 +167,53 @@ function computeConfidence(viewModel: ApprovalVerificationViewModel): number {
   const base = Math.round((viewModel.analysis.docTypeConfidence ?? 0.7) * 100);
   const weighted = Math.round(base * 0.55 + passRatio * 35 + (viewModel.verification.verifyStatus === "PASS" ? 10 : 0));
   return Math.max(41, Math.min(98, weighted));
+}
+
+function buildRiskItems(viewModel: ApprovalVerificationViewModel, inconsistencyMessage: string | null) {
+  const items: Array<{
+    title: string;
+    action: string;
+    detail: string;
+    tone: "pass" | "review" | "reject";
+  }> = [];
+
+  if (inconsistencyMessage) {
+    items.push({
+      title: "系统判断与业务结论存在分歧",
+      action: "优先按当前业务核验结论处理，并复看原始材料后再决定是否通过。",
+      detail: inconsistencyMessage,
+      tone: "review",
+    });
+  }
+
+  viewModel.verification.warnings.forEach((warning) => {
+    items.push({
+      title: warning,
+      action: viewModel.verification.verifyStatus === "PASS" ? "建议保留审批备注后通过。" : "建议转人工复核，确认是否需要补充材料。",
+      detail: "请结合原始材料和申请单信息做最终判断。",
+      tone: viewModel.verification.verifyStatus === "PASS" ? "pass" : "review",
+    });
+  });
+
+  viewModel.analysis.validationIssues.forEach((issue) => {
+    items.push({
+      title: issue.message,
+      action: viewModel.verification.verifyStatus === "REJECT" ? "建议驳回或退回申请人补正后再提交。" : "建议重点查看原始材料对应位置，确认是否影响审批。",
+      detail: "该项提示仅作为风险提醒，请以审批结论和材料内容为准。",
+      tone: viewModel.verification.verifyStatus === "REJECT" ? "reject" : "review",
+    });
+  });
+
+  if (!items.length) {
+    items.push({
+      title: "当前未发现明显审批风险",
+      action: "可按照建议动作直接处理。",
+      detail: "如需更谨慎，可继续查看结构化字段和原始材料。",
+      tone: "pass",
+    });
+  }
+
+  return items.slice(0, 4);
 }
 
 export function ApprovalVerificationPage({
@@ -228,12 +268,15 @@ export function ApprovalVerificationPage({
   const reasonCards = useMemo(() => buildReasonCards(viewModel), [viewModel]);
   const timelineItems = useMemo(() => buildTimelineItems(), []);
   const confidence = useMemo(() => computeConfidence(viewModel), [viewModel]);
+  const riskItems = useMemo(() => buildRiskItems(viewModel, inconsistencyMessage), [viewModel, inconsistencyMessage]);
 
   const uploadedFilename = selectedFile?.name ?? viewModel.attachments[0]?.filename ?? "-";
   const uploadedFileType = selectedFile?.type ?? viewModel.attachments[0]?.contentType ?? "-";
   const selectedAttachmentStatus = viewModel.verification.verifyStatus;
   const suggestionTone = getStatusTone(viewModel.verification.verifyStatus);
   const analysisTone = getStatusTone(viewModel.analysis.reviewAction);
+  const decisionAdvice = getDecisionAdvice(viewModel.verification.verifyStatus);
+  const decisionSubtitle = getDecisionSubtitle(viewModel.verification.verifyStatus);
 
   function handleFileChange(file: File | null) {
     if (!file) {
@@ -316,9 +359,9 @@ export function ApprovalVerificationPage({
         </nav>
 
         <div className="glf-sidebar-card">
-          <p className="glf-sidebar-card__title">需要帮助？</p>
-          <p className="muted">查看审批人 SOP 指南</p>
-          <button type="button" className="glf-link-button">打开 SOP</button>
+          <p className="glf-sidebar-card__title">当前建议动作</p>
+          <strong className={`glf-sidebar-card__decision glf-sidebar-card__decision--${suggestionTone}`}>{decisionAdvice}</strong>
+          <p className="muted">{decisionSubtitle}</p>
         </div>
       </aside>
 
@@ -326,11 +369,11 @@ export function ApprovalVerificationPage({
         <header className="glf-header">
           <div>
             <p className="glf-header__eyebrow">事务 / 单据核验详情</p>
-            <h1>Leave Verification Dashboard</h1>
+            <h1>审批材料核验工作台</h1>
+            <p className="glf-header__summary">先看建议动作，再核对审批材料，最后确认风险提示。</p>
           </div>
           <div className="glf-header__meta">
             <span className="glf-chip">Request ID: {viewModel.requestHeader.requestId}</span>
-            <span className="glf-chip">{mode === "real" ? "Real Adapter" : "Mock"}</span>
             <div className="glf-usercard">
               <div className="glf-usercard__avatar">HR</div>
               <div>
@@ -338,84 +381,36 @@ export function ApprovalVerificationPage({
                 <p>审批人</p>
               </div>
             </div>
+            <details className="glf-debug-menu">
+              <summary>调试入口</summary>
+              <div className="glf-debug-menu__panel">
+                <div className="glf-debug-menu__group">
+                  <span>页面</span>
+                  <button type="button" className={pageVersion === "default" ? "scenario-button scenario-button--active" : "scenario-button"} onClick={() => onPageVersionChange("default")}>当前页</button>
+                  <button type="button" className="scenario-button" onClick={() => onPageVersionChange("v1")}>打开 V1</button>
+                </div>
+                <div className="glf-debug-menu__group">
+                  <span>数据源</span>
+                  <button type="button" className={mode === "mock" ? "scenario-button scenario-button--active" : "scenario-button"} onClick={() => onModeChange("mock")}>Mock</button>
+                  <button type="button" className={mode === "real" ? "scenario-button scenario-button--active" : "scenario-button"} onClick={() => onModeChange("real")}>Real</button>
+                </div>
+                <div className="glf-debug-menu__group">
+                  <span>场景</span>
+                  <button type="button" className={scenario === "pass" ? "scenario-button scenario-button--active" : "scenario-button"} onClick={() => onScenarioChange("pass")}>通过</button>
+                  <button type="button" className={scenario === "review" ? "scenario-button scenario-button--active" : "scenario-button"} onClick={() => onScenarioChange("review")}>复核</button>
+                </div>
+              </div>
+            </details>
           </div>
         </header>
 
-        <section className="glf-controls">
-          <div className="glf-controls__group">
-            <span className="glf-controls__label">页面版本</span>
-            <button type="button" className={pageVersion === "default" ? "scenario-button scenario-button--active" : "scenario-button"} onClick={() => onPageVersionChange("default")}>默认页</button>
-            <button type="button" className={pageVersion === "v1" ? "scenario-button scenario-button--active" : "scenario-button"} onClick={() => onPageVersionChange("v1")}>V1</button>
-          </div>
-          <div className="glf-controls__group">
-            <span className="glf-controls__label">数据源</span>
-            <button type="button" className={mode === "mock" ? "scenario-button scenario-button--active" : "scenario-button"} onClick={() => onModeChange("mock")}>Mock mode</button>
-            <button type="button" className={mode === "real" ? "scenario-button scenario-button--active" : "scenario-button"} onClick={() => onModeChange("real")}>Real adapter mode</button>
-          </div>
-          <div className="glf-controls__group">
-            <span className="glf-controls__label">演示场景</span>
-            <button type="button" className={scenario === "pass" ? "scenario-button scenario-button--active" : "scenario-button"} onClick={() => onScenarioChange("pass")}>PASS mock</button>
-            <button type="button" className={scenario === "review" ? "scenario-button scenario-button--active" : "scenario-button"} onClick={() => onScenarioChange("review")}>REVIEW mock</button>
-          </div>
-        </section>
-
-        <section className="glf-summary-card">
-          <div className="glf-summary-card__conclusion">
-            <div className={`glf-summary-card__icon glf-summary-card__icon--${suggestionTone}`}>
-              {viewModel.verification.verifyStatus === "PASS" ? "✓" : viewModel.verification.verifyStatus === "REJECT" ? "!" : "?"}
-            </div>
-            <div>
-              <p className="glf-summary-card__label">核验结论</p>
-              <h2>{viewModel.verification.verifyStatus}</h2>
-              <p className="glf-summary-card__subtext">{getDecisionText(viewModel.verification.verifyStatus)}</p>
-            </div>
-          </div>
-          <div className="glf-summary-card__metric">
-            <span>风险等级</span>
-            <strong>{getRiskLabel(viewModel.verification.riskLevel)}</strong>
-            <small>{viewModel.verification.riskLevel}</small>
-          </div>
-          <div className="glf-summary-card__metric">
-            <span>置信度</span>
-            <strong>{confidence}%</strong>
-            <small>{viewModel.analysis.docTypeConfidence ? `analysis ${Math.round(viewModel.analysis.docTypeConfidence * 100)}%` : "derived"}</small>
-          </div>
-          <div className="glf-summary-card__metric">
-            <span>处理建议</span>
-            <strong>{getDecisionAdvice(viewModel.verification.verifyStatus)}</strong>
-            <small>{viewModel.verification.summaryMessage}</small>
-          </div>
-        </section>
-
-        <section className="glf-action-row">
-          <button type="button" className="glf-decision-btn glf-decision-btn--pass">通过</button>
-          <button type="button" className="glf-decision-btn glf-decision-btn--review">转人工复核</button>
-          <button type="button" className="glf-decision-btn glf-decision-btn--reject">驳回</button>
-          <div className="glf-action-row__spacer" />
-          <button type="button" className="action-button" onClick={handleAnalyze} disabled={analyzeStatus === "loading"}>{analyzeStatus === "loading" ? "分析中..." : "运行分析"}</button>
-          <button type="button" className="action-button action-button--secondary" onClick={handleVerify} disabled={verifyStatus === "loading"}>{verifyStatus === "loading" ? "核验中..." : "运行核验"}</button>
-        </section>
-
-        <section className="glf-reasons">
-          <div className="glf-section-header">
-            <h3>为什么是这个结论？</h3>
-            <p>审批时优先看业务核验结论，再看触发原因。</p>
-          </div>
-          <div className="glf-reason-grid">
-            {reasonCards.map((card) => (
-              <article key={card.title} className={`glf-reason-card glf-reason-card--${card.tone}`}>
-                <span className="glf-reason-card__title">{card.title}</span>
-                <strong>{card.value}</strong>
-                <small>{card.detail}</small>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="glf-content-grid">
-          <div className="glf-panel glf-panel--document">
-            <div className="glf-section-header">
-              <h3>原始材料</h3>
+        <section className="glf-primary-grid">
+          <div className="glf-panel glf-panel--document glf-panel--hero-document">
+            <div className="glf-section-header glf-section-header--stacked-mobile">
+              <div>
+                <h3>审批材料（必须核验）</h3>
+                <p>审批前请先核对材料内容、姓名、日期与盖章信息。</p>
+              </div>
               <button type="button" className="glf-link-button" onClick={() => fileInputRef.current?.click()}>选择图片</button>
             </div>
             <input
@@ -428,10 +423,10 @@ export function ApprovalVerificationPage({
             <div className="glf-upload-meta">
               <span>当前文件：{uploadedFilename}</span>
               <span>类型：{uploadedFileType}</span>
-              <span>状态：{selectedAttachmentStatus}</span>
+              <span>当前建议：{decisionAdvice}</span>
             </div>
             {uploadInputError ? <p className="upload-error">{uploadInputError}</p> : null}
-            <div className="glf-document-canvas">
+            <div className="glf-document-canvas glf-document-canvas--hero">
               {previewUrl ? (
                 <img src={previewUrl} alt={uploadedFilename} className="glf-document-image" />
               ) : (
@@ -449,93 +444,158 @@ export function ApprovalVerificationPage({
             <div className="glf-thumbnail-strip">
               <span className="glf-thumbnail-strip__thumb">1</span>
               <span>1/1</span>
+              <span>核验状态：{selectedAttachmentStatus}</span>
             </div>
           </div>
 
-          <div className="glf-panel">
-            <div className="glf-section-header">
-              <h3>结构化信息（关键信息）</h3>
-              <button type="button" className="glf-link-button">查看全部字段</button>
-            </div>
-            <dl className="glf-kv-list">
-              {structuredRows.map((row) => (
-                <div key={row.label} className="glf-kv-list__row">
-                  <dt>{row.label}</dt>
-                  <dd>{row.value}</dd>
+          <div className="glf-primary-side">
+            <section className="glf-summary-card glf-summary-card--action-first">
+              <div className="glf-summary-card__conclusion">
+                <div className={`glf-summary-card__icon glf-summary-card__icon--${suggestionTone}`}>
+                  {viewModel.verification.verifyStatus === "PASS" ? "✓" : viewModel.verification.verifyStatus === "REJECT" ? "!" : "?"}
                 </div>
+                <div>
+                  <p className="glf-summary-card__label">建议动作</p>
+                  <h2>{decisionAdvice}</h2>
+                  <p className="glf-summary-card__subtext">{decisionSubtitle}</p>
+                </div>
+              </div>
+              <div className="glf-summary-card__metric">
+                <span>审批结论</span>
+                <strong>{viewModel.verification.summaryMessage}</strong>
+                <small>{getRiskLabel(viewModel.verification.riskLevel)}</small>
+              </div>
+              <div className="glf-summary-card__metric">
+                <span>人工处理建议</span>
+                <strong>{viewModel.verification.verifyStatus === "REVIEW" ? "需要人工复核" : viewModel.verification.verifyStatus === "REJECT" ? "建议退回补正" : "可直接处理"}</strong>
+                <small>请结合材料原件做最终审批</small>
+              </div>
+              <div className="glf-summary-card__metric">
+                <span>核验把握度</span>
+                <strong>{confidence}%</strong>
+                <small>仅供审批人参考</small>
+              </div>
+            </section>
+
+            <section className="glf-action-row glf-action-row--decision-first">
+              <button type="button" className="glf-decision-btn glf-decision-btn--pass">通过</button>
+              <button type="button" className="glf-decision-btn glf-decision-btn--review">转人工复核</button>
+              <button type="button" className="glf-decision-btn glf-decision-btn--reject">驳回</button>
+            </section>
+
+            <section className="glf-ops-row">
+              <button type="button" className="action-button" onClick={handleAnalyze} disabled={analyzeStatus === "loading"}>{analyzeStatus === "loading" ? "分析中..." : "运行分析"}</button>
+              <button type="button" className="action-button action-button--secondary" onClick={handleVerify} disabled={verifyStatus === "loading"}>{verifyStatus === "loading" ? "核验中..." : "运行核验"}</button>
+            </section>
+          </div>
+        </section>
+
+        <section className="glf-secondary-grid">
+          <div className="glf-reasons glf-panel">
+            <div className="glf-section-header">
+              <h3>为什么建议这样处理</h3>
+              <p>只保留审批时最需要确认的几项依据。</p>
+            </div>
+            <div className="glf-reason-grid glf-reason-grid--compact">
+              {reasonCards.map((card) => (
+                <article key={card.title} className={`glf-reason-card glf-reason-card--${card.tone}`}>
+                  <span className="glf-reason-card__title">{card.title}</span>
+                  <strong>{card.value}</strong>
+                  <small>{card.detail}</small>
+                </article>
               ))}
-            </dl>
-          </div>
-
-          <div className="glf-panel">
-            <div className="glf-section-header">
-              <h3>验证结果</h3>
-              <span className={`badge badge--${getStatusTone(viewModel.verification.verifyStatus)}`}>{viewModel.verification.verifyStatus}</span>
             </div>
-            <dl className="glf-stat-list">
-              <div><dt>验证状态</dt><dd className={`glf-stat-list__status glf-stat-list__status--${suggestionTone}`}>{viewModel.verification.verifyStatus}</dd></div>
-              <div><dt>风险等级</dt><dd className={`glf-stat-list__status glf-stat-list__status--${getStatusTone(viewModel.verification.riskLevel)}`}>{viewModel.verification.riskLevel}</dd></div>
-              <div><dt>置信度</dt><dd>{confidence}%</dd></div>
-              <div><dt>验证耗时</dt><dd>{verifyStatus === "loading" ? "进行中" : mode === "real" ? "114 ms" : "114 ms"}</dd></div>
-              <div><dt>校验时间</dt><dd>2025-05-06 10:32:45</dd></div>
-            </dl>
           </div>
 
-          <div className="glf-panel">
+          <div className="glf-panel glf-panel--risk">
             <div className="glf-section-header">
-              <h3>分析摘要</h3>
-              <span className={`badge badge--${analysisTone}`}>{viewModel.analysis.reviewAction}</span>
-            </div>
-            <dl className="glf-stat-list">
-              <div><dt>分析状态</dt><dd>{viewModel.analysis.reviewAction}</dd></div>
-              <div><dt>文档类型</dt><dd>{viewModel.analysis.docType}</dd></div>
-              <div><dt>分析耗时</dt><dd>{mode === "real" ? "802 ms" : "802 ms"}</dd></div>
-              <div><dt>关键问题数</dt><dd>{viewModel.analysis.validationIssues.length}</dd></div>
-              <div><dt>分析时间</dt><dd>2025-05-06 10:32:45</dd></div>
-            </dl>
-          </div>
-
-          <div className="glf-panel">
-            <div className="glf-section-header">
-              <h3>风险提示详情</h3>
-              {inconsistencyMessage ? <span className="badge badge--review">analysis ≠ verify</span> : null}
+              <h3>风险提示与建议动作</h3>
+              <span className={`badge badge--${suggestionTone}`}>{decisionAdvice}</span>
             </div>
             <div className="glf-warning-stack">
-              <article className="glf-warning-card glf-warning-card--review">
-                <strong>{viewModel.analysis.validationIssues[0]?.message ?? "未检测到明显问题"}</strong>
-                <span>{viewModel.verification.verifyStatus === "PASS" ? "可接受" : "需处理"}</span>
-                <p>{inconsistencyMessage ?? "材料内容完整，符合当前业务核验要求。"}</p>
-              </article>
-              <article className="glf-warning-card glf-warning-card--pass">
-                <strong>{viewModel.verification.warnings[0] ?? "未发现冲突信息"}</strong>
-                <p>未发现与请假信息冲突的内容。</p>
-              </article>
-            </div>
-          </div>
-
-          <div className="glf-panel">
-            <div className="glf-section-header">
-              <h3>处理流程时间线</h3>
-              <span className="badge badge--info">实时概览</span>
-            </div>
-            <div className="glf-timeline">
-              {timelineItems.map((item) => (
-                <div key={item.label} className="glf-timeline__item">
-                  <span className={`glf-timeline__dot glf-timeline__dot--${item.tone}`}></span>
-                  <div>
-                    <strong>{item.label}</strong>
-                    <p>{item.time}</p>
-                  </div>
-                </div>
+              {riskItems.map((item, index) => (
+                <article key={`${item.title}-${index}`} className={`glf-warning-card glf-warning-card--${item.tone}`}>
+                  <span className="glf-warning-card__eyebrow">问题</span>
+                  <strong>{item.title}</strong>
+                  <span className="glf-warning-card__eyebrow">建议动作</span>
+                  <p className="glf-warning-card__action">{item.action}</p>
+                  <p>{item.detail}</p>
+                </article>
               ))}
             </div>
           </div>
         </section>
 
-        <footer className="glf-footer-bar">
-          <span>展开详细信息（原始分析结果 / 验证详情 / 字段明细）</span>
-          <span>⌄</span>
-        </footer>
+        <section className="glf-panel glf-panel--structured">
+          <div className="glf-section-header">
+            <div>
+              <h3>结构化信息（审批辅助）</h3>
+              <p>用于快速核对关键字段，如需更多技术细节请展开下方调试信息。</p>
+            </div>
+            <button type="button" className="glf-link-button">查看全部字段</button>
+          </div>
+          <dl className="glf-kv-list glf-kv-list--two-column">
+            {structuredRows.map((row) => (
+              <div key={row.label} className="glf-kv-list__row">
+                <dt>{row.label}</dt>
+                <dd>{row.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+
+        <details className="glf-collapsible-panel">
+          <summary>展开调试详情（分析摘要 / 核验状态 / 处理时间线）</summary>
+          <div className="glf-collapsible-panel__content">
+            <div className="glf-content-grid glf-content-grid--collapsed-detail">
+              <div className="glf-panel">
+                <div className="glf-section-header">
+                  <h3>核验状态摘要</h3>
+                  <span className={`badge badge--${getStatusTone(viewModel.verification.verifyStatus)}`}>{viewModel.verification.verifyStatus}</span>
+                </div>
+                <dl className="glf-stat-list">
+                  <div><dt>验证状态</dt><dd className={`glf-stat-list__status glf-stat-list__status--${suggestionTone}`}>{viewModel.verification.verifyStatus}</dd></div>
+                  <div><dt>风险等级</dt><dd className={`glf-stat-list__status glf-stat-list__status--${getStatusTone(viewModel.verification.riskLevel)}`}>{viewModel.verification.riskLevel}</dd></div>
+                  <div><dt>匹配材料类型</dt><dd>{viewModel.verification.matchedAttachmentType ?? "-"}</dd></div>
+                  <div><dt>验证耗时</dt><dd>{verifyStatus === "loading" ? "进行中" : "114 ms"}</dd></div>
+                  <div><dt>校验时间</dt><dd>2025-05-06 10:32:45</dd></div>
+                </dl>
+              </div>
+
+              <div className="glf-panel">
+                <div className="glf-section-header">
+                  <h3>分析摘要</h3>
+                  <span className={`badge badge--${analysisTone}`}>{viewModel.analysis.reviewAction}</span>
+                </div>
+                <dl className="glf-stat-list">
+                  <div><dt>分析状态</dt><dd>{viewModel.analysis.reviewAction}</dd></div>
+                  <div><dt>文档类型</dt><dd>{viewModel.analysis.docType}</dd></div>
+                  <div><dt>附件类型</dt><dd>{viewModel.analysis.attachmentLabel}</dd></div>
+                  <div><dt>分析耗时</dt><dd>{mode === "real" ? "802 ms" : "802 ms"}</dd></div>
+                  <div><dt>问题数量</dt><dd>{viewModel.analysis.validationIssues.length}</dd></div>
+                </dl>
+              </div>
+
+              <div className="glf-panel glf-panel--timeline-detail">
+                <div className="glf-section-header">
+                  <h3>处理流程时间线</h3>
+                  <span className="badge badge--info">调试信息</span>
+                </div>
+                <div className="glf-timeline">
+                  {timelineItems.map((item) => (
+                    <div key={item.label} className="glf-timeline__item">
+                      <span className={`glf-timeline__dot glf-timeline__dot--${item.tone}`}></span>
+                      <div>
+                        <strong>{item.label}</strong>
+                        <p>{item.time}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </details>
 
         {(analyzeError || verifyError) ? (
           <div className="glf-error-banner">
