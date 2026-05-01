@@ -61,6 +61,12 @@ function getRiskLabel(level: string): string {
   return "中风险";
 }
 
+function getBusinessStatusLabel(status: VerifyStatus): string {
+  if (status === "PASS") return "通过";
+  if (status === "REJECT") return "驳回";
+  return "人工复核";
+}
+
 function getDecisionAdvice(status: VerifyStatus): string {
   if (status === "PASS") return "建议通过";
   if (status === "REJECT") return "建议驳回";
@@ -73,6 +79,28 @@ function getDecisionSubtitle(status: VerifyStatus): string {
   return "材料存在待确认风险，建议先转人工复核。";
 }
 
+function getAttachmentTypeLabel(viewModel: ApprovalVerificationViewModel): string {
+  const normalized = `${viewModel.analysis.attachmentLabel}|${viewModel.analysis.docType}`.toLowerCase();
+  if (normalized.includes("medical_certificate") || normalized.includes("diagnosis_proof")) {
+    return "诊断证明";
+  }
+  if (normalized.includes("marriage_certificate")) {
+    return "婚姻证明材料";
+  }
+  return "请假证明材料";
+}
+
+function getApprovalConclusionText(viewModel: ApprovalVerificationViewModel): string {
+  const attachmentLabel = getAttachmentTypeLabel(viewModel);
+  if (viewModel.verification.verifyStatus === "PASS") {
+    return `材料类型：${attachmentLabel}（符合要求）`;
+  }
+  if (viewModel.verification.verifyStatus === "REJECT") {
+    return `材料类型：${attachmentLabel}（不符合要求）`;
+  }
+  return `材料类型：${attachmentLabel}（建议补充核验）`;
+}
+
 function formatFieldLabel(name: string): string {
   const labels: Record<string, string> = {
     patient_name: "姓名",
@@ -82,13 +110,31 @@ function formatFieldLabel(name: string): string {
     diagnosis: "诊断/描述",
     physician_name: "医生",
     issue_date: "开具日期",
-    doc_type: "文档类型",
     certificate_title: "证明标题",
     hospital_name: "医院",
     department: "科室",
     advice: "建议",
   };
   return labels[name] ?? name;
+}
+
+function mapRiskMessage(message: string): string {
+  const normalized = message.trim();
+  const mappings: Record<string, string> = {
+    missing_hospital_name: "未识别到医院信息",
+    "missing hospital_name": "未识别到医院信息",
+    missing_diagnosis: "未识别到诊断信息",
+    "missing diagnosis": "未识别到诊断信息",
+    missing_issue_date: "未识别到开具日期",
+    "missing issue_date": "未识别到开具日期",
+    missing_seal: "未识别到盖章信息",
+    "missing seal": "未识别到盖章信息",
+    weak_sick_note_signal: "材料疑似非标准病假证明",
+    not_sick_note_like: "材料不符合病假证明特征",
+    "related person does not match": "材料人员信息与申请人不一致",
+    "related person does not match extracted document relationship party": "材料人员信息与申请人不一致",
+  };
+  return mappings[normalized] ?? normalized;
 }
 
 function extractFieldValue(viewModel: ApprovalVerificationViewModel, fieldName: string): string {
@@ -112,7 +158,7 @@ function buildStructuredRows(viewModel: ApprovalVerificationViewModel) {
     { label: "诊断/描述", value: extractFieldValue(viewModel, "diagnosis") },
     { label: "医生", value: extractFieldValue(viewModel, "physician_name") },
     { label: "开具日期", value: extractFieldValue(viewModel, "issue_date") },
-    { label: "文档类型", value: `${viewModel.analysis.attachmentLabel} (${viewModel.analysis.docType})` },
+    { label: "材料类型", value: getAttachmentTypeLabel(viewModel) },
   ];
 }
 
@@ -138,8 +184,8 @@ function buildReasonCards(viewModel: ApprovalVerificationViewModel) {
     },
     {
       title: "材料类型是否匹配",
-      value: viewModel.analysis.attachmentLabel,
-      detail: `当前识别：${formatFieldLabel("doc_type")}`,
+      value: getAttachmentTypeLabel(viewModel),
+      detail: viewModel.verification.verifyStatus === "PASS" ? "与申请类型匹配" : "建议结合申请类型再次确认",
       tone: viewModel.verification.verifyStatus === "REJECT" ? "reject" : "pass",
     },
     {
@@ -188,7 +234,7 @@ function buildRiskItems(viewModel: ApprovalVerificationViewModel, inconsistencyM
 
   viewModel.verification.warnings.forEach((warning) => {
     items.push({
-      title: warning,
+      title: mapRiskMessage(warning),
       action: viewModel.verification.verifyStatus === "PASS" ? "建议保留审批备注后通过。" : "建议转人工复核，确认是否需要补充材料。",
       detail: "请结合原始材料和申请单信息做最终判断。",
       tone: viewModel.verification.verifyStatus === "PASS" ? "pass" : "review",
@@ -197,7 +243,7 @@ function buildRiskItems(viewModel: ApprovalVerificationViewModel, inconsistencyM
 
   viewModel.analysis.validationIssues.forEach((issue) => {
     items.push({
-      title: issue.message,
+      title: mapRiskMessage(issue.message),
       action: viewModel.verification.verifyStatus === "REJECT" ? "建议驳回或退回申请人补正后再提交。" : "建议重点查看原始材料对应位置，确认是否影响审批。",
       detail: "该项提示仅作为风险提醒，请以审批结论和材料内容为准。",
       tone: viewModel.verification.verifyStatus === "REJECT" ? "reject" : "review",
@@ -271,12 +317,13 @@ export function ApprovalVerificationPage({
   const riskItems = useMemo(() => buildRiskItems(viewModel, inconsistencyMessage), [viewModel, inconsistencyMessage]);
 
   const uploadedFilename = selectedFile?.name ?? viewModel.attachments[0]?.filename ?? "-";
-  const uploadedFileType = selectedFile?.type ?? viewModel.attachments[0]?.contentType ?? "-";
   const selectedAttachmentStatus = viewModel.verification.verifyStatus;
   const suggestionTone = getStatusTone(viewModel.verification.verifyStatus);
   const analysisTone = getStatusTone(viewModel.analysis.reviewAction);
   const decisionAdvice = getDecisionAdvice(viewModel.verification.verifyStatus);
   const decisionSubtitle = getDecisionSubtitle(viewModel.verification.verifyStatus);
+  const approvalConclusionText = getApprovalConclusionText(viewModel);
+  const attachmentTypeLabel = getAttachmentTypeLabel(viewModel);
 
   function handleFileChange(file: File | null) {
     if (!file) {
@@ -422,7 +469,7 @@ export function ApprovalVerificationPage({
             />
             <div className="glf-upload-meta">
               <span>当前文件：{uploadedFilename}</span>
-              <span>类型：{uploadedFileType}</span>
+              <span>材料形式：{selectedFile ? "上传图片附件" : "示例图片附件"}</span>
               <span>当前建议：{decisionAdvice}</span>
             </div>
             {uploadInputError ? <p className="upload-error">{uploadInputError}</p> : null}
@@ -431,12 +478,12 @@ export function ApprovalVerificationPage({
                 <img src={previewUrl} alt={uploadedFilename} className="glf-document-image" />
               ) : (
                 <div className="glf-demo-paper">
-                  <p className="glf-demo-paper__title">SICK LEAVE DEMO</p>
-                  <p>Patient: {viewModel.requestHeader.applicantName}</p>
-                  <p>Rest: {extractFieldValue(viewModel, "rest_start_date")} - {extractFieldValue(viewModel, "rest_end_date")}</p>
-                  <p>Days: {extractFieldValue(viewModel, "rest_days")}</p>
-                  <p>Doctor: {extractFieldValue(viewModel, "physician_name")}</p>
-                  <p>Date: {extractFieldValue(viewModel, "issue_date")}</p>
+                  <p className="glf-demo-paper__title">示例材料</p>
+                  <p>申请人：{viewModel.requestHeader.applicantName}</p>
+                  <p>材料类型：{attachmentTypeLabel}</p>
+                  <p>日期信息：{extractFieldValue(viewModel, "rest_start_date")} - {extractFieldValue(viewModel, "rest_end_date")}</p>
+                  <p>开具日期：{extractFieldValue(viewModel, "issue_date")}</p>
+                  <p>说明：请以上传附件预览为准</p>
                   <div className="glf-demo-paper__seal">章</div>
                 </div>
               )}
@@ -444,7 +491,7 @@ export function ApprovalVerificationPage({
             <div className="glf-thumbnail-strip">
               <span className="glf-thumbnail-strip__thumb">1</span>
               <span>1/1</span>
-              <span>核验状态：{selectedAttachmentStatus}</span>
+              <span>当前结论：{getBusinessStatusLabel(selectedAttachmentStatus)}</span>
             </div>
           </div>
 
@@ -462,7 +509,7 @@ export function ApprovalVerificationPage({
               </div>
               <div className="glf-summary-card__metric">
                 <span>审批结论</span>
-                <strong>{viewModel.verification.summaryMessage}</strong>
+                <strong>{approvalConclusionText}</strong>
                 <small>{getRiskLabel(viewModel.verification.riskLevel)}</small>
               </div>
               <div className="glf-summary-card__metric">
@@ -478,9 +525,9 @@ export function ApprovalVerificationPage({
             </section>
 
             <section className="glf-action-row glf-action-row--decision-first">
-              <button type="button" className="glf-decision-btn glf-decision-btn--pass">通过</button>
-              <button type="button" className="glf-decision-btn glf-decision-btn--review">转人工复核</button>
-              <button type="button" className="glf-decision-btn glf-decision-btn--reject">驳回</button>
+              <button type="button" className={`glf-decision-btn glf-decision-btn--pass${suggestionTone === "pass" ? " glf-decision-btn--active" : ""}`}>通过</button>
+              <button type="button" className={`glf-decision-btn glf-decision-btn--review${suggestionTone === "review" ? " glf-decision-btn--active" : ""}`}>转人工复核</button>
+              <button type="button" className={`glf-decision-btn glf-decision-btn--reject${suggestionTone === "reject" ? " glf-decision-btn--active" : ""}`}>驳回</button>
             </section>
 
             <section className="glf-ops-row">
@@ -551,13 +598,13 @@ export function ApprovalVerificationPage({
               <div className="glf-panel">
                 <div className="glf-section-header">
                   <h3>核验状态摘要</h3>
-                  <span className={`badge badge--${getStatusTone(viewModel.verification.verifyStatus)}`}>{viewModel.verification.verifyStatus}</span>
+                  <span className={`badge badge--${getStatusTone(viewModel.verification.verifyStatus)}`}>{getBusinessStatusLabel(viewModel.verification.verifyStatus)}</span>
                 </div>
                 <dl className="glf-stat-list">
-                  <div><dt>验证状态</dt><dd className={`glf-stat-list__status glf-stat-list__status--${suggestionTone}`}>{viewModel.verification.verifyStatus}</dd></div>
-                  <div><dt>风险等级</dt><dd className={`glf-stat-list__status glf-stat-list__status--${getStatusTone(viewModel.verification.riskLevel)}`}>{viewModel.verification.riskLevel}</dd></div>
-                  <div><dt>匹配材料类型</dt><dd>{viewModel.verification.matchedAttachmentType ?? "-"}</dd></div>
-                  <div><dt>验证耗时</dt><dd>{verifyStatus === "loading" ? "进行中" : "114 ms"}</dd></div>
+                  <div><dt>当前状态</dt><dd className={`glf-stat-list__status glf-stat-list__status--${suggestionTone}`}>{getBusinessStatusLabel(viewModel.verification.verifyStatus)}</dd></div>
+                  <div><dt>风险等级</dt><dd className={`glf-stat-list__status glf-stat-list__status--${getStatusTone(viewModel.verification.riskLevel)}`}>{getRiskLabel(viewModel.verification.riskLevel)}</dd></div>
+                  <div><dt>材料类型</dt><dd>{attachmentTypeLabel}</dd></div>
+                  <div><dt>处理进度</dt><dd>{verifyStatus === "loading" ? "系统正在核验" : "已完成当前核验"}</dd></div>
                   <div><dt>校验时间</dt><dd>2025-05-06 10:32:45</dd></div>
                 </dl>
               </div>
@@ -565,14 +612,14 @@ export function ApprovalVerificationPage({
               <div className="glf-panel">
                 <div className="glf-section-header">
                   <h3>分析摘要</h3>
-                  <span className={`badge badge--${analysisTone}`}>{viewModel.analysis.reviewAction}</span>
+                  <span className={`badge badge--${analysisTone}`}>{getBusinessStatusLabel(normalizeAnalysisAction(viewModel.analysis.reviewAction))}</span>
                 </div>
                 <dl className="glf-stat-list">
-                  <div><dt>分析状态</dt><dd>{viewModel.analysis.reviewAction}</dd></div>
-                  <div><dt>文档类型</dt><dd>{viewModel.analysis.docType}</dd></div>
-                  <div><dt>附件类型</dt><dd>{viewModel.analysis.attachmentLabel}</dd></div>
-                  <div><dt>分析耗时</dt><dd>{mode === "real" ? "802 ms" : "802 ms"}</dd></div>
-                  <div><dt>问题数量</dt><dd>{viewModel.analysis.validationIssues.length}</dd></div>
+                  <div><dt>识别建议</dt><dd>{getBusinessStatusLabel(normalizeAnalysisAction(viewModel.analysis.reviewAction))}</dd></div>
+                  <div><dt>材料类别</dt><dd>{attachmentTypeLabel}</dd></div>
+                  <div><dt>识别完整度</dt><dd>{confidence >= 85 ? "较完整" : confidence >= 65 ? "基本完整" : "需人工补充确认"}</dd></div>
+                  <div><dt>风险提示数</dt><dd>{viewModel.analysis.validationIssues.length}</dd></div>
+                  <div><dt>辅助说明</dt><dd>仅用于辅助审批，不直接替代人工判断</dd></div>
                 </dl>
               </div>
 
