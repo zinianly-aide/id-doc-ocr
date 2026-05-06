@@ -18,7 +18,7 @@ import type {
 
 export default function App() {
   const [scenario, setScenario] = useState<MockScenario>("pass");
-  const [mode, setMode] = useState<DataSourceMode>("mock");
+  const [mode, setMode] = useState<DataSourceMode>("real");
   const [pageVersion, setPageVersion] = useState<"default" | "v1">("default");
   const [rawPageModel, setRawPageModel] = useState<RawApprovalVerificationPageModel | null>(null);
   const [loading, setLoading] = useState(true);
