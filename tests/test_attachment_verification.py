@@ -131,7 +131,14 @@ def test_verify_attachment_accepts_multiple_expected_attachment_types():
 def test_verify_attachment_uses_leave_type_default_attachment_matrix():
     analysis = _build_analysis(
         attachment_label="MARRIAGE_CERTIFICATE",
-        extracted_fields={"holder_name": "张三", "registration_date": "2024-05-20"},
+        extracted_fields={
+            "certificate_title": "中华人民共和国结婚证",
+            "holder_name": "张三",
+            "registration_date": "2024-05-20",
+            "person_a_name": "张三",
+            "person_b_name": "李四",
+            "registration_authority": "杭州市西湖区民政局婚姻登记处",
+        },
     )
 
     result = verify_attachment(
@@ -233,11 +240,193 @@ def test_verify_attachment_downgrades_sick_pass_to_review_when_minimum_fields_mi
 
 
 
-def test_verify_attachment_gating_does_not_change_non_sick_pass_behavior():
+def test_verify_attachment_downgrades_marriage_pass_to_review_when_analysis_rejects():
     analysis = _build_analysis(
         attachment_label="MARRIAGE_CERTIFICATE",
-        extracted_fields={"holder_name": "张三", "registration_date": "2024-05-20"},
+        extracted_fields={
+            "holder_name": "张三",
+            "registration_date": "2024-05-20",
+            "person_a_name": "张三",
+            "person_b_name": "李四",
+            "registration_authority": "杭州市西湖区民政局婚姻登记处",
+        },
         review_action="reject",
+        validation_accepted=False,
+    )
+
+    result = verify_attachment(
+        analysis,
+        {
+            "leave_type": "MARRIAGE",
+            "applicant_name": "张三",
+            "leave_start_date": "2024-05-20",
+            "leave_end_date": "2024-05-20",
+            "related_person_name": "李四",
+        },
+    )
+
+    assert result["verify_status"] == "REVIEW"
+    assert result["needs_manual_review"] is True
+
+
+
+def test_verify_attachment_downgrades_marriage_pass_to_review_when_minimum_fields_missing():
+    analysis = _build_analysis(
+        attachment_label="MARRIAGE_CERTIFICATE",
+        extracted_fields={
+            "certificate_title": None,
+            "holder_name": "张三",
+            "registration_date": None,
+            "person_a_name": "张三",
+            "person_b_name": None,
+            "registration_authority": None,
+        },
+    )
+
+    result = verify_attachment(
+        analysis,
+        {
+            "leave_type": "MARRIAGE",
+            "applicant_name": "张三",
+        },
+    )
+
+    assert result["verify_status"] == "REVIEW"
+    assert result["needs_manual_review"] is True
+
+
+
+def test_verify_attachment_downgrades_marriage_pass_to_review_for_holder_not_in_couple_warning():
+    analysis = _build_analysis(
+        attachment_label="MARRIAGE_CERTIFICATE",
+        extracted_fields={
+            "certificate_title": "中华人民共和国结婚证",
+            "holder_name": "王五",
+            "registration_date": "2024-05-20",
+            "person_a_name": "张三",
+            "person_b_name": "李四",
+            "registration_authority": "杭州市西湖区民政局婚姻登记处",
+        },
+        validation_accepted=True,
+        validation_issues=[{"code": "holder_name_not_in_couple"}],
+    )
+
+    result = verify_attachment(
+        analysis,
+        {
+            "leave_type": "MARRIAGE",
+            "applicant_name": "王五",
+            "leave_start_date": "2024-05-20",
+            "leave_end_date": "2024-05-20",
+        },
+    )
+
+    assert result["verify_status"] == "REVIEW"
+    assert result["needs_manual_review"] is True
+
+
+
+def test_verify_attachment_downgrades_marriage_pass_to_review_for_suspect_authority_warning():
+    analysis = _build_analysis(
+        attachment_label="MARRIAGE_CERTIFICATE",
+        extracted_fields={
+            "certificate_title": "中华人民共和国结婚证",
+            "holder_name": "张三",
+            "registration_date": "2024-05-20",
+            "person_a_name": "张三",
+            "person_b_name": "李四",
+            "registration_authority": "某某办公室",
+        },
+        validation_accepted=True,
+        validation_issues=[{"code": "registration_authority_suspect"}],
+    )
+
+    result = verify_attachment(
+        analysis,
+        {
+            "leave_type": "MARRIAGE",
+            "applicant_name": "张三",
+            "leave_start_date": "2024-05-20",
+            "leave_end_date": "2024-05-20",
+        },
+    )
+
+    assert result["verify_status"] == "REVIEW"
+    assert result["needs_manual_review"] is True
+
+
+
+def test_verify_attachment_downgrades_marriage_pass_to_review_for_suspect_title_warning():
+    analysis = _build_analysis(
+        attachment_label="MARRIAGE_CERTIFICATE",
+        extracted_fields={
+            "certificate_title": "证明材料",
+            "holder_name": "张三",
+            "registration_date": "2024-05-20",
+            "person_a_name": "张三",
+            "person_b_name": "李四",
+            "registration_authority": "杭州市西湖区民政局婚姻登记处",
+        },
+        validation_accepted=True,
+        validation_issues=[{"code": "certificate_title_suspect"}],
+    )
+
+    result = verify_attachment(
+        analysis,
+        {
+            "leave_type": "MARRIAGE",
+            "applicant_name": "张三",
+            "leave_start_date": "2024-05-20",
+            "leave_end_date": "2024-05-20",
+        },
+    )
+
+    assert result["verify_status"] == "REVIEW"
+    assert result["needs_manual_review"] is True
+
+
+
+def test_verify_attachment_downgrades_marriage_pass_to_review_when_analysis_reviewed():
+    analysis = _build_analysis(
+        attachment_label="MARRIAGE_CERTIFICATE",
+        extracted_fields={
+            "certificate_title": "中华人民共和国结婚证",
+            "holder_name": "张三",
+            "registration_date": "2024-05-20",
+            "person_a_name": "张三",
+            "person_b_name": "李四",
+            "registration_authority": "杭州市西湖区民政局婚姻登记处",
+        },
+        review_action="review",
+        validation_accepted=True,
+    )
+
+    result = verify_attachment(
+        analysis,
+        {
+            "leave_type": "MARRIAGE",
+            "applicant_name": "张三",
+            "leave_start_date": "2024-05-20",
+            "leave_end_date": "2024-05-20",
+        },
+    )
+
+    assert result["verify_status"] == "REVIEW"
+    assert result["needs_manual_review"] is True
+
+
+
+def test_verify_attachment_downgrades_marriage_pass_to_review_when_validation_not_accepted():
+    analysis = _build_analysis(
+        attachment_label="MARRIAGE_CERTIFICATE",
+        extracted_fields={
+            "certificate_title": "中华人民共和国结婚证",
+            "holder_name": "张三",
+            "registration_date": "2024-05-20",
+            "person_a_name": "张三",
+            "person_b_name": "李四",
+            "registration_authority": "杭州市西湖区民政局婚姻登记处",
+        },
         validation_accepted=False,
     )
 
@@ -251,4 +440,37 @@ def test_verify_attachment_gating_does_not_change_non_sick_pass_behavior():
         },
     )
 
+    assert result["verify_status"] == "REVIEW"
+    assert result["needs_manual_review"] is True
+
+
+
+def test_verify_attachment_marriage_gating_does_not_apply_to_non_marriage_leave_type():
+    analysis = _build_analysis(
+        attachment_label="MARRIAGE_CERTIFICATE",
+        extracted_fields={
+            "certificate_title": "证明材料",
+            "holder_name": "王五",
+            "registration_date": "2024-05-20",
+            "person_a_name": "张三",
+            "person_b_name": "李四",
+            "registration_authority": "某某办公室",
+        },
+        validation_accepted=True,
+        validation_issues=[
+            {"code": "certificate_title_suspect"},
+            {"code": "holder_name_not_in_couple"},
+            {"code": "registration_authority_suspect"},
+        ],
+    )
+
+    result = verify_attachment(
+        analysis,
+        {
+            "expected_attachment_type": "MARRIAGE_CERTIFICATE",
+            "applicant_name": "王五",
+        },
+    )
+
     assert result["verify_status"] == "PASS"
+    assert result["needs_manual_review"] is False

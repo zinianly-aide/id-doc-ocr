@@ -110,6 +110,44 @@ def _apply_sick_pass_gating(analysis: dict[str, Any], request: dict[str, Any], f
 
 
 
+def _apply_marriage_pass_gating(analysis: dict[str, Any], request: dict[str, Any], fields: dict[str, Any], verify_status: str) -> str:
+    if str(request.get("leave_type") or "").upper() != "MARRIAGE":
+        return verify_status
+    if verify_status != "PASS":
+        return verify_status
+
+    review_action = str((analysis.get("risk") or {}).get("review_action") or "")
+    if review_action in {"review", "reject"}:
+        return "REVIEW"
+
+    validation = analysis.get("validation") or {}
+    if not bool(validation.get("accepted", True)):
+        return "REVIEW"
+
+    minimum_required_fields = (
+        "certificate_title",
+        "holder_name",
+        "registration_date",
+        "person_a_name",
+        "person_b_name",
+        "registration_authority",
+    )
+    if any(fields.get(field_name) in (None, "", []) for field_name in minimum_required_fields):
+        return "REVIEW"
+
+    issue_codes = _issue_codes(analysis)
+    review_blocking_issue_codes = {
+        "holder_name_not_in_couple",
+        "registration_authority_suspect",
+        "certificate_title_suspect",
+    }
+    if issue_codes & review_blocking_issue_codes:
+        return "REVIEW"
+
+    return verify_status
+
+
+
 def verify_attachment(analysis: dict[str, Any], request: dict[str, Any]) -> dict[str, Any]:
     fields = _field_map(analysis)
     classification = analysis.get("classification_evidence") or {}
@@ -201,6 +239,7 @@ def verify_attachment(analysis: dict[str, Any], request: dict[str, Any]) -> dict
         verify_status = "PASS"
 
     verify_status = _apply_sick_pass_gating(analysis, request, fields, verify_status)
+    verify_status = _apply_marriage_pass_gating(analysis, request, fields, verify_status)
 
     warnings = [rule["message"] for rule in rule_results if not rule["passed"]]
     request_evidence = dict(request)

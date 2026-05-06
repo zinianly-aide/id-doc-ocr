@@ -1,0 +1,10 @@
+{
+  "leave_type": "MARRIAGE",
+  "expected_status": "REVIEW",
+  "expected_risks": [
+    "holder_name_not_in_couple"
+  ],
+  "expected_warnings": [
+    "holder name does not match either named spouse"
+  ]
+}

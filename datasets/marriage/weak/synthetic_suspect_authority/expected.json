@@ -1,0 +1,10 @@
+{
+  "leave_type": "MARRIAGE",
+  "expected_status": "REVIEW",
+  "expected_risks": [
+    "registration_authority_suspect"
+  ],
+  "expected_warnings": [
+    "registration authority lacks common marriage-registration hints"
+  ]
+}
