@@ -124,13 +124,17 @@ export function buildApprovalPageModel(input: {
 }): ApprovalVerificationViewModel {
   const analyzeResponse = input.rawVerifyResponse ?? input.rawAnalyzeResponse ?? input.rawPageModel.analyzeResponse;
   const verifyResponse = input.rawVerifyResponse ?? input.rawPageModel.verifyResponse;
+  const latestRequestId = input.rawVerifyResponse?.request_id ?? input.rawAnalyzeResponse?.request_id ?? input.rawPageModel.requestHeader.requestId;
 
   const latestDocType = analyzeResponse.analysis.doc_type;
   const latestAttachmentLabel = analyzeResponse.analysis.classification_evidence.attachment_label;
   const latestVerifyStatus = verifyResponse.verification.verify_status;
 
   return {
-    requestHeader: input.rawPageModel.requestHeader,
+    requestHeader: {
+      ...input.rawPageModel.requestHeader,
+      requestId: latestRequestId,
+    },
     attachments: input.rawPageModel.attachments.map((attachment) =>
       attachment.id === input.rawPageModel.selectedAttachmentId
         ? buildAttachmentViewModel(attachment, {
