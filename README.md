@@ -28,11 +28,84 @@ A self-hosted OCR system for identity documents with a production-oriented archi
 ## Quick start by language
 
 - **English project guide**: this page
-- **Chinese project guide**: [docs/zh/README.zh-CN.md](docs/zh/README.zh-CN.md)
+- **Chinese project guide**: [docs/archive/README.zh-CN.md](docs/archive/README.zh-CN.md)
 
 ## Architecture
 
 See [docs/architecture.md](docs/architecture.md).
+
+## First local run (recommended for first-time readers)
+
+If this is your first time opening the repo, the fastest way to get a working local demo is:
+
+1. start the FastAPI backend on `127.0.0.1:8000`
+2. start the React approval-verification UI on `127.0.0.1:4173`
+3. open the UI in a browser and test both mock mode and real adapter mode
+
+### 1) Backend setup and run
+
+From the repo root:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -U pip
+python -m pip install -e '.[dev]'
+python -m uvicorn id_doc_ocr.service.app:app --host 127.0.0.1 --port 8000
+```
+
+In another terminal, verify the backend is alive:
+
+```bash
+curl http://127.0.0.1:8000/health
+```
+
+Expected local backend URL:
+
+- API base: `http://127.0.0.1:8000`
+- health: `http://127.0.0.1:8000/health`
+
+### 2) Frontend setup and run
+
+In a new terminal:
+
+```bash
+cd ui/approval-verification
+npm install
+npm run dev -- --host 127.0.0.1 --port 4173
+```
+
+Expected local frontend URL:
+
+- UI: `http://127.0.0.1:4173/`
+
+### 3) What to test first in the browser
+
+Open `http://127.0.0.1:4173/` and use this sequence:
+
+1. confirm the default page renders
+2. click the analyze action
+3. click the verify action
+4. switch between `Mock mode` and `Real adapter mode`
+5. in `Real adapter mode`, verify calls succeed against the backend on `127.0.0.1:8000`
+6. open the V1 debug entry if you want to exercise `PASS`, `REVIEW`, and error-demo states
+
+Notes:
+
+- `Mock mode` works with frontend-only local JSON data
+- `Real adapter mode` requires the backend above because the Vite dev server proxies `/api/*` to `http://127.0.0.1:8000`
+- the UI-specific guide lives at [ui/approval-verification/README.md](ui/approval-verification/README.md)
+
+### 4) Optional quick verification commands
+
+```bash
+# backend tests
+pytest -q
+
+# frontend production build
+cd ui/approval-verification
+npm run build
+```
 
 ## Service API and deployment
 
