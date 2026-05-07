@@ -212,14 +212,19 @@ def test_verify_attachment_accepts_leave_type_without_explicit_expected_type():
             "applicant_name": "张三",
             "leave_start_date": "2024-05-20",
             "leave_end_date": "2024-05-20",
+            "certificate_title": "中华人民共和国结婚证",
             "holder_name": "张三",
             "registration_date": "2024-05-20",
+            "person_a_name": "张三",
+            "person_b_name": "李四",
+            "registration_authority": "杭州市西湖区民政局婚姻登记处",
         },
         files={"file": ("sample.jpg", b"fake-image-bytes", "image/jpeg")},
     )
     assert response.status_code == 200
     payload = response.json()
-    assert payload["verification"]["verify_status"] == "PASS"
+    assert payload["verification"]["verify_status"] == "REVIEW"
+    assert payload["verification"]["matched_attachment_type"] == "MARRIAGE_CERTIFICATE"
     assert payload["verification"]["evidence"]["request"]["resolved_expected_attachment_types"] == ["MARRIAGE_CERTIFICATE"]
 
 
