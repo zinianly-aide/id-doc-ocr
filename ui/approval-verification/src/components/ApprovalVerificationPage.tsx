@@ -536,8 +536,7 @@ export function ApprovalVerificationPage({
             </section>
 
             <section className="glf-ops-row">
-              <button type="button" className="action-button" onClick={handleAnalyze} disabled={analyzeStatus === "loading"}>{analyzeStatus === "loading" ? "分析中..." : "运行分析"}</button>
-              <button type="button" className="action-button action-button--secondary" onClick={handleVerify} disabled={verifyStatus === "loading"}>{verifyStatus === "loading" ? "核验中..." : "运行核验"}</button>
+              <button type="button" className="action-button" onClick={handleVerify} disabled={verifyStatus === "loading"}>{verifyStatus === "loading" ? "核验中..." : "运行核验"}</button>
             </section>
           </div>
         </section>
