@@ -9,7 +9,9 @@ import type {
   VerifyStatus,
 } from "@/types";
 import { derivePilotDecisionUiState } from "./pilotDecisionState";
-import { getRequestIdFromError } from "@/adapters/requestTrace";
+import { deriveStructuredFieldPresentation } from "./structuredFieldPresentation";
+import { buildVerificationRunMeta } from "./verificationRunState";
+import { resolveRequestId } from "@/adapters/requestTrace";
 
 interface ApprovalVerificationPageProps {
   initialViewModel: ApprovalVerificationViewModel;
@@ -204,15 +206,6 @@ function buildReasonCards(viewModel: ApprovalVerificationViewModel) {
   ];
 }
 
-function buildTimelineItems() {
-  return [
-    { label: "文档上传", time: "10:32:30", tone: "pass" },
-    { label: "文档分析", time: "10:32:31", tone: "pass" },
-    { label: "规则验证", time: "10:32:32", tone: "pass" },
-    { label: "完成核验", time: "10:32:45", tone: "info" },
-  ];
-}
-
 function computeConfidence(viewModel: ApprovalVerificationViewModel): number {
   const passRatio = viewModel.verification.ruleResults.length
     ? viewModel.verification.ruleResults.filter((item) => item.passed).length / viewModel.verification.ruleResults.length
@@ -290,6 +283,8 @@ export function ApprovalVerificationPage({
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const [displayRequestId, setDisplayRequestId] = useState(initialViewModel.requestHeader.requestId);
+  const [latestVerifyStartedAt, setLatestVerifyStartedAt] = useState<Date | null>(null);
+  const [latestVerifyCompletedAt, setLatestVerifyCompletedAt] = useState<Date | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -302,6 +297,8 @@ export function ApprovalVerificationPage({
     setAnalyzeError(null);
     setVerifyError(null);
     setDisplayRequestId(initialViewModel.requestHeader.requestId);
+    setLatestVerifyStartedAt(null);
+    setLatestVerifyCompletedAt(null);
   }, [initialViewModel]);
 
   useEffect(() => {
@@ -321,7 +318,12 @@ export function ApprovalVerificationPage({
 
   const structuredRows = useMemo(() => buildStructuredRows(viewModel), [viewModel]);
   const reasonCards = useMemo(() => buildReasonCards(viewModel), [viewModel]);
-  const timelineItems = useMemo(() => buildTimelineItems(), []);
+  const verifyRunMeta = useMemo(() => buildVerificationRunMeta({
+    verifyStatus,
+    latestStartedAt: latestVerifyStartedAt,
+    latestCompletedAt: latestVerifyCompletedAt,
+  }), [verifyStatus, latestVerifyStartedAt, latestVerifyCompletedAt]);
+  const timelineItems = verifyRunMeta.timelineItems;
   const confidence = useMemo(() => computeConfidence(viewModel), [viewModel]);
   const riskItems = useMemo(() => buildRiskItems(viewModel, inconsistencyMessage), [viewModel, inconsistencyMessage]);
 
@@ -337,6 +339,7 @@ export function ApprovalVerificationPage({
   const decisionSubtitle = decisionUiState.decisionSubtitle;
   const approvalConclusionText = getApprovalConclusionText(viewModel);
   const attachmentTypeLabel = getAttachmentTypeLabel(viewModel);
+  const structuredFieldPresentation = useMemo(() => deriveStructuredFieldPresentation(viewModel), [viewModel]);
 
   function handleFileChange(file: File | null) {
     if (!file) {
@@ -362,13 +365,14 @@ export function ApprovalVerificationPage({
     }
     setAnalyzeStatus("loading");
     setAnalyzeError(null);
+    let rawAnalyzeResponse: RawAnalyzeResponse | null = null;
     try {
-      const rawAnalyzeResponse = await onAnalyze(selectedFile);
+      rawAnalyzeResponse = await onAnalyze(selectedFile);
       setViewModel(buildNextViewModel({ rawAnalyzeResponse }));
       setDisplayRequestId(rawAnalyzeResponse.request_id);
       setAnalyzeStatus("success");
     } catch (error) {
-      const tracedRequestId = getRequestIdFromError(error);
+      const tracedRequestId = resolveRequestId({ response: rawAnalyzeResponse, error });
       if (tracedRequestId) {
         setDisplayRequestId(tracedRequestId);
       }
@@ -385,16 +389,21 @@ export function ApprovalVerificationPage({
     }
     setVerifyStatus("loading");
     setVerifyError(null);
+    setLatestVerifyStartedAt(new Date());
+    setLatestVerifyCompletedAt(null);
+    let rawVerifyResponse: RawVerifyResponse | null = null;
     try {
-      const rawVerifyResponse = await onVerify(selectedFile);
+      rawVerifyResponse = await onVerify(selectedFile);
       setViewModel(buildNextViewModel({ rawVerifyResponse }));
       setDisplayRequestId(rawVerifyResponse.request_id);
+      setLatestVerifyCompletedAt(new Date());
       setVerifyStatus("success");
     } catch (error) {
-      const tracedRequestId = getRequestIdFromError(error);
+      const tracedRequestId = resolveRequestId({ response: rawVerifyResponse, error });
       if (tracedRequestId) {
         setDisplayRequestId(tracedRequestId);
       }
+      setLatestVerifyCompletedAt(new Date());
       setVerifyStatus("error");
       setVerifyError(error instanceof Error ? error.message : "verify failed");
     }
@@ -601,7 +610,19 @@ export function ApprovalVerificationPage({
               <h3>结构化信息（审批辅助）</h3>
               <p>用于快速核对关键字段，如需更多技术细节请展开下方调试信息。</p>
             </div>
-            <button type="button" className="glf-link-button">查看全部字段</button>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              {structuredFieldPresentation.badgeText ? <span className={`badge badge--${structuredFieldPresentation.emphasisTone}`}>{structuredFieldPresentation.badgeText}</span> : null}
+              <button type="button" className="glf-link-button">查看全部字段</button>
+            </div>
+          </div>
+          <div className={`glf-warning-card glf-warning-card--${structuredFieldPresentation.emphasisTone}`}>
+            {structuredFieldPresentation.reviewHint ? (
+              <>
+                <span className="glf-warning-card__eyebrow">需复核提示</span>
+                <p className="glf-warning-card__action">{structuredFieldPresentation.reviewHint}</p>
+              </>
+            ) : null}
+            <p>{structuredFieldPresentation.contextNotice}</p>
           </div>
           <dl className="glf-kv-list glf-kv-list--two-column">
             {structuredRows.map((row) => (
@@ -625,9 +646,11 @@ export function ApprovalVerificationPage({
                 <dl className="glf-stat-list">
                   <div><dt>当前状态</dt><dd className={`glf-stat-list__status glf-stat-list__status--${suggestionTone}`}>{getBusinessStatusLabel(viewModel.verification.verifyStatus)}</dd></div>
                   <div><dt>风险等级</dt><dd className={`glf-stat-list__status glf-stat-list__status--${getStatusTone(viewModel.verification.riskLevel)}`}>{getRiskLabel(viewModel.verification.riskLevel)}</dd></div>
-                  <div><dt>材料类型</dt><dd>{attachmentTypeLabel}</dd></div>
-                  <div><dt>处理进度</dt><dd>{verifyStatus === "loading" ? "系统正在核验" : "已完成当前核验"}</dd></div>
-                  <div><dt>校验时间</dt><dd>2025-05-06 10:32:45</dd></div>
+                  <div><dt>后端返回状态</dt><dd>{viewModel.verification.summaryMessage}</dd></div>
+                  <div><dt>本次文件名</dt><dd>{uploadedFilename}</dd></div>
+                  <div><dt>本次 Request ID</dt><dd>{displayRequestId}</dd></div>
+                  <div><dt>处理进度</dt><dd>{verifyRunMeta.statusText}</dd></div>
+                  <div><dt>校验时间</dt><dd>{verifyRunMeta.completedAtLabel}</dd></div>
                 </dl>
               </div>
 
