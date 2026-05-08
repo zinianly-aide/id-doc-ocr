@@ -10,7 +10,7 @@ import type {
 } from "@/types";
 import { derivePilotDecisionUiState } from "./pilotDecisionState";
 import { deriveStructuredFieldPresentation } from "./structuredFieldPresentation";
-import { buildVerificationRunMeta } from "./verificationRunState";
+import { buildVerificationRunMeta, buildVerificationRunSummary } from "./verificationRunState";
 import { resolveRequestId } from "@/adapters/requestTrace";
 
 interface ApprovalVerificationPageProps {
@@ -340,6 +340,12 @@ export function ApprovalVerificationPage({
   const approvalConclusionText = getApprovalConclusionText(viewModel);
   const attachmentTypeLabel = getAttachmentTypeLabel(viewModel);
   const structuredFieldPresentation = useMemo(() => deriveStructuredFieldPresentation(viewModel), [viewModel]);
+  const verificationRunSummary = useMemo(() => buildVerificationRunSummary({
+    filename: uploadedFilename,
+    backendStatus: viewModel.verification.summaryMessage,
+    requestId: displayRequestId,
+    completedAtLabel: verifyRunMeta.completedAtLabel,
+  }), [uploadedFilename, viewModel.verification.summaryMessage, displayRequestId, verifyRunMeta.completedAtLabel]);
 
   function handleFileChange(file: File | null) {
     if (!file) {
@@ -543,6 +549,10 @@ export function ApprovalVerificationPage({
                 <span>审批结论</span>
                 <strong>{approvalConclusionText}</strong>
                 <small>{getRiskLabel(viewModel.verification.riskLevel)}</small>
+              </div>
+              <div className="glf-summary-card__subtext" style={{ display: "flex", flexWrap: "wrap", gap: "8px 14px" }}>
+                <span>本次核验摘要</span>
+                {verificationRunSummary.map((item) => <span key={item}>{item}</span>)}
               </div>
               <div className="glf-summary-card__metric">
                 <span>人工处理建议</span>

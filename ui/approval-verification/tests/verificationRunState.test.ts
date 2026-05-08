@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   buildVerificationRunMeta,
+  buildVerificationRunSummary,
   formatVerificationTimestamp,
 } from "../src/components/verificationRunState.ts";
 
@@ -34,4 +35,20 @@ test("buildVerificationRunMeta shows loading state before verify completes", () 
   assert.equal(meta.completedAtLabel, "核验进行中");
   assert.equal(meta.timelineItems.at(-1)?.label, "完成核验");
   assert.equal(meta.timelineItems.at(-1)?.time, "进行中");
+});
+
+test("buildVerificationRunSummary surfaces filename, backend status, short request_id, and verification time", () => {
+  const summary = buildVerificationRunSummary({
+    filename: "unrelated-captcha.png",
+    backendStatus: "REVIEW: attachment requires manual confirmation",
+    requestId: "LV-SICK-12345678-9abc-def0-1234-56789abcdef0",
+    completedAtLabel: "2026-04-29 21:30:05",
+  });
+
+  assert.deepEqual(summary, [
+    "文件：unrelated-captcha.png",
+    "状态：REVIEW: attachment requires manual confirmation",
+    "ID：9abcdef0",
+    "时间：2026-04-29 21:30:05",
+  ]);
 });

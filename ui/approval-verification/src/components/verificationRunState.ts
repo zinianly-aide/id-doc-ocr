@@ -12,6 +12,24 @@ export interface VerificationRunMeta {
   timelineItems: VerificationTimelineItem[];
 }
 
+function shortenRequestId(requestId: string): string {
+  return requestId.slice(-8);
+}
+
+export function buildVerificationRunSummary(input: {
+  filename: string;
+  backendStatus: string;
+  requestId: string;
+  completedAtLabel: string;
+}): string[] {
+  return [
+    `文件：${input.filename}`,
+    `状态：${input.backendStatus}`,
+    `ID：${shortenRequestId(input.requestId)}`,
+    `时间：${input.completedAtLabel}`,
+  ];
+}
+
 function pad(value: number): string {
   return String(value).padStart(2, "0");
 }
