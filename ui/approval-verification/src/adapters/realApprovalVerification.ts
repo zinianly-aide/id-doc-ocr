@@ -10,6 +10,7 @@ import {
   buildVerifySelectedFileFormData,
 } from "./demoRequestBuilders";
 import { getScenarioRawPageModel } from "./mockApprovalVerification";
+import { RequestTraceError } from "./requestTrace";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
 let currentRealRequestId: string | null = null;
@@ -31,11 +32,18 @@ function currentVerifyRequestId(): string {
   return currentRealRequestId;
 }
 
-async function requestJson<T>(path: string, init: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, init);
+async function requestJson<T>(path: string, init: RequestInit, requestId: string): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, init);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : `API ${path} failed`;
+    throw new RequestTraceError(message, requestId, { cause: error });
+  }
+
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`API ${path} failed (${response.status}): ${text || response.statusText}`);
+    throw new RequestTraceError(`API ${path} failed (${response.status}): ${text || response.statusText}`, requestId);
   }
   return (await response.json()) as T;
 }
@@ -52,7 +60,7 @@ export async function analyzeDocumentReal(
   return requestJson<RawAnalyzeResponse>("/analyze-document", {
     method: "POST",
     body: formData,
-  });
+  }, requestId);
 }
 
 export async function verifyAttachmentReal(
@@ -67,7 +75,7 @@ export async function verifyAttachmentReal(
   return requestJson<RawVerifyResponse>("/verify-attachment", {
     method: "POST",
     body: formData,
-  });
+  }, requestId);
 }
 
 export async function getApprovalVerificationRealShell(scenario: MockScenario) {

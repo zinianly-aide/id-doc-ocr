@@ -8,6 +8,8 @@ import type {
   RawVerifyResponse,
   VerifyStatus,
 } from "@/types";
+import { derivePilotDecisionUiState } from "./pilotDecisionState";
+import { getRequestIdFromError } from "@/adapters/requestTrace";
 
 interface ApprovalVerificationPageProps {
   initialViewModel: ApprovalVerificationViewModel;
@@ -287,6 +289,7 @@ export function ApprovalVerificationPage({
   const [verifyStatus, setVerifyStatus] = useState<AsyncStatus>("success");
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [verifyError, setVerifyError] = useState<string | null>(null);
+  const [displayRequestId, setDisplayRequestId] = useState(initialViewModel.requestHeader.requestId);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -298,6 +301,7 @@ export function ApprovalVerificationPage({
     setVerifyStatus("success");
     setAnalyzeError(null);
     setVerifyError(null);
+    setDisplayRequestId(initialViewModel.requestHeader.requestId);
   }, [initialViewModel]);
 
   useEffect(() => {
@@ -323,10 +327,14 @@ export function ApprovalVerificationPage({
 
   const uploadedFilename = selectedFile?.name ?? viewModel.attachments[0]?.filename ?? "-";
   const selectedAttachmentStatus = viewModel.verification.verifyStatus;
-  const suggestionTone = getStatusTone(viewModel.verification.verifyStatus);
+  const decisionUiState = derivePilotDecisionUiState({
+    verifyStatus: viewModel.verification.verifyStatus,
+    verifyError,
+  });
+  const suggestionTone = decisionUiState.suggestionTone;
   const analysisTone = getStatusTone(viewModel.analysis.reviewAction);
-  const decisionAdvice = getDecisionAdvice(viewModel.verification.verifyStatus);
-  const decisionSubtitle = getDecisionSubtitle(viewModel.verification.verifyStatus);
+  const decisionAdvice = decisionUiState.decisionAdvice;
+  const decisionSubtitle = decisionUiState.decisionSubtitle;
   const approvalConclusionText = getApprovalConclusionText(viewModel);
   const attachmentTypeLabel = getAttachmentTypeLabel(viewModel);
 
@@ -357,8 +365,13 @@ export function ApprovalVerificationPage({
     try {
       const rawAnalyzeResponse = await onAnalyze(selectedFile);
       setViewModel(buildNextViewModel({ rawAnalyzeResponse }));
+      setDisplayRequestId(rawAnalyzeResponse.request_id);
       setAnalyzeStatus("success");
     } catch (error) {
+      const tracedRequestId = getRequestIdFromError(error);
+      if (tracedRequestId) {
+        setDisplayRequestId(tracedRequestId);
+      }
       setAnalyzeStatus("error");
       setAnalyzeError(error instanceof Error ? error.message : "analyze failed");
     }
@@ -375,8 +388,13 @@ export function ApprovalVerificationPage({
     try {
       const rawVerifyResponse = await onVerify(selectedFile);
       setViewModel(buildNextViewModel({ rawVerifyResponse }));
+      setDisplayRequestId(rawVerifyResponse.request_id);
       setVerifyStatus("success");
     } catch (error) {
+      const tracedRequestId = getRequestIdFromError(error);
+      if (tracedRequestId) {
+        setDisplayRequestId(tracedRequestId);
+      }
       setVerifyStatus("error");
       setVerifyError(error instanceof Error ? error.message : "verify failed");
     }
@@ -425,7 +443,7 @@ export function ApprovalVerificationPage({
             <p className="glf-header__summary">先看建议动作，再核对审批材料，最后确认风险提示。</p>
           </div>
           <div className="glf-header__meta">
-            <span className="glf-chip">Request ID: {viewModel.requestHeader.requestId}</span>
+            <span className="glf-chip">Request ID: {displayRequestId}</span>
             <div className="glf-usercard">
               <div className="glf-usercard__avatar">HR</div>
               <div>
@@ -648,10 +666,11 @@ export function ApprovalVerificationPage({
           </div>
         </details>
 
-        {(analyzeError || verifyError) ? (
+        {(analyzeError || verifyError || decisionUiState.staleResultWarning) ? (
           <div className="glf-error-banner">
             {analyzeError ? <p>分析错误：{analyzeError}</p> : null}
             {verifyError ? <p>核验错误：{verifyError}</p> : null}
+            {decisionUiState.staleResultWarning ? <p>{decisionUiState.staleResultWarning}</p> : null}
           </div>
         ) : null}
       </main>
