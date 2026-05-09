@@ -227,6 +227,7 @@ export interface VerificationViewModel {
   summaryMessage: string;
   needsManualReview: boolean;
   warnings: string[];
+  reviewReasonHint: string | null;
   ruleResults: RuleResultViewModel[];
   requestEvidence: EvidenceEntryViewModel[];
 }

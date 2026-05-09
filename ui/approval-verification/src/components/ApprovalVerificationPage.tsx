@@ -232,6 +232,15 @@ function buildRiskItems(viewModel: ApprovalVerificationViewModel, inconsistencyM
     });
   }
 
+  if (viewModel.verification.reviewReasonHint) {
+    items.push({
+      title: "材料仍未达到自动通过标准",
+      action: viewModel.verification.reviewReasonHint,
+      detail: "当前业务字段与结构化结果已基本对齐，但系统仍保留人工复核门槛。",
+      tone: "review",
+    });
+  }
+
   viewModel.verification.warnings.forEach((warning) => {
     items.push({
       title: mapRiskMessage(warning),

@@ -26,21 +26,21 @@ function getScenarioRequestConfig(scenario: MockScenario): DemoRequestConfig {
 
   return {
     plugin_name: "diagnosis_proof",
-    ocr_backend: "mock",
+    ocr_backend: "rapidocr",
     vlm_backend: "mock",
     leave_type: "SICK",
     applicant_name: "张三",
-    leave_start_date: "2026-04-01",
-    leave_end_date: "2026-04-03",
+    leave_start_date: "2026-03-10",
+    leave_end_date: "2026-03-16",
     fieldOverrides: {
       patient_name: "张三",
-      rest_start_date: "2026-04-01",
-      rest_end_date: "2026-04-03",
-      issue_date: "2026-04-01",
+      rest_start_date: "2026-03-10",
+      rest_end_date: "2026-03-16",
+      issue_date: "2026-03-10",
     },
-    sampleFileUrl: "/samples/paddle_sample_doc_00006737.jpg",
-    sampleFilename: "diagnosis-proof.jpg",
-    sampleContentType: "image/jpeg",
+    sampleFileUrl: "/samples/diagnosis_generated_001.png",
+    sampleFilename: "diagnosis_generated_001.png",
+    sampleContentType: "image/png",
   };
 }
 

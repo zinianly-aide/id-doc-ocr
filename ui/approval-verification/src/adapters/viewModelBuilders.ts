@@ -8,6 +8,7 @@ import type {
   RawAttachmentItem,
   RawVerifyResponse,
   VerificationViewModel,
+  VerifyStatus,
 } from "@/types";
 
 function renderValue(value: unknown): string {
@@ -32,14 +33,15 @@ function humanizeKey(key: string): string {
 function buildAttachmentViewModel(
   attachment: RawAttachmentItem,
   overrides?: {
+    filename?: string;
     docType?: string;
     attachmentLabel?: string;
-    verifyStatus?: AttachmentViewModel["verifyStatus"];
+    verifyStatus?: VerifyStatus;
   },
 ): AttachmentViewModel {
   return {
     id: attachment.id,
-    filename: attachment.filename,
+    filename: overrides?.filename ?? attachment.filename,
     contentType: attachment.contentType,
     uploadTime: attachment.uploadTime,
     sizeLabel: attachment.sizeLabel,
@@ -96,6 +98,37 @@ function buildEvidenceEntries(requestEvidence: Record<string, unknown>): Evidenc
   }));
 }
 
+function hasMeaningfulValue(value: unknown): boolean {
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === "string") return value.trim().length > 0;
+  return value !== null && value !== undefined;
+}
+
+function buildReviewReasonHint(response: RawVerifyResponse): string | null {
+  const verification = response.verification;
+  if (verification.verify_status !== "REVIEW" || verification.needs_manual_review !== true) {
+    return null;
+  }
+  if (verification.warnings.length > 0) {
+    return null;
+  }
+
+  const hasExplicitRuleFailure = verification.rule_results.some((rule) => rule.passed === false);
+  if (hasExplicitRuleFailure) {
+    return null;
+  }
+
+  const extractedFieldMap = new Map(response.analysis.extracted_fields.map((field) => [field.name, field.value]));
+  const hasCompleteCoreFields = ["patient_name", "rest_start_date", "rest_end_date", "issue_date"].every((fieldName) =>
+    hasMeaningfulValue(extractedFieldMap.get(fieldName)),
+  );
+  if (!hasCompleteCoreFields) {
+    return null;
+  }
+
+  return "业务字段已基本匹配，但材料质量门控/识别置信度仍未达到自动通过标准，建议人工复核。";
+}
+
 function buildVerificationViewModel(response: RawVerifyResponse): VerificationViewModel {
   const verification = response.verification;
   return {
@@ -106,6 +139,7 @@ function buildVerificationViewModel(response: RawVerifyResponse): VerificationVi
     summaryMessage: verification.summary_message,
     needsManualReview: verification.needs_manual_review,
     warnings: verification.warnings,
+    reviewReasonHint: buildReviewReasonHint(response),
     ruleResults: verification.rule_results.map((rule) => ({
       ruleCode: rule.rule_code,
       passed: rule.passed,
@@ -129,6 +163,17 @@ function assertVerifyPayload(response: unknown): asserts response is RawVerifyRe
   }
 }
 
+function pickNonEmptyString(value: unknown, fallback: string): string {
+  return typeof value === "string" && value.trim().length > 0 ? value : fallback;
+}
+
+function buildLeaveDateRange(start: unknown, end: unknown, fallback: string): string {
+  if (typeof start === "string" && start.trim() && typeof end === "string" && end.trim()) {
+    return `${start} ~ ${end}`;
+  }
+  return fallback;
+}
+
 export function buildApprovalPageModel(input: {
   rawPageModel: RawApprovalVerificationPageModel;
   rawAnalyzeResponse?: RawAnalyzeResponse;
@@ -144,15 +189,25 @@ export function buildApprovalPageModel(input: {
   const latestDocType = analyzeResponse.analysis.doc_type;
   const latestAttachmentLabel = analyzeResponse.analysis.classification_evidence.attachment_label;
   const latestVerifyStatus = verifyResponse.verification.verify_status;
+  const latestFilename = input.rawVerifyResponse?.filename ?? input.rawAnalyzeResponse?.filename ?? null;
+  const latestRequestContext = input.rawVerifyResponse?.verification.evidence?.request ?? null;
 
   return {
     requestHeader: {
       ...input.rawPageModel.requestHeader,
       requestId: latestRequestId,
+      applicantName: pickNonEmptyString(latestRequestContext?.applicant_name, input.rawPageModel.requestHeader.applicantName),
+      leaveType: pickNonEmptyString(latestRequestContext?.leave_type, input.rawPageModel.requestHeader.leaveType),
+      leaveDateRange: buildLeaveDateRange(
+        latestRequestContext?.leave_start_date,
+        latestRequestContext?.leave_end_date,
+        input.rawPageModel.requestHeader.leaveDateRange,
+      ),
     },
     attachments: input.rawPageModel.attachments.map((attachment) =>
       attachment.id === input.rawPageModel.selectedAttachmentId
         ? buildAttachmentViewModel(attachment, {
+            filename: latestFilename ?? attachment.filename,
             docType: latestDocType,
             attachmentLabel: latestAttachmentLabel,
             verifyStatus: latestVerifyStatus,
