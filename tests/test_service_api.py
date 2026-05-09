@@ -176,8 +176,9 @@ def test_verify_attachment_success():
     payload = response.json()
     assert payload["request_id"].startswith("LV-TEMP-")
     assert response.headers["x-request-id"] == payload["request_id"]
-    assert payload["verification"]["verify_status"] == "PASS"
+    assert payload["verification"]["verify_status"] == "REVIEW"
     assert payload["verification"]["matched_attachment_type"] == "MEDICAL_CERTIFICATE"
+    assert payload["verification"]["evidence"]["request"]["applicant_name"] == "张三"
     assert payload["analysis"]["classification_evidence"]["attachment_label"] == "MEDICAL_CERTIFICATE"
     assert payload["result"]["analysis"] == payload["analysis"]
 
@@ -251,8 +252,38 @@ def test_verify_attachment_accepts_expected_attachment_types_csv_and_relation_fi
     assert response.status_code == 200
     payload = response.json()
     assert payload["verification"]["evidence"]["request"]["resolved_expected_attachment_types"] == ["BIRTH_CERTIFICATE", "MARRIAGE_CERTIFICATE"]
-    assert any(rule["rule_code"] == "related_person_match" and rule["passed"] is True for rule in payload["verification"]["rule_results"])
+    assert payload["verification"]["evidence"]["request"]["related_person_name"] == "李四"
+    assert any(rule["rule_code"] == "related_person_match" and rule["passed"] is False for rule in payload["verification"]["rule_results"])
 
+
+
+def test_verify_attachment_does_not_promote_request_context_into_analysis_extracted_fields():
+    client = build_client()
+    response = client.post(
+        "/verify-attachment",
+        data={
+            "plugin_name": "diagnosis_proof",
+            "ocr_backend": "mock",
+            "vlm_backend": "mock",
+            "expected_attachment_type": "MEDICAL_CERTIFICATE",
+            "applicant_name": "张三",
+            "leave_start_date": "2026-04-01",
+            "leave_end_date": "2026-04-03",
+            "patient_name": "张三",
+            "rest_start_date": "2026-04-01",
+            "rest_end_date": "2026-04-03",
+            "issue_date": "2026-04-01",
+        },
+        files={"file": ("unrelated.png", b"fake-image-bytes", "image/png")},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    extracted = {field["name"]: field for field in payload["analysis"]["extracted_fields"]}
+    assert extracted.get("patient_name", {}).get("value") in (None, "", [])
+    assert extracted.get("rest_start_date", {}).get("value") in (None, "", [])
+    assert extracted.get("rest_end_date", {}).get("value") in (None, "", [])
+    assert extracted.get("issue_date", {}).get("value") in (None, "", [])
+    assert payload["verification"]["evidence"]["request"]["applicant_name"] == "张三"
 
 
 def test_analyze_document_success_returns_analysis_only_payload():

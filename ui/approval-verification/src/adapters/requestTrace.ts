@@ -16,3 +16,14 @@ export function getRequestIdFromError(error: unknown): string | null {
   }
   return null;
 }
+
+export function resolveRequestId(input: {
+  response?: { request_id?: string | null } | null;
+  error?: unknown;
+}): string | null {
+  const responseRequestId = input.response?.request_id;
+  if (responseRequestId) {
+    return responseRequestId;
+  }
+  return getRequestIdFromError(input.error);
+}

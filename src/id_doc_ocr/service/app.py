@@ -505,7 +505,7 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
             rectify_backend=rectify_backend,
             failure_dir=failure_dir,
             service_settings=service_settings,
-            fields=provided_fields,
+            fields={},
         )
         verification = verify_attachment(
             result["analysis"],

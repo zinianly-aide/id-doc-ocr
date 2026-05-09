@@ -117,6 +117,18 @@ function buildVerificationViewModel(response: RawVerifyResponse): VerificationVi
   };
 }
 
+function assertAnalyzePayload(response: unknown, context: "analyze" | "verify"): asserts response is RawAnalyzeResponse {
+  if (!response || typeof response !== "object" || !("analysis" in response) || !(response as { analysis?: unknown }).analysis) {
+    throw new Error(`${context} response is missing analysis payload`);
+  }
+}
+
+function assertVerifyPayload(response: unknown): asserts response is RawVerifyResponse {
+  if (!response || typeof response !== "object" || !("verification" in response) || !(response as { verification?: unknown }).verification) {
+    throw new Error("verify response is missing verification payload");
+  }
+}
+
 export function buildApprovalPageModel(input: {
   rawPageModel: RawApprovalVerificationPageModel;
   rawAnalyzeResponse?: RawAnalyzeResponse;
@@ -125,6 +137,9 @@ export function buildApprovalPageModel(input: {
   const analyzeResponse = input.rawVerifyResponse ?? input.rawAnalyzeResponse ?? input.rawPageModel.analyzeResponse;
   const verifyResponse = input.rawVerifyResponse ?? input.rawPageModel.verifyResponse;
   const latestRequestId = input.rawVerifyResponse?.request_id ?? input.rawAnalyzeResponse?.request_id ?? input.rawPageModel.requestHeader.requestId;
+
+  assertAnalyzePayload(analyzeResponse, input.rawVerifyResponse ? "verify" : "analyze");
+  assertVerifyPayload(verifyResponse);
 
   const latestDocType = analyzeResponse.analysis.doc_type;
   const latestAttachmentLabel = analyzeResponse.analysis.classification_evidence.attachment_label;
