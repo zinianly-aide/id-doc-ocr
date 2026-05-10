@@ -87,6 +87,59 @@ test("buildApprovalPageModel derives quality review reason when review has no wa
   );
 });
 
+test("buildApprovalPageModel classifies analysis risk separately from verification risk", () => {
+  const rawPageModel = loadPageModel();
+  const rawVerifyResponse = {
+    ...rawPageModel.verifyResponse,
+    analysis: {
+      ...rawPageModel.verifyResponse.analysis,
+      validation: {
+        ...rawPageModel.verifyResponse.analysis.validation,
+        accepted: true,
+        issues: [],
+      },
+      review: {
+        ...rawPageModel.verifyResponse.analysis.review,
+        decision: {
+          ...rawPageModel.verifyResponse.analysis.review.decision,
+          review_recommended: true,
+          quality_passed: false,
+          validation_accepted: true,
+        },
+      },
+      risk: {
+        ...rawPageModel.verifyResponse.analysis.risk,
+        review_recommended: true,
+        quality_passed: false,
+        validation_accepted: true,
+      },
+    },
+    verification: {
+      ...rawPageModel.verifyResponse.verification,
+      verify_status: "REVIEW",
+      risk_level: "LOW",
+      warnings: [],
+      needs_manual_review: true,
+      rule_results: rawPageModel.verifyResponse.verification.rule_results.map((rule: { passed: boolean }) => ({
+        ...rule,
+        passed: true,
+      })),
+    },
+  };
+
+  const viewModel = buildApprovalPageModel({
+    rawPageModel,
+    rawVerifyResponse,
+  });
+
+  assert.equal(viewModel.analysis.riskCategory.label, "识别/材料风险");
+  assert.equal(viewModel.analysis.riskCategory.level, "HIGH");
+  assert.match(viewModel.analysis.riskCategory.summary, /质量门控|自动通过/);
+  assert.equal(viewModel.verification.riskCategory.label, "业务核验风险");
+  assert.equal(viewModel.verification.riskCategory.level, "LOW");
+  assert.match(viewModel.verification.riskCategory.summary, /业务字段已基本匹配|规则/);
+});
+
 test("buildApprovalPageModel fails closed with clear message for partial verify response", () => {
   const rawPageModel = loadPageModel();
   const rawVerifyResponse = {

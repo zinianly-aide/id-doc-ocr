@@ -203,6 +203,7 @@ export interface AnalysisViewModel {
   reviewRecommended: boolean;
   riskScore: number;
   riskAction: string;
+  riskCategory: RiskCategoryViewModel;
 }
 
 export interface RuleResultViewModel {
@@ -219,6 +220,12 @@ export interface EvidenceEntryViewModel {
   value: string;
 }
 
+export interface RiskCategoryViewModel {
+  label: string;
+  level: RiskLevel;
+  summary: string;
+}
+
 export interface VerificationViewModel {
   verifyStatus: VerifyStatus;
   riskScore: number;
@@ -228,6 +235,7 @@ export interface VerificationViewModel {
   needsManualReview: boolean;
   warnings: string[];
   reviewReasonHint: string | null;
+  riskCategory: RiskCategoryViewModel;
   ruleResults: RuleResultViewModel[];
   requestEvidence: EvidenceEntryViewModel[];
 }

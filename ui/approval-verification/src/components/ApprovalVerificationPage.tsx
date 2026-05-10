@@ -223,6 +223,13 @@ function buildRiskItems(viewModel: ApprovalVerificationViewModel, inconsistencyM
     tone: "pass" | "review" | "reject";
   }> = [];
 
+  items.push({
+    title: "风险来源分类",
+    action: `${viewModel.analysis.riskCategory.label}：${getRiskLabel(viewModel.analysis.riskCategory.level)}；${viewModel.verification.riskCategory.label}：${getRiskLabel(viewModel.verification.riskCategory.level)}。`,
+    detail: `${viewModel.analysis.riskCategory.summary} ${viewModel.verification.riskCategory.summary}`,
+    tone: viewModel.verification.verifyStatus === "REJECT" ? "reject" : viewModel.verification.verifyStatus === "PASS" ? "pass" : "review",
+  });
+
   if (inconsistencyMessage) {
     items.push({
       title: "系统判断与业务结论存在分歧",

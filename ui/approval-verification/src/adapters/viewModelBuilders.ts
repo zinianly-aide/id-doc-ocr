@@ -7,6 +7,7 @@ import type {
   RawApprovalVerificationPageModel,
   RawAttachmentItem,
   RawVerifyResponse,
+  RiskCategoryViewModel,
   VerificationViewModel,
   VerifyStatus,
 } from "@/types";
@@ -52,6 +53,30 @@ function buildAttachmentViewModel(
   };
 }
 
+function deriveAnalysisRiskCategory(response: RawAnalyzeResponse): RiskCategoryViewModel {
+  const analysis = response.analysis;
+  const level = analysis.risk.review_recommended || !analysis.risk.quality_passed
+    ? "HIGH"
+    : analysis.risk.score >= 0.35 || !analysis.risk.validation_accepted
+      ? "MEDIUM"
+      : "LOW";
+
+  let summary = "识别链路未发现明显材料风险，可继续参考业务核验结论。";
+  if (!analysis.risk.quality_passed) {
+    summary = "材料质量门控尚未通过，识别链路仍建议人工复核。";
+  } else if (!analysis.risk.validation_accepted) {
+    summary = "结构化字段校验仍有缺口，识别链路建议补充核对原始材料。";
+  } else if (analysis.review.decision.review_recommended) {
+    summary = "识别链路仍保留人工复核建议，暂未达到自动通过标准。";
+  }
+
+  return {
+    label: "识别/材料风险",
+    level,
+    summary,
+  };
+}
+
 function buildAnalysisViewModel(response: RawAnalyzeResponse): AnalysisViewModel {
   const analysis = response.analysis;
   return {
@@ -87,6 +112,7 @@ function buildAnalysisViewModel(response: RawAnalyzeResponse): AnalysisViewModel
     reviewRecommended: analysis.review.decision.review_recommended,
     riskScore: analysis.risk.score,
     riskAction: analysis.risk.review_action,
+    riskCategory: deriveAnalysisRiskCategory(response),
   };
 }
 
@@ -129,8 +155,30 @@ function buildReviewReasonHint(response: RawVerifyResponse): string | null {
   return "业务字段已基本匹配，但材料质量门控/识别置信度仍未达到自动通过标准，建议人工复核。";
 }
 
+function deriveVerificationRiskCategory(response: RawVerifyResponse, reviewReasonHint: string | null): RiskCategoryViewModel {
+  const verification = response.verification;
+  let summary = "业务规则未发现明显冲突，可按当前核验结论继续审批。";
+
+  if (verification.verify_status === "REJECT" || verification.risk_level === "HIGH") {
+    summary = "业务规则已发现高风险冲突，建议驳回或退回补正。";
+  } else if (verification.warnings.length > 0) {
+    summary = "业务规则命中了需复核的预警项，建议结合原始材料继续核对。";
+  } else if (reviewReasonHint) {
+    summary = "业务字段已基本匹配，业务规则侧未发现明显冲突。";
+  } else if (verification.verify_status === "REVIEW") {
+    summary = "业务核验结论仍为人工复核，建议继续查看规则明细。";
+  }
+
+  return {
+    label: "业务核验风险",
+    level: verification.risk_level,
+    summary,
+  };
+}
+
 function buildVerificationViewModel(response: RawVerifyResponse): VerificationViewModel {
   const verification = response.verification;
+  const reviewReasonHint = buildReviewReasonHint(response);
   return {
     verifyStatus: verification.verify_status,
     riskScore: verification.risk_score,
@@ -139,7 +187,8 @@ function buildVerificationViewModel(response: RawVerifyResponse): VerificationVi
     summaryMessage: verification.summary_message,
     needsManualReview: verification.needs_manual_review,
     warnings: verification.warnings,
-    reviewReasonHint: buildReviewReasonHint(response),
+    reviewReasonHint,
+    riskCategory: deriveVerificationRiskCategory(response, reviewReasonHint),
     ruleResults: verification.rule_results.map((rule) => ({
       ruleCode: rule.rule_code,
       passed: rule.passed,
