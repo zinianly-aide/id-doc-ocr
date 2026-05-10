@@ -248,6 +248,15 @@ function buildRiskItems(viewModel: ApprovalVerificationViewModel, inconsistencyM
     });
   }
 
+  viewModel.verification.explainabilityGroups.forEach((group) => {
+    items.push({
+      title: `Explainability · ${group.label}`,
+      action: group.items[0] ?? "-",
+      detail: group.items.slice(1).join("；") || "用于补充说明当前复核来源。",
+      tone: "review",
+    });
+  });
+
   viewModel.verification.warnings.forEach((warning) => {
     items.push({
       title: mapRiskMessage(warning),

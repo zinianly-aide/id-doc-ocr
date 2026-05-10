@@ -4,6 +4,7 @@ import type {
   AttachmentViewModel,
   EvidenceEntryViewModel,
   RawAnalyzeResponse,
+  ExplainabilityGroupViewModel,
   RawApprovalVerificationPageModel,
   RawAttachmentItem,
   RawVerifyResponse,
@@ -155,6 +156,33 @@ function buildReviewReasonHint(response: RawVerifyResponse): string | null {
   return "业务字段已基本匹配，但材料质量门控/识别置信度仍未达到自动通过标准，建议人工复核。";
 }
 
+function buildReviewReasonTags(response: RawVerifyResponse): string[] {
+  const tags: string[] = [];
+  const hasQualityRisk = response.analysis.review.warnings.some((warning) => warning.stage === "quality" || /blur|glare|quality|置信度/i.test(warning.message));
+  const hasIntegrityRisk = response.analysis.validation.issues.some((issue) => /missing|seal|hospital|diagnosis|issue_date|certificate|盖章|医院|诊断|开具日期/i.test(issue.message) || /missing_/i.test(issue.code));
+  const hasRuleMismatchRisk = response.verification.warnings.length > 0 || response.verification.rule_results.some((rule) => rule.passed === false);
+
+  if (hasQualityRisk) tags.push("ocr_quality_risk");
+  if (hasIntegrityRisk) tags.push("document_integrity_risk");
+  if (hasRuleMismatchRisk) tags.push("rule_mismatch_risk");
+  return tags;
+}
+
+function localizeExplainabilityMessage(message: string): string {
+  const normalized = message.trim();
+  const mappings: Record<string, string> = {
+    "blur_score is below the preferred threshold.": "图像清晰度偏低，可能影响 OCR 识别稳定性。",
+    "glare_score is below the preferred threshold.": "图像反光较强，可能影响关键信息识别。",
+    "Perspective correction confidence is weak; warped crops may need review.": "透视矫正置信度偏低，当前裁切结果可能存在形变，建议人工复核原图。",
+    "missing seal": "未识别到盖章信息，材料完整性仍需人工确认。",
+    "missing hospital_name": "未识别到医院信息，材料完整性仍需人工确认。",
+    "missing diagnosis": "未识别到诊断信息，材料完整性仍需人工确认。",
+    "missing issue_date": "未识别到开具日期，材料完整性仍需人工确认。",
+    "leave dates do not align with extracted document dates": "请假日期与识别出的材料日期不一致。",
+  };
+  return mappings[normalized] ?? normalized;
+}
+
 function deriveVerificationRiskCategory(response: RawVerifyResponse, reviewReasonHint: string | null): RiskCategoryViewModel {
   const verification = response.verification;
   let summary = "业务规则未发现明显冲突，可按当前核验结论继续审批。";
@@ -176,6 +204,33 @@ function deriveVerificationRiskCategory(response: RawVerifyResponse, reviewReaso
   };
 }
 
+function buildExplainabilityGroups(response: RawVerifyResponse): ExplainabilityGroupViewModel[] {
+  const qualityItems = response.analysis.review.warnings
+    .filter((warning) => warning.stage === "quality" || /blur|glare|quality|置信度/i.test(warning.message))
+    .map((warning) => localizeExplainabilityMessage(warning.message));
+
+  const integrityItems = response.analysis.validation.issues
+    .filter((issue) => /missing|seal|hospital|diagnosis|issue_date|certificate|integrity|盖章|医院|诊断|开具日期/i.test(issue.message) || /missing_/i.test(issue.code))
+    .map((issue) => localizeExplainabilityMessage(issue.message));
+
+  const ruleMismatchItems = [
+    ...response.verification.warnings,
+    ...response.verification.rule_results.filter((rule) => rule.passed === false).map((rule) => rule.message),
+  ].map(localizeExplainabilityMessage);
+
+  const groups: ExplainabilityGroupViewModel[] = [];
+  if (qualityItems.length) {
+    groups.push({ key: "ocr_quality", label: "OCR质量", items: qualityItems });
+  }
+  if (integrityItems.length) {
+    groups.push({ key: "document_integrity", label: "材料完整性", items: integrityItems });
+  }
+  if (ruleMismatchItems.length) {
+    groups.push({ key: "rule_mismatch", label: "规则不匹配", items: ruleMismatchItems });
+  }
+  return groups;
+}
+
 function buildVerificationViewModel(response: RawVerifyResponse): VerificationViewModel {
   const verification = response.verification;
   const reviewReasonHint = buildReviewReasonHint(response);
@@ -188,7 +243,9 @@ function buildVerificationViewModel(response: RawVerifyResponse): VerificationVi
     needsManualReview: verification.needs_manual_review,
     warnings: verification.warnings,
     reviewReasonHint,
+    reviewReasonTags: buildReviewReasonTags(response),
     riskCategory: deriveVerificationRiskCategory(response, reviewReasonHint),
+    explainabilityGroups: buildExplainabilityGroups(response),
     ruleResults: verification.rule_results.map((rule) => ({
       ruleCode: rule.rule_code,
       passed: rule.passed,

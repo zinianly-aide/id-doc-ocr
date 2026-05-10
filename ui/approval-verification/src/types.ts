@@ -226,6 +226,12 @@ export interface RiskCategoryViewModel {
   summary: string;
 }
 
+export interface ExplainabilityGroupViewModel {
+  key: "ocr_quality" | "document_integrity" | "rule_mismatch";
+  label: string;
+  items: string[];
+}
+
 export interface VerificationViewModel {
   verifyStatus: VerifyStatus;
   riskScore: number;
@@ -235,7 +241,9 @@ export interface VerificationViewModel {
   needsManualReview: boolean;
   warnings: string[];
   reviewReasonHint: string | null;
+  reviewReasonTags: string[];
   riskCategory: RiskCategoryViewModel;
+  explainabilityGroups: ExplainabilityGroupViewModel[];
   ruleResults: RuleResultViewModel[];
   requestEvidence: EvidenceEntryViewModel[];
 }

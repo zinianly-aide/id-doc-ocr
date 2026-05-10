@@ -140,6 +140,125 @@ test("buildApprovalPageModel classifies analysis risk separately from verificati
   assert.match(viewModel.verification.riskCategory.summary, /业务字段已基本匹配|规则/);
 });
 
+test("buildApprovalPageModel derives layered explainability buckets for quality integrity and rule mismatch", () => {
+  const rawPageModel = loadPageModel();
+  const rawVerifyResponse = {
+    ...rawPageModel.verifyResponse,
+    analysis: {
+      ...rawPageModel.verifyResponse.analysis,
+      review: {
+        ...rawPageModel.verifyResponse.analysis.review,
+        warnings: [
+          {
+            code: "low_blur_score",
+            severity: "warning",
+            message: "blur_score is below the preferred threshold.",
+            stage: "quality",
+          },
+        ],
+      },
+      validation: {
+        ...rawPageModel.verifyResponse.analysis.validation,
+        issues: [
+          {
+            code: "missing_seal",
+            severity: "warning",
+            message: "missing seal",
+          },
+        ],
+      },
+    },
+    verification: {
+      ...rawPageModel.verifyResponse.verification,
+      warnings: ["leave dates do not align with extracted document dates"],
+      rule_results: rawPageModel.verifyResponse.verification.rule_results.map((rule: { rule_code: string }) =>
+        rule.rule_code === "leave_date_match"
+          ? {
+              ...rule,
+              passed: false,
+              severity: "warning",
+              message: "leave dates do not align with extracted document dates",
+            }
+          : rule,
+      ),
+    },
+  };
+
+  const viewModel = buildApprovalPageModel({
+    rawPageModel,
+    rawVerifyResponse,
+  });
+
+  assert.deepEqual(
+    viewModel.verification.explainabilityGroups.map((group) => group.key),
+    ["ocr_quality", "document_integrity", "rule_mismatch"],
+  );
+  assert.match(viewModel.verification.explainabilityGroups[0]?.items.join(" "), /blur|质量|低/);
+  assert.match(viewModel.verification.explainabilityGroups[1]?.items.join(" "), /seal|盖章/);
+  assert.match(viewModel.verification.explainabilityGroups[2]?.items.join(" "), /leave dates|日期/);
+});
+
+test("buildApprovalPageModel derives review reason taxonomy and localized explainability copy", () => {
+  const rawPageModel = loadPageModel();
+  const rawVerifyResponse = {
+    ...rawPageModel.verifyResponse,
+    analysis: {
+      ...rawPageModel.verifyResponse.analysis,
+      review: {
+        ...rawPageModel.verifyResponse.analysis.review,
+        warnings: [
+          {
+            code: "low_blur_score",
+            severity: "warning",
+            message: "blur_score is below the preferred threshold.",
+            stage: "quality",
+          },
+        ],
+      },
+      validation: {
+        ...rawPageModel.verifyResponse.analysis.validation,
+        issues: [
+          {
+            code: "missing_seal",
+            severity: "warning",
+            message: "missing seal",
+          },
+        ],
+      },
+    },
+    verification: {
+      ...rawPageModel.verifyResponse.verification,
+      verify_status: "REVIEW",
+      warnings: ["leave dates do not align with extracted document dates"],
+      needs_manual_review: true,
+      rule_results: rawPageModel.verifyResponse.verification.rule_results.map((rule: { rule_code: string }) =>
+        rule.rule_code === "leave_date_match"
+          ? {
+              ...rule,
+              passed: false,
+              severity: "warning",
+              message: "leave dates do not align with extracted document dates",
+            }
+          : rule,
+      ),
+    },
+  };
+
+  const viewModel = buildApprovalPageModel({ rawPageModel, rawVerifyResponse });
+
+  assert.deepEqual(viewModel.verification.reviewReasonTags, [
+    "ocr_quality_risk",
+    "document_integrity_risk",
+    "rule_mismatch_risk",
+  ]);
+  assert.equal(viewModel.verification.explainabilityGroups[0]?.label, "OCR质量");
+  assert.match(viewModel.verification.explainabilityGroups[0]?.items.join(" "), /清晰度|质量门控|模糊/);
+  assert.equal(viewModel.verification.explainabilityGroups[1]?.label, "材料完整性");
+  assert.match(viewModel.verification.explainabilityGroups[1]?.items.join(" "), /盖章|完整性/);
+  assert.equal(viewModel.verification.explainabilityGroups[2]?.label, "规则不匹配");
+  assert.match(viewModel.verification.explainabilityGroups[2]?.items.join(" "), /日期|规则/);
+});
+
 test("buildApprovalPageModel fails closed with clear message for partial verify response", () => {
   const rawPageModel = loadPageModel();
   const rawVerifyResponse = {
