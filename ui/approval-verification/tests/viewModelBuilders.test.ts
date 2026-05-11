@@ -259,6 +259,131 @@ test("buildApprovalPageModel derives review reason taxonomy and localized explai
   assert.match(viewModel.verification.explainabilityGroups[2]?.items.join(" "), /日期|规则/);
 });
 
+test("buildApprovalPageModel marks auto-pass readiness ready for PASS without review tags", () => {
+  const rawPageModel = loadPageModel();
+  const rawVerifyResponse = {
+    ...rawPageModel.verifyResponse,
+    analysis: {
+      ...rawPageModel.verifyResponse.analysis,
+      review: {
+        ...rawPageModel.verifyResponse.analysis.review,
+        warnings: [],
+      },
+      validation: {
+        ...rawPageModel.verifyResponse.analysis.validation,
+        accepted: true,
+        issues: [],
+      },
+      risk: {
+        ...rawPageModel.verifyResponse.analysis.risk,
+        review_recommended: false,
+        quality_passed: true,
+        validation_accepted: true,
+      },
+    },
+    verification: {
+      ...rawPageModel.verifyResponse.verification,
+      verify_status: "PASS",
+      warnings: [],
+      needs_manual_review: false,
+      rule_results: rawPageModel.verifyResponse.verification.rule_results.map((rule: { passed: boolean }) => ({
+        ...rule,
+        passed: true,
+      })),
+    },
+  };
+
+  const viewModel = buildApprovalPageModel({ rawPageModel, rawVerifyResponse });
+  assert.equal(viewModel.verification.autoPassReadiness.status, "ready");
+  assert.equal(viewModel.verification.autoPassReadiness.label, "自动通过条件已满足");
+});
+
+test("buildApprovalPageModel marks auto-pass readiness blocked for OCR quality risk", () => {
+  const rawPageModel = loadPageModel();
+  const rawVerifyResponse = {
+    ...rawPageModel.verifyResponse,
+    analysis: {
+      ...rawPageModel.verifyResponse.analysis,
+      review: {
+        ...rawPageModel.verifyResponse.analysis.review,
+        warnings: [{ code: "low_blur_score", severity: "warning", message: "blur_score is below the preferred threshold.", stage: "quality" }],
+      },
+    },
+    verification: {
+      ...rawPageModel.verifyResponse.verification,
+      verify_status: "REVIEW",
+      needs_manual_review: true,
+      warnings: [],
+      rule_results: rawPageModel.verifyResponse.verification.rule_results.map((rule: { passed: boolean }) => ({ ...rule, passed: true })),
+    },
+  };
+  const viewModel = buildApprovalPageModel({ rawPageModel, rawVerifyResponse });
+  assert.equal(viewModel.verification.autoPassReadiness.status, "blocked");
+  assert.match(viewModel.verification.autoPassReadiness.blockers.join("、"), /OCR质量风险/);
+});
+
+test("buildApprovalPageModel marks auto-pass readiness blocked for document integrity risk", () => {
+  const rawPageModel = loadPageModel();
+  const rawVerifyResponse = {
+    ...rawPageModel.verifyResponse,
+    analysis: {
+      ...rawPageModel.verifyResponse.analysis,
+      review: { ...rawPageModel.verifyResponse.analysis.review, warnings: [] },
+      validation: {
+        ...rawPageModel.verifyResponse.analysis.validation,
+        issues: [{ code: "missing_seal", severity: "warning", message: "missing seal" }],
+      },
+    },
+    verification: {
+      ...rawPageModel.verifyResponse.verification,
+      verify_status: "REVIEW",
+      needs_manual_review: true,
+      warnings: [],
+      rule_results: rawPageModel.verifyResponse.verification.rule_results.map((rule: { passed: boolean }) => ({ ...rule, passed: true })),
+    },
+  };
+  const viewModel = buildApprovalPageModel({ rawPageModel, rawVerifyResponse });
+  assert.equal(viewModel.verification.autoPassReadiness.status, "blocked");
+  assert.match(viewModel.verification.autoPassReadiness.blockers.join("、"), /材料完整性风险/);
+});
+
+test("buildApprovalPageModel marks auto-pass readiness blocked for rule mismatch risk", () => {
+  const rawPageModel = loadPageModel();
+  const rawVerifyResponse = {
+    ...rawPageModel.verifyResponse,
+    verification: {
+      ...rawPageModel.verifyResponse.verification,
+      verify_status: "REVIEW",
+      needs_manual_review: true,
+      warnings: ["leave dates do not align with extracted document dates"],
+      rule_results: rawPageModel.verifyResponse.verification.rule_results.map((rule: { rule_code: string }) =>
+        rule.rule_code === "leave_date_match"
+          ? { ...rule, passed: false, severity: "warning", message: "leave dates do not align with extracted document dates" }
+          : rule,
+      ),
+    },
+  };
+  const viewModel = buildApprovalPageModel({ rawPageModel, rawVerifyResponse });
+  assert.equal(viewModel.verification.autoPassReadiness.status, "blocked");
+  assert.match(viewModel.verification.autoPassReadiness.blockers.join("、"), /规则不匹配/);
+});
+
+test("buildApprovalPageModel marks auto-pass readiness unknown when verify status is missing", () => {
+  const rawPageModel = loadPageModel();
+  const rawVerifyResponse = {
+    ...rawPageModel.verifyResponse,
+    verification: {
+      ...rawPageModel.verifyResponse.verification,
+      verify_status: undefined,
+      warnings: [],
+      needs_manual_review: false,
+    },
+  };
+  const viewModel = buildApprovalPageModel({ rawPageModel, rawVerifyResponse: rawVerifyResponse as never });
+  assert.equal(viewModel.verification.autoPassReadiness.status, "unknown");
+  assert.equal(viewModel.verification.autoPassReadiness.label, "暂无法判断自动通过条件");
+});
+
 test("buildApprovalPageModel fails closed with clear message for partial verify response", () => {
   const rawPageModel = loadPageModel();
   const rawVerifyResponse = {

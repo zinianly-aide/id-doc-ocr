@@ -585,6 +585,17 @@ export function ApprovalVerificationPage({
                 <small>请结合材料原件做最终审批</small>
               </div>
               <div className="glf-summary-card__metric">
+                <span>自动通过评估</span>
+                <strong>{viewModel.verification.autoPassReadiness.label}</strong>
+                <small>
+                  {viewModel.verification.autoPassReadiness.status === "blocked"
+                    ? `阻断原因：${viewModel.verification.autoPassReadiness.blockers.join("、")}`
+                    : viewModel.verification.autoPassReadiness.status === "ready"
+                      ? "当前未见自动通过阻断项"
+                      : "当前信息不足，仍需结合人工判断"}
+                </small>
+              </div>
+              <div className="glf-summary-card__metric">
                 <span>核验把握度</span>
                 <strong>{confidence}%</strong>
                 <small>仅供审批人参考</small>

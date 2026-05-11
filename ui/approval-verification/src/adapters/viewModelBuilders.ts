@@ -168,6 +168,15 @@ function buildReviewReasonTags(response: RawVerifyResponse): string[] {
   return tags;
 }
 
+function mapReviewReasonTag(tag: string): string {
+  const mappings: Record<string, string> = {
+    ocr_quality_risk: "OCR质量风险",
+    document_integrity_risk: "材料完整性风险",
+    rule_mismatch_risk: "规则不匹配",
+  };
+  return mappings[tag] ?? tag;
+}
+
 function localizeExplainabilityMessage(message: string): string {
   const normalized = message.trim();
   const mappings: Record<string, string> = {
@@ -231,9 +240,55 @@ function buildExplainabilityGroups(response: RawVerifyResponse): ExplainabilityG
   return groups;
 }
 
+function buildAutoPassReadiness(input: {
+  verifyStatus: string | undefined;
+  reviewReasonTags: string[];
+  explainabilityGroups: ExplainabilityGroupViewModel[];
+}): VerificationViewModel["autoPassReadiness"] {
+  const verifyStatus = input.verifyStatus;
+  const blockers = input.reviewReasonTags.map(mapReviewReasonTag);
+  const reasons = input.explainabilityGroups.map((group) => group.label);
+
+  if (verifyStatus !== "PASS" && verifyStatus !== "REVIEW" && verifyStatus !== "REJECT") {
+    return {
+      status: "unknown",
+      label: "暂无法判断自动通过条件",
+      reasons,
+      blockers,
+    };
+  }
+
+  if (verifyStatus === "PASS" && blockers.length === 0) {
+    return {
+      status: "ready",
+      label: "自动通过条件已满足",
+      reasons: reasons.length ? reasons : ["当前核验未发现阻断项"],
+      blockers: [],
+    };
+  }
+
+  if (verifyStatus === "REVIEW" && blockers.length > 0) {
+    return {
+      status: "blocked",
+      label: "自动通过条件未满足，建议人工复核",
+      reasons,
+      blockers,
+    };
+  }
+
+  return {
+    status: "unknown",
+    label: "暂无法判断自动通过条件",
+    reasons,
+    blockers,
+  };
+}
+
 function buildVerificationViewModel(response: RawVerifyResponse): VerificationViewModel {
   const verification = response.verification;
   const reviewReasonHint = buildReviewReasonHint(response);
+  const reviewReasonTags = buildReviewReasonTags(response);
+  const explainabilityGroups = buildExplainabilityGroups(response);
   return {
     verifyStatus: verification.verify_status,
     riskScore: verification.risk_score,
@@ -243,9 +298,14 @@ function buildVerificationViewModel(response: RawVerifyResponse): VerificationVi
     needsManualReview: verification.needs_manual_review,
     warnings: verification.warnings,
     reviewReasonHint,
-    reviewReasonTags: buildReviewReasonTags(response),
+    reviewReasonTags,
+    autoPassReadiness: buildAutoPassReadiness({
+      verifyStatus: verification.verify_status,
+      reviewReasonTags,
+      explainabilityGroups,
+    }),
     riskCategory: deriveVerificationRiskCategory(response, reviewReasonHint),
-    explainabilityGroups: buildExplainabilityGroups(response),
+    explainabilityGroups,
     ruleResults: verification.rule_results.map((rule) => ({
       ruleCode: rule.rule_code,
       passed: rule.passed,

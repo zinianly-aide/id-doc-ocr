@@ -232,6 +232,13 @@ export interface ExplainabilityGroupViewModel {
   items: string[];
 }
 
+export interface AutoPassReadinessViewModel {
+  status: "ready" | "blocked" | "unknown";
+  label: string;
+  reasons: string[];
+  blockers: string[];
+}
+
 export interface VerificationViewModel {
   verifyStatus: VerifyStatus;
   riskScore: number;
@@ -242,6 +249,7 @@ export interface VerificationViewModel {
   warnings: string[];
   reviewReasonHint: string | null;
   reviewReasonTags: string[];
+  autoPassReadiness: AutoPassReadinessViewModel;
   riskCategory: RiskCategoryViewModel;
   explainabilityGroups: ExplainabilityGroupViewModel[];
   ruleResults: RuleResultViewModel[];
