@@ -1012,3 +1012,71 @@ summary { cursor: pointer; }
     font-size: 18px;
   }
 }
+
+.leave-audit-workbench {
+  min-height: 100vh;
+  padding: 28px;
+  color: #0f172a;
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.14), transparent 28%),
+    linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+}
+
+.leave-audit-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 18px;
+}
+
+.leave-audit-header h2.ant-typography {
+  margin: 4px 0 8px;
+}
+
+.leave-audit-eyebrow {
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.leave-audit-toolbar-card {
+  margin: 16px 0;
+}
+
+.leave-audit-row-highlight td {
+  background: #fff7ed !important;
+}
+
+.leave-audit-full-width {
+  width: 100%;
+}
+
+.leave-audit-json-block {
+  max-height: 360px;
+  margin: 0;
+  padding: 12px;
+  overflow: auto;
+  color: #dbeafe;
+  background: #0f172a;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.leave-audit-rule-card--failed {
+  border-color: #fdba74;
+  background: #fff7ed;
+}
+
+@media (max-width: 768px) {
+  .leave-audit-workbench {
+    padding: 16px;
+  }
+
+  .leave-audit-header {
+    flex-direction: column;
+  }
+}

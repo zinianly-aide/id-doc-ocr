@@ -2,6 +2,7 @@
 
 ## 本次完成事项
 - 已完成假勤系统旁路审核模式重构：新增 `leave_audit` 业务域、MockLeaveSystemAdapter、SQLiteRepository、AuditService/ReviewService、worker skeleton 与 `/leave-audit/*` API
+- 已完成 React + Ant Design 假勤材料旁路审核工作台：统计卡、筛选/搜索、任务表格、详情 Drawer、人工复核 Panel、回写按钮均已接入 `/leave-audit/*` API
 - 已增强 verification 输出：新增 `autoPassReadiness` 与规则中文展示文案，前端可优先展示 `display_message`
 - 已新增 `docs/leave-audit-sidecar.md`，说明架构、接入方式、mock adapter、API 示例、状态流转与真实 adapter 替换路径
 - 已从 P3.1 Pre-Launch Validation 进入 P3.2 Go-Live Freeze

@@ -9,6 +9,7 @@ Go-Live Freeze
 ## 当前技术增量
 - 已新增 `leave_audit` 旁路审核业务域，使现有 OCR / plugin / pipeline / verify-attachment 能力可被假勤系统以 sidecar 模式接入。
 - 新增 `/leave-audit/*` API、SQLite 任务/结果/复核存储、MockLeaveSystemAdapter 与 `fixtures/sample_leave_tasks.json`。
+- 新增 React + Ant Design `ui/approval-verification/` 假勤材料旁路审核工作台，用于同步、核验、详情查看、人工复核与回写。
 - 保持 `/health`、`/capabilities`、`/infer`、`/analyze-document`、`/verify-attachment` 兼容。
 
 ## 本周重点

@@ -1,0 +1,520 @@
+import { useEffect, useMemo, useState } from "react";
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  Col,
+  Descriptions,
+  Divider,
+  Drawer,
+  Empty,
+  Form,
+  Input,
+  message,
+  Row,
+  Select,
+  Space,
+  Statistic,
+  Table,
+  Tag,
+  Typography,
+} from "antd";
+import type { ColumnsType } from "antd/es/table";
+import {
+  CheckCircleOutlined,
+  CloudSyncOutlined,
+  ExclamationCircleOutlined,
+  ReloadOutlined,
+  RollbackOutlined,
+  SearchOutlined,
+  SyncOutlined,
+} from "@ant-design/icons";
+import dayjs from "dayjs";
+
+import { leaveAuditApi } from "@/api/leaveAuditApi";
+import type {
+  AutoPassReadiness,
+  LeaveAuditDetailResponse,
+  LeaveAuditStatus,
+  LeaveAuditTableRow,
+  LeaveAuditTask,
+  RuleResult,
+} from "@/types/leaveAudit";
+
+const { Title, Text, Paragraph } = Typography;
+
+const STATUS_OPTIONS: LeaveAuditStatus[] = [
+  "PENDING",
+  "PULLED",
+  "PROCESSING",
+  "PASS",
+  "REVIEW",
+  "REJECT",
+  "ERROR",
+  "IGNORED",
+  "SYNCED",
+];
+
+const REVIEW_DECISIONS: LeaveAuditStatus[] = ["PASS", "REVIEW", "REJECT"];
+
+function statusColor(status?: string): string {
+  switch (status) {
+    case "PASS":
+    case "SYNCED":
+      return "success";
+    case "REVIEW":
+    case "PENDING":
+    case "PULLED":
+    case "PROCESSING":
+      return "warning";
+    case "REJECT":
+      return "error";
+    case "ERROR":
+      return "volcano";
+    default:
+      return "default";
+  }
+}
+
+function readinessColor(status?: string): string {
+  switch (status) {
+    case "ready":
+      return "success";
+    case "blocked":
+      return "warning";
+    default:
+      return "default";
+  }
+}
+
+function riskColor(riskLevel?: string): string {
+  switch (riskLevel) {
+    case "LOW":
+      return "success";
+    case "MEDIUM":
+      return "warning";
+    case "HIGH":
+      return "error";
+    default:
+      return "default";
+  }
+}
+
+function formatTime(value?: string | null): string {
+  if (!value) {
+    return "-";
+  }
+  const parsed = dayjs(value);
+  return parsed.isValid() ? parsed.format("YYYY-MM-DD HH:mm") : value;
+}
+
+function getLeaveRequestId(task: LeaveAuditTask): string {
+  const raw = task.raw_payload ?? {};
+  return String(raw.leave_request_id ?? raw.request_id ?? task.request_id);
+}
+
+function getAttachmentName(task: LeaveAuditTask): string {
+  const first = task.attachments?.[0];
+  return first?.filename ?? first?.attachment_id ?? "-";
+}
+
+function toRows(tasks: LeaveAuditTask[], details: Record<string, LeaveAuditDetailResponse | undefined>): LeaveAuditTableRow[] {
+  return tasks.map((task) => {
+    const detail = details[task.request_id];
+    const result = detail?.result ?? null;
+    const verification = result?.verification_json;
+    return {
+      key: task.request_id,
+      task,
+      result,
+      request_id: task.request_id,
+      leave_request_id: getLeaveRequestId(task),
+      employee_name: task.employee_name,
+      leave_type: task.leave_type,
+      attachment_name: getAttachmentName(task),
+      matched_attachment_type: verification?.matched_attachment_type,
+      status: task.status,
+      risk_level: verification?.risk_level,
+      verify_status: verification?.verify_status,
+      updated_at: result?.updated_at ?? task.updated_at,
+    };
+  });
+}
+
+function JsonBlock({ value }: { value: unknown }) {
+  return <pre className="leave-audit-json-block">{JSON.stringify(value ?? {}, null, 2)}</pre>;
+}
+
+function AutoPassReadinessView({ readiness }: { readiness?: AutoPassReadiness }) {
+  if (!readiness) {
+    return <Tag>未生成</Tag>;
+  }
+  return (
+    <Space direction="vertical" size={8} className="leave-audit-full-width">
+      <Tag color={readinessColor(readiness.status)}>{readiness.label || readiness.status}</Tag>
+      {readiness.reasons?.length ? <Alert type="warning" showIcon message="原因" description={readiness.reasons.join("；")} /> : null}
+      {readiness.blockers?.length ? <Alert type="error" showIcon message="阻断项" description={readiness.blockers.join("；")} /> : null}
+    </Space>
+  );
+}
+
+function RuleResultsView({ rules }: { rules?: RuleResult[] }) {
+  if (!rules?.length) {
+    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无规则结果" />;
+  }
+  return (
+    <Space direction="vertical" size={8} className="leave-audit-full-width">
+      {rules.map((rule) => (
+        <Card size="small" key={rule.rule_code} className={rule.passed ? undefined : "leave-audit-rule-card--failed"}>
+          <Space direction="vertical" size={4} className="leave-audit-full-width">
+            <Space wrap>
+              <Tag color={rule.passed ? "success" : statusColor(rule.severity === "error" ? "REJECT" : "REVIEW")}>
+                {rule.passed ? "通过" : "未通过"}
+              </Tag>
+              <Tag>{rule.rule_code}</Tag>
+              <Tag color={rule.severity === "error" ? "error" : rule.severity === "warning" ? "warning" : "default"}>{rule.severity}</Tag>
+              <Text type="secondary">score_delta: {rule.score_delta}</Text>
+            </Space>
+            <Text strong>{rule.display_message ?? rule.message_zh ?? rule.message ?? "-"}</Text>
+            <JsonBlock value={rule.evidence} />
+          </Space>
+        </Card>
+      ))}
+    </Space>
+  );
+}
+
+export function LeaveAuditWorkbench() {
+  const [tasks, setTasks] = useState<LeaveAuditTask[]>([]);
+  const [detailsById, setDetailsById] = useState<Record<string, LeaveAuditDetailResponse | undefined>>({});
+  const [statusFilter, setStatusFilter] = useState<string | undefined>();
+  const [leaveTypeFilter, setLeaveTypeFilter] = useState<string | undefined>();
+  const [keyword, setKeyword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
+  const [reviewForm] = Form.useForm<{ review_result: LeaveAuditStatus; review_comment?: string; reviewer: string }>();
+
+  const selectedDetail = selectedRequestId ? detailsById[selectedRequestId] : undefined;
+
+  const fetchDetail = async (requestId: string): Promise<LeaveAuditDetailResponse> => {
+    const detail = await leaveAuditApi.getTask(requestId);
+    setDetailsById((current) => ({ ...current, [requestId]: detail }));
+    return detail;
+  };
+
+  const refresh = async () => {
+    setLoading(true);
+    try {
+      const response = await leaveAuditApi.listTasks(statusFilter ? { status: statusFilter } : undefined);
+      setTasks(response.tasks);
+      const detailResponses = await Promise.allSettled(response.tasks.map((task) => leaveAuditApi.getTask(task.request_id)));
+      const nextDetails: Record<string, LeaveAuditDetailResponse> = {};
+      detailResponses.forEach((item) => {
+        if (item.status === "fulfilled") {
+          nextDetails[item.value.task.request_id] = item.value;
+        }
+      });
+      setDetailsById(nextDetails);
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : "刷新失败");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter]);
+
+  const rows = useMemo(() => toRows(tasks, detailsById), [tasks, detailsById]);
+
+  const leaveTypeOptions = useMemo(
+    () => Array.from(new Set(tasks.map((task) => task.leave_type).filter(Boolean))).map((value) => ({ label: value, value })),
+    [tasks],
+  );
+
+  const filteredRows = useMemo(() => {
+    const normalizedKeyword = keyword.trim().toLowerCase();
+    return rows.filter((row) => {
+      const leaveTypeMatch = !leaveTypeFilter || row.leave_type === leaveTypeFilter;
+      const keywordMatch =
+        !normalizedKeyword ||
+        [row.request_id, row.leave_request_id, row.attachment_name, row.employee_name]
+          .filter(Boolean)
+          .some((item) => String(item).toLowerCase().includes(normalizedKeyword));
+      return leaveTypeMatch && keywordMatch;
+    });
+  }, [rows, leaveTypeFilter, keyword]);
+
+  const stats = useMemo(() => {
+    const total = rows.length;
+    const pending = rows.filter((row) => ["PENDING", "PULLED", "PROCESSING"].includes(row.status)).length;
+    const pass = rows.filter((row) => row.status === "PASS" || row.verify_status === "PASS").length;
+    const review = rows.filter((row) => row.status === "REVIEW" || row.verify_status === "REVIEW").length;
+    const reject = rows.filter((row) => row.status === "REJECT" || row.verify_status === "REJECT").length;
+    const autoPassRate = total > 0 ? Math.round((pass / total) * 1000) / 10 : 0;
+    return { pending, pass, review, reject, autoPassRate };
+  }, [rows]);
+
+  const syncTasks = async () => {
+    setLoading(true);
+    try {
+      const response = await leaveAuditApi.syncTasks();
+      message.success(`已同步 ${response.synced} 条待审核任务`);
+      await refresh();
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : "同步失败");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const runTask = async (requestId: string) => {
+    setActionLoadingId(requestId);
+    try {
+      const response = await leaveAuditApi.runTask(requestId);
+      message.success(`核验完成：${response.result.status}`);
+      await fetchDetail(requestId);
+      await refresh();
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : "运行核验失败");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const openDetail = async (requestId: string) => {
+    setSelectedRequestId(requestId);
+    setDrawerOpen(true);
+    await fetchDetail(requestId);
+    reviewForm.setFieldsValue({ reviewer: "hr01", review_result: "REVIEW", review_comment: "" });
+  };
+
+  const submitReview = async () => {
+    if (!selectedRequestId) {
+      return;
+    }
+    const values = await reviewForm.validateFields();
+    setActionLoadingId(selectedRequestId);
+    try {
+      await leaveAuditApi.submitReview(selectedRequestId, {
+        decision: values.review_result,
+        reviewer: values.reviewer,
+        comment: values.review_comment,
+      });
+      message.success("人工复核已提交");
+      await fetchDetail(selectedRequestId);
+      await refresh();
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : "提交复核失败");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const callbackTask = async (requestId: string) => {
+    setActionLoadingId(requestId);
+    try {
+      await leaveAuditApi.callbackTask(requestId);
+      message.success("已回写假勤系统");
+      await fetchDetail(requestId);
+      await refresh();
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : "回写失败");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const columns: ColumnsType<LeaveAuditTableRow> = [
+    { title: "request_id", dataIndex: "request_id", width: 210, fixed: "left" },
+    { title: "leave_request_id", dataIndex: "leave_request_id", width: 190 },
+    { title: "employee_name", dataIndex: "employee_name", width: 130 },
+    { title: "leave_type", dataIndex: "leave_type", width: 120, render: (value: string) => <Tag>{value}</Tag> },
+    { title: "attachment_name", dataIndex: "attachment_name", width: 180 },
+    { title: "matched_attachment_type", dataIndex: "matched_attachment_type", width: 220, render: (value?: string) => value ? <Tag color="blue">{value}</Tag> : "-" },
+    { title: "status", dataIndex: "status", width: 120, render: (value: string) => <Tag color={statusColor(value)}>{value}</Tag> },
+    { title: "risk_level", dataIndex: "risk_level", width: 120, render: (value?: string) => value ? <Tag color={riskColor(value)}>{value}</Tag> : "-" },
+    { title: "verify_status", dataIndex: "verify_status", width: 140, render: (value?: string) => value ? <Tag color={statusColor(value)}>{value}</Tag> : "-" },
+    { title: "updated_at", dataIndex: "updated_at", width: 170, render: formatTime },
+    {
+      title: "操作",
+      key: "actions",
+      fixed: "right",
+      width: 230,
+      render: (_, row) => (
+        <Space size={6} wrap>
+          <Button size="small" type="primary" icon={<SyncOutlined />} loading={actionLoadingId === row.request_id} onClick={() => void runTask(row.request_id)}>
+            运行核验
+          </Button>
+          <Button size="small" onClick={() => void openDetail(row.request_id)}>详情</Button>
+          <Button size="small" icon={<RollbackOutlined />} loading={actionLoadingId === row.request_id} onClick={() => void callbackTask(row.request_id)}>
+            回写
+          </Button>
+        </Space>
+      ),
+    },
+  ];
+
+  const selectedTask = selectedDetail?.task;
+  const selectedResult = selectedDetail?.result;
+  const verification = selectedResult?.verification_json;
+  const analysis = selectedResult?.analysis_json;
+  const readiness = verification?.autoPassReadiness;
+
+  return (
+    <div className="leave-audit-workbench">
+      <div className="leave-audit-header">
+        <div>
+          <Text className="leave-audit-eyebrow">Leave Audit Sidecar</Text>
+          <Title level={2}>假勤材料旁路审核工作台</Title>
+          <Paragraph>用于同步、核验、复核和回写 leave_audit 旁路审核任务。</Paragraph>
+        </div>
+        <Badge status="processing" text="Connected to /leave-audit API" />
+      </div>
+
+      <Row gutter={[16, 16]}>
+        <Col xs={24} sm={12} xl={4}>
+          <Card><Statistic title="待核验" value={stats.pending} prefix={<CloudSyncOutlined />} /></Card>
+        </Col>
+        <Col xs={24} sm={12} xl={4}>
+          <Card><Statistic title="自动通过" value={stats.pass} valueStyle={{ color: "#16a34a" }} prefix={<CheckCircleOutlined />} /></Card>
+        </Col>
+        <Col xs={24} sm={12} xl={5}>
+          <Card><Statistic title="待人工复核" value={stats.review} valueStyle={{ color: "#d97706" }} prefix={<ExclamationCircleOutlined />} /></Card>
+        </Col>
+        <Col xs={24} sm={12} xl={4}>
+          <Card><Statistic title="建议驳回" value={stats.reject} valueStyle={{ color: "#dc2626" }} /></Card>
+        </Col>
+        <Col xs={24} sm={12} xl={4}>
+          <Card><Statistic title="自动通过率" value={stats.autoPassRate} suffix="%" precision={1} /></Card>
+        </Col>
+      </Row>
+
+      <Card className="leave-audit-toolbar-card">
+        <Space wrap>
+          <Button type="primary" icon={<CloudSyncOutlined />} onClick={() => void syncTasks()} loading={loading}>同步待审核任务</Button>
+          <Button icon={<ReloadOutlined />} onClick={() => void refresh()} loading={loading}>刷新</Button>
+          <Select allowClear placeholder="状态筛选" value={statusFilter} onChange={setStatusFilter} style={{ width: 160 }} options={STATUS_OPTIONS.map((value) => ({ label: value, value }))} />
+          <Select allowClear placeholder="假别筛选" value={leaveTypeFilter} onChange={setLeaveTypeFilter} style={{ width: 160 }} options={leaveTypeOptions} />
+          <Input prefix={<SearchOutlined />} allowClear placeholder="文件名/申请单号搜索" value={keyword} onChange={(event) => setKeyword(event.target.value)} style={{ width: 260 }} />
+        </Space>
+      </Card>
+
+      <Card>
+        <Table
+          rowClassName={(row) => row.status === "REVIEW" || row.status === "REJECT" ? "leave-audit-row-highlight" : ""}
+          columns={columns}
+          dataSource={filteredRows}
+          loading={loading}
+          scroll={{ x: 1680 }}
+          pagination={{ pageSize: 10, showSizeChanger: true }}
+        />
+      </Card>
+
+      <Drawer
+        title="旁路审核详情"
+        width={760}
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        extra={selectedRequestId ? (
+          <Space>
+            <Button icon={<SyncOutlined />} onClick={() => void runTask(selectedRequestId)} loading={actionLoadingId === selectedRequestId}>运行核验</Button>
+            <Button type="primary" icon={<RollbackOutlined />} onClick={() => void callbackTask(selectedRequestId)} loading={actionLoadingId === selectedRequestId}>回写</Button>
+          </Space>
+        ) : null}
+      >
+        {!selectedTask ? (
+          <Empty description="请选择任务" />
+        ) : (
+          <Space direction="vertical" size={18} className="leave-audit-full-width">
+            <Card title="申请信息" size="small">
+              <Descriptions column={1} size="small">
+                <Descriptions.Item label="request_id">{selectedTask.request_id}</Descriptions.Item>
+                <Descriptions.Item label="leave_request_id">{getLeaveRequestId(selectedTask)}</Descriptions.Item>
+                <Descriptions.Item label="employee_name">{selectedTask.employee_name}</Descriptions.Item>
+                <Descriptions.Item label="employee_id">{selectedTask.employee_id ?? "-"}</Descriptions.Item>
+                <Descriptions.Item label="leave_type"><Tag>{selectedTask.leave_type}</Tag></Descriptions.Item>
+                <Descriptions.Item label="leave_date">{selectedTask.leave_start_date ?? "-"} ~ {selectedTask.leave_end_date ?? "-"}</Descriptions.Item>
+                <Descriptions.Item label="status"><Tag color={statusColor(selectedTask.status)}>{selectedTask.status}</Tag></Descriptions.Item>
+              </Descriptions>
+            </Card>
+
+            <Card title="附件信息" size="small">
+              <Descriptions column={1} size="small">
+                <Descriptions.Item label="attachment_name">{getAttachmentName(selectedTask)}</Descriptions.Item>
+                <Descriptions.Item label="attachment_url">{selectedTask.attachments?.[0]?.attachment_url ?? "-"}</Descriptions.Item>
+                <Descriptions.Item label="plugin_name">{selectedTask.attachments?.[0]?.plugin_name ?? selectedResult?.plugin_name ?? "-"}</Descriptions.Item>
+                <Descriptions.Item label="content_type">{selectedTask.attachments?.[0]?.content_type ?? "-"}</Descriptions.Item>
+              </Descriptions>
+            </Card>
+
+            <Card title="核验结论" size="small">
+              <Descriptions column={1} size="small">
+                <Descriptions.Item label="verify_status">{verification?.verify_status ? <Tag color={statusColor(String(verification.verify_status))}>{String(verification.verify_status)}</Tag> : "-"}</Descriptions.Item>
+                <Descriptions.Item label="risk_level">{verification?.risk_level ? <Tag color={riskColor(String(verification.risk_level))}>{String(verification.risk_level)}</Tag> : "-"}</Descriptions.Item>
+                <Descriptions.Item label="risk_score">{verification?.risk_score ?? "-"}</Descriptions.Item>
+                <Descriptions.Item label="matched_attachment_type">{verification?.matched_attachment_type ?? "-"}</Descriptions.Item>
+                <Descriptions.Item label="summary_message">{verification?.summary_message ?? selectedResult?.error_message ?? "-"}</Descriptions.Item>
+              </Descriptions>
+            </Card>
+
+            <Card title="autoPassReadiness" size="small">
+              <AutoPassReadinessView readiness={readiness} />
+            </Card>
+
+            <Card title="extracted_fields" size="small">
+              <JsonBlock value={verification?.extracted_fields ?? analysis?.extracted_fields} />
+            </Card>
+
+            <Card title="rule_results" size="small">
+              <RuleResultsView rules={verification?.rule_results} />
+            </Card>
+
+            <Card title="人工复核 Panel" size="small">
+              <Form form={reviewForm} layout="vertical" initialValues={{ reviewer: "hr01", review_result: "REVIEW" }}>
+                <Form.Item name="review_result" label="review_result" rules={[{ required: true }]}>
+                  <Select options={REVIEW_DECISIONS.map((value) => ({ label: value, value }))} />
+                </Form.Item>
+                <Form.Item name="reviewer" label="reviewer" rules={[{ required: true, message: "请输入复核人" }]}>
+                  <Input placeholder="hr01" />
+                </Form.Item>
+                <Form.Item name="review_comment" label="review_comment">
+                  <Input.TextArea rows={3} placeholder="请输入复核说明" />
+                </Form.Item>
+                <Button type="primary" onClick={() => void submitReview()} loading={selectedRequestId === actionLoadingId}>提交复核按钮</Button>
+              </Form>
+              {selectedDetail.reviews?.length ? (
+                <>
+                  <Divider />
+                  <Space direction="vertical" className="leave-audit-full-width">
+                    {selectedDetail.reviews.map((review) => (
+                      <Alert
+                        key={`${review.request_id}-${review.created_at}`}
+                        type={review.decision === "PASS" ? "success" : review.decision === "REJECT" ? "error" : "warning"}
+                        message={`${review.decision} / ${review.reviewer} / ${formatTime(review.created_at)}`}
+                        description={review.comment || "无备注"}
+                      />
+                    ))}
+                  </Space>
+                </>
+              ) : null}
+            </Card>
+
+            <Card title="analysis_json" size="small">
+              <JsonBlock value={analysis} />
+            </Card>
+
+            <Card title="verification_json" size="small">
+              <JsonBlock value={verification} />
+            </Card>
+          </Space>
+        )}
+      </Drawer>
+    </div>
+  );
+}
