@@ -21,6 +21,28 @@ LEAVE_TYPE_ATTACHMENT_MATRIX = {
     "SICK": ["MEDICAL_CERTIFICATE"],
     "MARRIAGE": ["MARRIAGE_CERTIFICATE"],
     "MATERNITY": ["BIRTH_CERTIFICATE", "MEDICAL_CERTIFICATE"],
+    "PATERNITY": ["BIRTH_CERTIFICATE"],
+    "PARENTAL": ["BIRTH_CERTIFICATE"],
+    "BEREAVEMENT": ["CUSTODY_RELATIONSHIP_CERTIFICATE", "HUKOU_BOOKLET"],
+}
+
+RULE_CODE_ZH_MESSAGES = {
+    "attachment_type_match": {
+        True: "材料类型符合该假别要求",
+        False: "材料类型与该假别要求不一致",
+    },
+    "applicant_name_match": {
+        True: "申请人与材料中的人员信息一致",
+        False: "申请人与材料中的人员信息不一致",
+    },
+    "leave_date_match": {
+        True: "请假日期与材料日期信息一致",
+        False: "请假日期与材料日期信息不一致",
+    },
+    "related_person_match": {
+        True: "关联人员信息与材料信息一致",
+        False: "关联人员信息与材料信息不一致",
+    },
 }
 
 
@@ -40,14 +62,28 @@ def _pick_first(fields: dict[str, Any], names: tuple[str, ...]) -> Any:
 
 
 def _build_rule(rule_code: str, passed: bool, severity: str, score_delta: int, message: str, evidence: dict[str, Any]) -> dict[str, Any]:
+    message_zh = RULE_CODE_ZH_MESSAGES.get(rule_code, {}).get(bool(passed), message)
     return {
         "rule_code": rule_code,
         "passed": passed,
         "severity": severity,
         "score_delta": score_delta,
         "message": message,
+        "message_zh": message_zh,
+        "display_message": message_zh,
         "evidence": evidence,
     }
+
+
+def _build_auto_pass_readiness(verify_status: str, rule_results: list[dict[str, Any]]) -> dict[str, Any]:
+    failed_rules = [rule for rule in rule_results if not rule.get("passed")]
+    blockers = [rule.get("display_message") or rule.get("message") for rule in failed_rules if rule.get("severity") == "error"]
+    reasons = [rule.get("display_message") or rule.get("message") for rule in failed_rules if rule.get("severity") != "error"]
+    if verify_status == "PASS" and not failed_rules:
+        return {"status": "ready", "label": "可自动通过", "reasons": [], "blockers": []}
+    if blockers or verify_status in {"REJECT", "ERROR"}:
+        return {"status": "blocked", "label": "禁止自动通过", "reasons": reasons, "blockers": blockers}
+    return {"status": "unknown", "label": "需要人工确认", "reasons": reasons, "blockers": []}
 
 
 
@@ -241,13 +277,15 @@ def verify_attachment(analysis: dict[str, Any], request: dict[str, Any]) -> dict
     verify_status = _apply_sick_pass_gating(analysis, request, fields, verify_status)
     verify_status = _apply_marriage_pass_gating(analysis, request, fields, verify_status)
 
-    warnings = [rule["message"] for rule in rule_results if not rule["passed"]]
+    warnings = [rule["display_message"] for rule in rule_results if not rule["passed"]]
     request_evidence = dict(request)
     request_evidence["resolved_expected_attachment_types"] = expected_types
+    auto_pass_readiness = _build_auto_pass_readiness(verify_status, rule_results)
     return {
         "verify_status": verify_status,
         "risk_score": total_risk,
         "risk_level": _risk_level(total_risk),
+        "autoPassReadiness": auto_pass_readiness,
         "matched_attachment_type": predicted_type,
         "extracted_fields": fields,
         "rule_results": rule_results,

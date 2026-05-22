@@ -21,6 +21,7 @@ from id_doc_ocr.backbones.paddleocr import PaddleOCRAdapter
 from id_doc_ocr.backbones.paddleocr_vl import PaddleOCRVLAdapter
 from id_doc_ocr.backbones.rapidocr import RapidOCRAdapter
 from id_doc_ocr.core.registry import registry
+from id_doc_ocr.leave_audit.api.routes import router as leave_audit_router
 from id_doc_ocr.pipeline.runner import BackendSelectionError, DemoPipelineRunner
 from id_doc_ocr.tools.plugin_inventory import build_plugin_inventory
 from id_doc_ocr.verification.rules import verify_attachment
@@ -269,6 +270,7 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
     service_settings = settings or ServiceSettings.from_env()
     app = FastAPI(title=service_settings.service_name, version=service_settings.service_version)
     app.state.settings = service_settings
+    app.include_router(leave_audit_router)
 
     @app.on_event("startup")
     async def _on_startup() -> None:

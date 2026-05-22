@@ -6,6 +6,11 @@ Go-Live Freeze
 ## 当前主目标
 未来30天内，把当前 SICK 试点从“技术 ready”推进到“可启动试点”，优先完成 integration freeze、指标采集责任与周度 review 机制冻结、试点 roster 与启动时间窗冻结。
 
+## 当前技术增量
+- 已新增 `leave_audit` 旁路审核业务域，使现有 OCR / plugin / pipeline / verify-attachment 能力可被假勤系统以 sidecar 模式接入。
+- 新增 `/leave-audit/*` API、SQLite 任务/结果/复核存储、MockLeaveSystemAdapter 与 `fixtures/sample_leave_tasks.json`。
+- 保持 `/health`、`/capabilities`、`/infer`、`/analyze-document`、`/verify-attachment` 兼容。
+
 ## 本周重点
 - 进入“P3.2 试点启动前最终冻结（Go-Live Freeze）”阶段
 - 冻结 request_id 真实接入责任边界与接入 checklist

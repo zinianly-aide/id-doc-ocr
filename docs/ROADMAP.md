@@ -43,6 +43,8 @@
 - 已完成：样本三分桶最低基线达标并形成 readiness 判断依据
 
 ## Milestone 5 — P3 小范围试点准备（Ready for Launch）
+- 已新增 `leave_audit` 旁路审核中台能力：支持从假勤系统适配器同步任务、执行核验、保存结果、人工复核与回调
+- 已新增 `docs/leave-audit-sidecar.md` 作为假勤系统 sidecar 接入说明
 - 新增 `docs/pilot-launch-readiness-v1.md` 作为试点准备主文档
 - 新增 `docs/METRICS.md`，冻结成功率 / REVIEW率 / P95耗时 / 人工复核占比口径
 - 新增 `docs/RISKS.md`，冻结误放行 / REVIEW率异常 / 接口失败 / rollback 触发条件

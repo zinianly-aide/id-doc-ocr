@@ -1,0 +1,83 @@
+{
+  "tasks": [
+    {
+      "request_id": "LV-MOCK-SICK-PASS-001",
+      "leave_type": "SICK",
+      "employee_id": "E001",
+      "employee_name": "张三",
+      "leave_start_date": "2026-04-01",
+      "leave_end_date": "2026-04-03",
+      "attachments": [
+        {
+          "attachment_id": "ATT-SICK-PASS-001",
+          "attachment_url": "fixture://sick-pass.jpg",
+          "filename": "sick-pass.jpg",
+          "content_type": "image/jpeg",
+          "plugin_name": "diagnosis_proof",
+          "metadata": {
+            "mock_fields": {
+              "patient_name": "张三",
+              "rest_start_date": "2026-04-01",
+              "rest_end_date": "2026-04-03",
+              "issue_date": "2026-04-01",
+              "diagnosis": "上呼吸道感染"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "request_id": "LV-MOCK-SICK-REVIEW-001",
+      "leave_type": "SICK",
+      "employee_id": "E002",
+      "employee_name": "李四",
+      "leave_start_date": "2026-04-01",
+      "leave_end_date": "2026-04-03",
+      "attachments": [
+        {
+          "attachment_id": "ATT-SICK-REVIEW-001",
+          "attachment_url": "fixture://sick-review.jpg",
+          "filename": "sick-review.jpg",
+          "content_type": "image/jpeg",
+          "plugin_name": "diagnosis_proof",
+          "metadata": {
+            "mock_fields": {
+              "patient_name": "张三",
+              "rest_start_date": "2026-04-01",
+              "rest_end_date": "2026-04-03",
+              "issue_date": "2026-04-01",
+              "diagnosis": "急性胃肠炎"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "request_id": "LV-MOCK-SICK-REJECT-001",
+      "leave_type": "SICK",
+      "employee_id": "E003",
+      "employee_name": "王五",
+      "leave_start_date": "2026-05-20",
+      "leave_end_date": "2026-05-20",
+      "attachments": [
+        {
+          "attachment_id": "ATT-SICK-REJECT-001",
+          "attachment_url": "fixture://wrong-type.jpg",
+          "filename": "wrong-type.jpg",
+          "content_type": "image/jpeg",
+          "plugin_name": "marriage_certificate",
+          "metadata": {
+            "mock_fields": {
+              "certificate_title": "中华人民共和国结婚证",
+              "holder_name": "王五",
+              "registration_date": "2026-05-20",
+              "person_a_name": "王五",
+              "person_b_name": "赵六",
+              "registration_authority": "杭州市西湖区民政局婚姻登记处"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
