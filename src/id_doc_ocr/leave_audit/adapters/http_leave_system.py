@@ -10,6 +10,7 @@ from urllib.parse import urljoin
 import httpx
 
 from id_doc_ocr.leave_audit.adapters.base import LeaveSystemAdapter
+from id_doc_ocr.leave_audit.adapters.field_mapping import normalize_pending_item
 from id_doc_ocr.leave_audit.domain.enums import LeaveAuditStatus
 from id_doc_ocr.leave_audit.domain.models import LeaveAttachment, LeaveAuditResult, LeaveAuditTask
 
@@ -183,18 +184,16 @@ class HttpLeaveSystemAdapter(LeaveSystemAdapter):
         )
 
     def _task_from_payload(self, item: dict[str, Any]) -> LeaveAuditTask:
-        attachments_payload = item.get("attachments") or item.get("attachment_list") or []
-        if not isinstance(attachments_payload, list):
-            raise ValueError("leave system task attachments must be a list")
-        attachments = [self._attachment_from_payload(att) for att in attachments_payload]
-        status_raw = item.get("status") or "PENDING"
+        normalized = normalize_pending_item(item)
+        attachments = [self._attachment_from_payload(att) for att in normalized["attachments"]]
+        status_raw = normalized.get("status") or "PENDING"
         return LeaveAuditTask(
-            request_id=str(item.get("request_id") or item.get("id") or item.get("leave_request_id")),
-            leave_type=str(item.get("leave_type") or ""),
-            employee_name=str(item.get("employee_name") or item.get("applicant_name") or item.get("applicant") or ""),
-            employee_id=item.get("employee_id"),
-            leave_start_date=item.get("leave_start_date") or item.get("start_date"),
-            leave_end_date=item.get("leave_end_date") or item.get("end_date"),
+            request_id=str(normalized["request_id"]),
+            leave_type=str(normalized["leave_type"]),
+            employee_name=str(normalized["employee_name"]),
+            employee_id=normalized.get("employee_id"),
+            leave_start_date=normalized.get("leave_start_date"),
+            leave_end_date=normalized.get("leave_end_date"),
             status=LeaveAuditStatus(status_raw),
             attachments=attachments,
             raw_payload=dict(item),
@@ -202,10 +201,10 @@ class HttpLeaveSystemAdapter(LeaveSystemAdapter):
 
     def _attachment_from_payload(self, item: dict[str, Any]) -> LeaveAttachment:
         return LeaveAttachment(
-            attachment_id=str(item.get("attachment_id") or item.get("id") or item.get("file_id")),
-            attachment_url=str(item.get("attachment_url") or item.get("url") or item.get("download_url")),
-            filename=item.get("filename") or item.get("attachment_name") or item.get("name"),
-            content_type=item.get("content_type") or item.get("mime_type"),
+            attachment_id=str(item["attachment_id"]),
+            attachment_url=str(item["attachment_url"]),
+            filename=item.get("attachment_name"),
+            content_type=item.get("content_type"),
             plugin_name=item.get("plugin_name"),
             metadata=dict(item.get("metadata") or {}),
         )

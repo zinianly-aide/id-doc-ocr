@@ -18,6 +18,7 @@ This template records each leave-system sandbox dry-run integration session befo
 - adapter 模式：mock / http / 待填写
 - `ID_DOC_OCR_LEAVE_SYSTEM_ADAPTER`：待填写
 - `ID_DOC_OCR_LEAVE_SYSTEM_BASE_URL`：待填写
+- `ID_DOC_OCR_LEAVE_SYSTEM_FIELD_MAPPING_FILE`：默认 `configs/leave_system_field_mapping.yaml` / 自定义路径 / 未配置
 - `ID_DOC_OCR_LEAVE_AUDIT_DB`：待填写
 - dry-run 是否开启：是 / 否 / 待填写
 - `ID_DOC_OCR_LEAVE_AUDIT_DRY_RUN`：true / false / 待填写
@@ -27,6 +28,7 @@ This template records each leave-system sandbox dry-run integration session befo
 | 项目 | 记录内容 | 结果 |
 | --- | --- | --- |
 | pending 接口结果 | 请求时间、HTTP status、返回任务数、关键 request_id | 待填写 |
+| pending 字段映射结果 | 外部字段名、是否被映射为内部 canonical field、是否需更新 mapping 文件 | 待填写 |
 | download 接口结果 | attachment_id、HTTP status、文件大小、content-type、耗时 | 待填写 |
 | OCR/verify 结果 | plugin、analysis.doc_type、analysis.review.action、verify_status、risk_level、needs_manual_review | 待填写 |
 | callback dry-run payload 检查 | `dry_run=true` 时 payload 是否含 request_id、leave_request_id、verify_status、risk_level、summary、rule_results | 待填写 |
@@ -42,6 +44,10 @@ This template records each leave-system sandbox dry-run integration session befo
 - 返回任务数：待填写
 - 样例 request_id：待填写
 - 样例 leave_request_id：待填写
+- 外部原始字段名示例：如 `applyNo` / `empName` / `absenceType` / `fileUrl` / 待填写
+- 字段映射文件：`configs/leave_system_field_mapping.yaml` / 自定义路径 / 未使用
+- 字段差异记录：无 / 待填写
+- 需要新增或调整的别名：无 / 待填写
 - 异常或非预期字段：无 / 待填写
 
 ### 2. Download 接口结果

@@ -281,6 +281,7 @@ export ID_DOC_OCR_LEAVE_SYSTEM_PENDING_API=/api/leave-audit/pending
 export ID_DOC_OCR_LEAVE_SYSTEM_DOWNLOAD_API=/api/leave-audit/download
 export ID_DOC_OCR_LEAVE_SYSTEM_CALLBACK_API=/api/leave-audit/callback
 export ID_DOC_OCR_LEAVE_SYSTEM_TIMEOUT_SECONDS=10
+export ID_DOC_OCR_LEAVE_SYSTEM_FIELD_MAPPING_FILE=configs/leave_system_field_mapping.yaml
 export ID_DOC_OCR_LEAVE_AUDIT_DRY_RUN=true
 ```
 
@@ -292,6 +293,7 @@ export ID_DOC_OCR_LEAVE_AUDIT_DRY_RUN=true
 - `DOWNLOAD_API`：下载附件接口，默认 `/leave-audit/download`
 - `CALLBACK_API`：回写审核结果接口，默认 `/leave-audit/callback`
 - `TIMEOUT_SECONDS`：HTTP 超时秒数，默认 `10`
+- `ID_DOC_OCR_LEAVE_SYSTEM_FIELD_MAPPING_FILE`：可选字段映射配置文件路径；默认读取 `configs/leave_system_field_mapping.yaml`，不存在时使用内置映射
 - `ID_DOC_OCR_LEAVE_AUDIT_DRY_RUN`：callback dry-run 开关，默认 `false`；sandbox 首轮联调建议先设为 `true`
 
 HTTP adapter 使用 `httpx`，并显式 `trust_env=False`，避免本机代理环境变量影响联调行为。
@@ -336,14 +338,28 @@ Accept: application/json
 }
 ```
 
-字段兼容别名：
+字段兼容层：
 
-- task id：`request_id` / `id` / `leave_request_id`
-- employee name：`employee_name` / `applicant_name` / `applicant`
-- date：`leave_start_date` / `start_date`，`leave_end_date` / `end_date`
-- attachments：`attachments` / `attachment_list`
-- attachment url：`attachment_url` / `url` / `download_url`
-- filename：`filename` / `attachment_name` / `name`
+- HTTP adapter 会先调用 `normalize_pending_item()` 把外部字段名转为内部 canonical fields，再构造 `LeaveAuditTask` / `LeaveAttachment`。
+- 默认内置映射，同时会读取 `configs/leave_system_field_mapping.yaml`；也可通过 `ID_DOC_OCR_LEAVE_SYSTEM_FIELD_MAPPING_FILE=/path/to/mapping.yaml` 指定 sandbox 专用映射。
+- 配置文件不强制依赖 PyYAML；若运行环境没有 `yaml` 包，仍支持本项目这种简单 YAML 列表格式，或使用 JSON 映射文件。
+
+常见真实假勤系统字段名示例：
+
+| 内部字段 | 默认兼容别名示例 |
+| --- | --- |
+| `leave_request_id` | `leave_request_id`, `leaveRequestId`, `applyNo`, `requestNo` |
+| `employee_id` | `employee_id`, `employeeId`, `empNo` |
+| `employee_name` | `employee_name`, `employeeName`, `empName` |
+| `leave_type` | `leave_type`, `leaveType`, `absenceType` |
+| `leave_start_date` | `leave_start_date`, `leaveStartDate`, `startDate`, `startTime` |
+| `leave_end_date` | `leave_end_date`, `leaveEndDate`, `endDate`, `endTime` |
+| `attachment_id` | `attachment_id`, `attachmentId`, `fileId` |
+| `attachment_name` | `attachment_name`, `attachmentName`, `fileName` |
+| `attachment_url` | `attachment_url`, `attachmentUrl`, `fileUrl` |
+| `plugin_name` | `plugin_name`, `pluginName` |
+
+首轮 sandbox 联调时，如果 pending 返回字段不在上表中，先在 `docs/sandbox-integration-log.md` 的“字段差异记录”中记录原始字段名，再追加到 `configs/leave_system_field_mapping.yaml` 或通过 `ID_DOC_OCR_LEAVE_SYSTEM_FIELD_MAPPING_FILE` 指向 sandbox 专用文件，避免为字段名差异改代码。
 
 #### 下载附件
 
@@ -489,6 +505,7 @@ export ID_DOC_OCR_LEAVE_SYSTEM_PENDING_API=/api/leave/attachments/pending
 export ID_DOC_OCR_LEAVE_SYSTEM_DOWNLOAD_API=/api/leave/attachments/{attachment_id}/download
 export ID_DOC_OCR_LEAVE_SYSTEM_CALLBACK_API=/api/leave/audit-result
 export ID_DOC_OCR_LEAVE_SYSTEM_TIMEOUT_SECONDS=10
+export ID_DOC_OCR_LEAVE_SYSTEM_FIELD_MAPPING_FILE=configs/leave_system_field_mapping.yaml
 export ID_DOC_OCR_LEAVE_AUDIT_DB=.local/leave_audit.db
 ```
 
@@ -578,6 +595,7 @@ python scripts/reset_leave_audit_demo.py --db-path .local/leave_audit.db
 | 问题 | 检查点 | 处理建议 |
 | --- | --- | --- |
 | sync 无任务 | adapter 是否为 http、pending API 是否正确 | 先 curl 假勤系统 pending API；确认响应是 list 或包含 `tasks/data` |
+| pending 字段无法解析 | 字段映射文件、真实字段名、错误中的 accepted aliases | 把真实字段名记录到 `docs/sandbox-integration-log.md`，再更新 `configs/leave_system_field_mapping.yaml` 或设置 `ID_DOC_OCR_LEAVE_SYSTEM_FIELD_MAPPING_FILE` |
 | 任务入库失败 | SQLite 路径、目录权限、request_id 是否为空 | 检查 `ID_DOC_OCR_LEAVE_AUDIT_DB`，确认父目录可写 |
 | run 失败 | 附件 URL、download API、插件映射 | 查看任务详情 error_message；确认附件 bytes 非空 |
 | OCR/analysis 异常 | backend 环境、插件名、文件内容 | 本地先用 mock backend；真实 OCR 问题单独记录样本 |

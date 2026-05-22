@@ -1,0 +1,42 @@
+leave_request_id:
+  - leave_request_id
+  - leaveRequestId
+  - applyNo
+  - requestNo
+employee_id:
+  - employee_id
+  - employeeId
+  - empNo
+employee_name:
+  - employee_name
+  - employeeName
+  - empName
+leave_type:
+  - leave_type
+  - leaveType
+  - absenceType
+leave_start_date:
+  - leave_start_date
+  - leaveStartDate
+  - startDate
+  - startTime
+leave_end_date:
+  - leave_end_date
+  - leaveEndDate
+  - endDate
+  - endTime
+attachment_id:
+  - attachment_id
+  - attachmentId
+  - fileId
+attachment_name:
+  - attachment_name
+  - attachmentName
+  - fileName
+attachment_url:
+  - attachment_url
+  - attachmentUrl
+  - fileUrl
+plugin_name:
+  - plugin_name
+  - pluginName
