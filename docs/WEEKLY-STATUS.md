@@ -4,6 +4,8 @@
 - 已完成假勤系统旁路审核模式重构：新增 `leave_audit` 业务域、MockLeaveSystemAdapter、SQLiteRepository、AuditService/ReviewService、worker skeleton 与 `/leave-audit/*` API
 - 已完成 React + Ant Design 假勤材料旁路审核工作台：统计卡、筛选/搜索、任务表格、详情 Drawer、人工复核 Panel、回写按钮均已接入 `/leave-audit/*` API
 - 已完成真实假勤系统 HTTP adapter 骨架：支持 Bearer Token、超时、非 2xx 明确异常、pending/download/callback 三类接口与 adapter factory 环境变量切换
+- 已完成 dry-run callback 模式与联调日志追踪，sandbox 联调可在不真实回写的情况下检查 callback payload
+- 已新增 `scripts/reset_leave_audit_demo.py`，mock 演示可一键重置本地 SQLite 数据
 - 已完成试点联调准备材料：`docs/demo-script.md`、`docs/pilot-acceptance-checklist.md`、`.env.leave-audit.example`，当前阶段进入“试点联调准备完成”
 - 已增强 verification 输出：新增 `autoPassReadiness` 与规则中文展示文案，前端可优先展示 `display_message`
 - 已新增 `docs/leave-audit-sidecar.md`，说明架构、接入方式、mock adapter、API 示例、状态流转与真实 adapter 替换路径

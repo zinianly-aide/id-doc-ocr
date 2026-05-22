@@ -14,7 +14,9 @@
 cd /Users/anshi/clawd/id-doc-ocr
 source .venv/bin/activate
 export ID_DOC_OCR_LEAVE_SYSTEM_ADAPTER=mock
+export ID_DOC_OCR_LEAVE_AUDIT_DRY_RUN=false
 export ID_DOC_OCR_LEAVE_AUDIT_DB=.local/leave_audit.db
+python scripts/reset_leave_audit_demo.py
 python -m uvicorn id_doc_ocr.service.app:app --host 127.0.0.1 --port 8000
 ```
 
@@ -47,7 +49,19 @@ http://127.0.0.1:5173
 http://127.0.0.1:8000
 ```
 
-## 4. Mock adapter 演示流程
+## 4. 演示前重置 demo 数据
+
+为了保证每次演示从干净状态开始，先执行：
+
+```bash
+cd /Users/anshi/clawd/id-doc-ocr
+source .venv/bin/activate
+python scripts/reset_leave_audit_demo.py
+```
+
+脚本会删除并重建 `.local/leave_audit.db`，并输出下一步启动和 sync 命令。
+
+## 5. Mock adapter 演示流程
 
 Mock 数据来自：
 
@@ -258,6 +272,24 @@ curl -X POST http://127.0.0.1:8000/leave-audit/tasks/LV-MOCK-SICK-PASS-001/callb
 ```
 
 Mock adapter 下 callback 只写入内存；HTTP adapter 下会调用真实假勤系统 callback API。
+
+Sandbox 首轮联调建议先开启 dry-run：
+
+```bash
+export ID_DOC_OCR_LEAVE_AUDIT_DRY_RUN=true
+curl -X POST http://127.0.0.1:8000/leave-audit/tasks/LV-MOCK-SICK-PASS-001/callback
+```
+
+此时不会真实调用假勤系统 callback，API 会返回：
+
+```json
+{
+  "dry_run": true,
+  "callback_skipped": true
+}
+```
+
+callback payload 可在响应的 `callback_payload` 或任务详情的 `verification_json.callback_dry_run.payload` 中检查。
 
 预期 callback payload 包含：
 

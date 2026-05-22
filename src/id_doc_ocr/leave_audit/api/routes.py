@@ -109,10 +109,10 @@ def review_task(request: Request, request_id: str, body: ReviewRequest) -> dict[
 def callback_task(request: Request, request_id: str) -> dict[str, Any]:
     service = AuditService(_repo(request), _adapter(request), InferenceService(getattr(request.app.state, "settings", None)))
     try:
-        result = service.push_callback(request_id)
+        result, metadata = service.push_callback_with_metadata(request_id)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    return jsonable_encoder({"result": _result_to_dict(result)})
+    return jsonable_encoder({"result": _result_to_dict(result), **metadata})
 
 
 @router.get("/stats")

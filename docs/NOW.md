@@ -11,6 +11,7 @@
 - 新增 `/leave-audit/*` API、SQLite 任务/结果/复核存储、MockLeaveSystemAdapter 与 `fixtures/sample_leave_tasks.json`。
 - 新增 React + Ant Design `ui/approval-verification/` 假勤材料旁路审核工作台，用于同步、核验、详情查看、人工复核与回写。
 - 新增真实假勤系统 HTTP adapter 骨架与 adapter factory，可通过环境变量在 mock/http 间切换。
+- 新增 dry-run callback 模式、联调结构化日志与 `scripts/reset_leave_audit_demo.py`，真实 sandbox 联调可先验 payload 再实际回写。
 - 新增 `docs/demo-script.md`、`docs/pilot-acceptance-checklist.md` 与 `.env.leave-audit.example`，试点联调演示与验收材料已收口。
 - 保持 `/health`、`/capabilities`、`/infer`、`/analyze-document`、`/verify-attachment` 兼容。
 

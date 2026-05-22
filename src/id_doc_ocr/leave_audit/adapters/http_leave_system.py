@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import logging
 import os
+import time
 from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urljoin
@@ -10,6 +12,17 @@ import httpx
 from id_doc_ocr.leave_audit.adapters.base import LeaveSystemAdapter
 from id_doc_ocr.leave_audit.domain.enums import LeaveAuditStatus
 from id_doc_ocr.leave_audit.domain.models import LeaveAttachment, LeaveAuditResult, LeaveAuditTask
+
+logger = logging.getLogger(__name__)
+
+
+def _is_dry_run() -> bool:
+    return str(os.getenv("ID_DOC_OCR_LEAVE_AUDIT_DRY_RUN", "false")).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _log_adapter_event(**fields: Any) -> None:
+    details = " ".join(f"{key}={value}" for key, value in fields.items() if value is not None)
+    logger.info("leave_audit_adapter_event %s", details)
 
 
 class LeaveSystemHttpError(RuntimeError):
@@ -50,34 +63,98 @@ class HttpLeaveSystemAdapter(LeaveSystemAdapter):
         self.client = client or httpx.Client(timeout=self.settings.timeout_seconds, trust_env=False)
 
     def fetch_pending_attachments(self) -> list[LeaveAuditTask]:
-        response = self.client.get(
-            self._url(self.settings.pending_api),
-            headers=self._headers(),
-        )
-        payload = self._json_or_raise(response, "fetch pending leave attachments")
-        items = payload.get("tasks", payload.get("data", payload if isinstance(payload, list) else [])) if isinstance(payload, dict) else payload
-        if not isinstance(items, list):
-            raise ValueError("leave system pending response must be a list or contain a tasks/data list")
-        return [self._task_from_payload(item) for item in items]
+        started = time.perf_counter()
+        response: httpx.Response | None = None
+        error_type = None
+        error_message = None
+        try:
+            response = self.client.get(
+                self._url(self.settings.pending_api),
+                headers=self._headers(),
+            )
+            payload = self._json_or_raise(response, "fetch pending leave attachments")
+            items = payload.get("tasks", payload.get("data", payload if isinstance(payload, list) else [])) if isinstance(payload, dict) else payload
+            if not isinstance(items, list):
+                raise ValueError("leave system pending response must be a list or contain a tasks/data list")
+            return [self._task_from_payload(item) for item in items]
+        except Exception as exc:
+            error_type = exc.__class__.__name__
+            error_message = str(exc)
+            raise
+        finally:
+            elapsed_ms = (time.perf_counter() - started) * 1000.0
+            _log_adapter_event(
+                adapter_type=self.__class__.__name__,
+                adapter_action="fetch_pending_attachments",
+                http_status=response.status_code if response is not None else None,
+                elapsed_ms=f"{elapsed_ms:.2f}",
+                dry_run=_is_dry_run(),
+                error_type=error_type,
+                error_message=error_message,
+            )
 
     def download_attachment(self, attachment_url: str) -> bytes:
-        if attachment_url.startswith("http://") or attachment_url.startswith("https://"):
-            url = attachment_url
-            params: dict[str, str] | None = None
-        else:
-            url = self._url(self.settings.download_api)
-            params = {"attachment_url": attachment_url}
-        response = self.client.get(url, params=params, headers=self._headers())
-        self._raise_for_status(response, "download leave attachment")
-        return response.content
+        started = time.perf_counter()
+        response: httpx.Response | None = None
+        error_type = None
+        error_message = None
+        try:
+            if attachment_url.startswith("http://") or attachment_url.startswith("https://"):
+                url = attachment_url
+                params: dict[str, str] | None = None
+            else:
+                url = self._url(self.settings.download_api)
+                params = {"attachment_url": attachment_url}
+            response = self.client.get(url, params=params, headers=self._headers())
+            self._raise_for_status(response, "download leave attachment")
+            return response.content
+        except Exception as exc:
+            error_type = exc.__class__.__name__
+            error_message = str(exc)
+            raise
+        finally:
+            elapsed_ms = (time.perf_counter() - started) * 1000.0
+            _log_adapter_event(
+                attachment_id=attachment_url,
+                adapter_type=self.__class__.__name__,
+                adapter_action="download_attachment",
+                http_status=response.status_code if response is not None else None,
+                elapsed_ms=f"{elapsed_ms:.2f}",
+                dry_run=_is_dry_run(),
+                error_type=error_type,
+                error_message=error_message,
+            )
 
     def push_audit_result(self, result: LeaveAuditResult) -> None:
-        response = self.client.post(
-            self._url(self.settings.callback_api),
-            headers=self._headers(),
-            json=self._callback_payload(result),
-        )
-        self._raise_for_status(response, "push leave audit result")
+        started = time.perf_counter()
+        response: httpx.Response | None = None
+        error_type = None
+        error_message = None
+        payload = self._callback_payload(result)
+        try:
+            response = self.client.post(
+                self._url(self.settings.callback_api),
+                headers=self._headers(),
+                json=payload,
+            )
+            self._raise_for_status(response, "push leave audit result")
+        except Exception as exc:
+            error_type = exc.__class__.__name__
+            error_message = str(exc)
+            raise
+        finally:
+            elapsed_ms = (time.perf_counter() - started) * 1000.0
+            _log_adapter_event(
+                request_id=result.request_id,
+                leave_request_id=payload.get("leave_request_id"),
+                adapter_type=self.__class__.__name__,
+                adapter_action="push_audit_result",
+                http_status=response.status_code if response is not None else None,
+                elapsed_ms=f"{elapsed_ms:.2f}",
+                dry_run=_is_dry_run(),
+                error_type=error_type,
+                error_message=error_message,
+            )
 
     def _url(self, path_or_url: str) -> str:
         if path_or_url.startswith("http://") or path_or_url.startswith("https://"):

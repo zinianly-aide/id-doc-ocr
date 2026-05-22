@@ -281,6 +281,7 @@ export ID_DOC_OCR_LEAVE_SYSTEM_PENDING_API=/api/leave-audit/pending
 export ID_DOC_OCR_LEAVE_SYSTEM_DOWNLOAD_API=/api/leave-audit/download
 export ID_DOC_OCR_LEAVE_SYSTEM_CALLBACK_API=/api/leave-audit/callback
 export ID_DOC_OCR_LEAVE_SYSTEM_TIMEOUT_SECONDS=10
+export ID_DOC_OCR_LEAVE_AUDIT_DRY_RUN=true
 ```
 
 说明：
@@ -291,6 +292,7 @@ export ID_DOC_OCR_LEAVE_SYSTEM_TIMEOUT_SECONDS=10
 - `DOWNLOAD_API`：下载附件接口，默认 `/leave-audit/download`
 - `CALLBACK_API`：回写审核结果接口，默认 `/leave-audit/callback`
 - `TIMEOUT_SECONDS`：HTTP 超时秒数，默认 `10`
+- `ID_DOC_OCR_LEAVE_AUDIT_DRY_RUN`：callback dry-run 开关，默认 `false`；sandbox 首轮联调建议先设为 `true`
 
 HTTP adapter 使用 `httpx`，并显式 `trust_env=False`，避免本机代理环境变量影响联调行为。
 
@@ -492,7 +494,86 @@ export ID_DOC_OCR_LEAVE_AUDIT_DB=.local/leave_audit.db
 
 切换后无需改前端，工作台仍调用同一组 `/leave-audit/*` API。
 
-## 12. 联调排障清单
+## 12. Dry-run callback 模式
+
+`sandbox` 首轮联调建议开启：
+
+```bash
+export ID_DOC_OCR_LEAVE_AUDIT_DRY_RUN=true
+```
+
+开启后：
+
+- `/leave-audit/sync` 正常拉取任务
+- 附件下载正常执行
+- OCR / analysis 正常执行
+- `verify_attachment` 正常执行
+- 任务状态正常更新为 PASS / REVIEW / REJECT / ERROR
+- `POST /leave-audit/tasks/{request_id}/callback` 不调用真实假勤系统 callback
+- callback payload 会保存到 `result.verification_json.callback_dry_run.payload`
+- API 响应会包含：
+
+```json
+{
+  "dry_run": true,
+  "callback_skipped": true,
+  "callback_payload": {
+    "request_id": "LV-SICK-20260522-000001",
+    "leave_request_id": "LR-20260522-000001",
+    "verify_status": "REVIEW"
+  }
+}
+```
+
+检查 payload：
+
+```bash
+curl http://127.0.0.1:8000/leave-audit/tasks/<request_id> | python -m json.tool
+```
+
+关闭 dry-run 后才会真实回写：
+
+```bash
+export ID_DOC_OCR_LEAVE_AUDIT_DRY_RUN=false
+curl -X POST http://127.0.0.1:8000/leave-audit/tasks/<request_id>/callback
+```
+
+## 13. 联调日志追踪
+
+`leave_audit` service 与 HTTP adapter 会输出结构化 key/value 日志，常用字段包括：
+
+- `request_id`
+- `leave_request_id`
+- `attachment_id`
+- `adapter_type`
+- `adapter_action`
+- `http_status`
+- `elapsed_ms`
+- `dry_run`
+- `error_type`
+- `error_message`
+
+建议联调时按 `request_id` 过滤日志，并对 pending / download / run / callback 四段分别确认耗时与错误。
+
+## 14. 演示前重置 demo 数据
+
+使用脚本重建本地 demo SQLite：
+
+```bash
+cd /Users/anshi/clawd/id-doc-ocr
+source .venv/bin/activate
+python scripts/reset_leave_audit_demo.py
+```
+
+或指定数据库路径：
+
+```bash
+python scripts/reset_leave_audit_demo.py --db-path .local/leave_audit.db
+```
+
+脚本会删除并重建目标 SQLite schema，然后输出下一步演示命令。它只操作指定 `.db` 文件，不会清理源码目录。
+
+## 15. 联调排障清单
 
 | 问题 | 检查点 | 处理建议 |
 | --- | --- | --- |
@@ -504,7 +585,7 @@ export ID_DOC_OCR_LEAVE_AUDIT_DB=.local/leave_audit.db
 | callback 失败 | callback API、token、payload 字段 | 检查 HTTP status/body preview；确认假勤系统接受字段名 |
 | 前端无数据 | 后端端口、Vite proxy、浏览器 console | 确认后端在 127.0.0.1:8000，前端 `/api` proxy 生效 |
 
-## 13. 常见错误
+## 16. 常见错误
 
 ### token 缺失
 
@@ -569,7 +650,7 @@ export ID_DOC_OCR_LEAVE_AUDIT_DB=.local/leave_audit.db
 - 本地建议使用 `.local/leave_audit.db`
 - CI 或容器环境建议使用临时目录或挂载卷
 
-## 14. 兼容性
+## 17. 兼容性
 
 本次新增 `/leave-audit/*` 路由，不改变以下既有接口：
 
@@ -579,7 +660,7 @@ export ID_DOC_OCR_LEAVE_AUDIT_DB=.local/leave_audit.db
 - `POST /analyze-document`
 - `POST /verify-attachment`
 
-## 15. 验证命令
+## 18. 验证命令
 
 ```bash
 .venv/bin/python -m pytest -q \

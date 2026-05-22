@@ -34,7 +34,8 @@
 | verify_attachment 成功 | 运行任务后查看 `verification_json` | 输出 `verify_status`、risk_level、risk_score、rule_results、autoPassReadiness | 后端负责人 / 规则负责人 | 前端展示应优先使用中文 `display_message` |
 | PASS / REVIEW / REJECT 状态正确 | 分别运行三类样例和真实试点样本 | PASS 仅用于低风险自动通过候选；REVIEW 进入人工复核；REJECT 有明确 blocker | 规则负责人 / HR 负责人 | 首轮以不误放行为优先，必要时 REVIEW 偏保守 |
 | HR 复核可提交 | 在工作台详情 Drawer 的人工复核 Panel 提交 PASS / REVIEW / REJECT | `POST /leave-audit/tasks/{request_id}/review` 返回成功；review 记录可查询；任务状态更新 | HR 负责人 / 前端负责人 | reviewer 和 comment 必须可追踪 |
-| callback 可回写 | 点击工作台“回写”或调用 callback API | HTTP adapter 向假勤系统发送 request_id、leave_request_id、verify_status、risk、summary、rule_results；假勤系统侧可查 | 后端负责人 / 假勤系统接口负责人 | mock 模式只记录内存，不代表真实回写成功 |
+| callback dry-run 可检查 | 设置 `ID_DOC_OCR_LEAVE_AUDIT_DRY_RUN=true` 后调用 callback API | API 返回 `dry_run=true`、`callback_skipped=true`；真实 adapter 未被调用；payload 可在响应或 `verification_json.callback_dry_run.payload` 中检查 | 后端负责人 / 假勤系统接口负责人 | sandbox 首轮联调必须先跑 dry-run，避免误写生产/沙箱状态 |
+| callback 可回写 | 设置 `ID_DOC_OCR_LEAVE_AUDIT_DRY_RUN=false` 后点击工作台“回写”或调用 callback API | HTTP adapter 向假勤系统发送 request_id、leave_request_id、verify_status、risk、summary、rule_results；假勤系统侧可查 | 后端负责人 / 假勤系统接口负责人 | mock 模式只记录内存，不代表真实回写成功 |
 | 错误可追踪 | 人为触发 token 错误、pending 非 2xx、下载失败、callback 失败 | API 返回明确错误；任务进入 ERROR 或操作报错；日志可按 request_id 排查 | 后端负责人 / QA | 联调阶段保留失败样例和日志片段 |
 | 原有接口兼容 | 执行 pytest，并抽查原有 API | `/health`、`/capabilities`、`/infer`、`/analyze-document`、`/verify-attachment` 均不受影响；全量测试通过 | 后端负责人 / QA | 当前基线：pytest 全量通过 |
 
@@ -44,11 +45,12 @@
 
 1. mock 模式 PASS / REVIEW / REJECT 三类流程全部可演示。
 2. HTTP adapter 能连通真实假勤系统 sandbox pending / download / callback。
-3. 至少婚假、病假、出生证明相关假别各有一条真实或脱敏真实样例完成端到端验证。
-4. HR 人工复核流程可用，且 reviewer/comment 可追踪。
-5. callback 后假勤系统侧能看到审核摘要和规则证据。
-6. 失败场景能定位到 request_id、接口、状态码和错误摘要。
-7. 原有 OCR API 和现有前端构建不回归。
+3. sandbox 首轮 callback 已在 dry-run 模式下确认 payload 正确，再关闭 dry-run 做真实回写。
+4. 至少婚假、病假、出生证明相关假别各有一条真实或脱敏真实样例完成端到端验证。
+5. HR 人工复核流程可用，且 reviewer/comment 可追踪。
+6. callback 后假勤系统侧能看到审核摘要和规则证据。
+7. 失败场景能定位到 request_id、接口、状态码和错误摘要。
+8. 原有 OCR API 和现有前端构建不回归。
 
 ## 5. 验收记录模板
 
