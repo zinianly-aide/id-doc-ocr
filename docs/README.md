@@ -44,6 +44,10 @@ Use this index before opening individual documents.
   - 假勤材料旁路审核试点验收清单：范围、旁路接入方式、验收项、负责人、通过标准
 - `[CURRENT]` `docs/sandbox-integration-log.md`
   - sandbox dry-run 联调记录模板：pending/download/OCR/verify/callback payload/真实回写/问题与结论
+- `[CURRENT]` `docs/leave-system-api-contract.md`
+  - 真实假勤系统 sandbox 接口契约模板：pending/download/callback、鉴权、字段映射、错误码、超时与重试
+- `[ACTIVE]` `docs/callback-field-mapping-design.md`
+  - callback 字段映射预留设计：未来真实系统 callback 字段不一致时的配置化映射方案
 - `[CURRENT]` `docs/pilot-sick-leave-samples-v1.md`
   - 病假样本台账、分类结构、最小样本规模、联调/回归/误判分析使用方式
 - `[CURRENT]` `docs/sick-leave-verification-gap-analysis-v1.md`
@@ -167,6 +171,8 @@ These folders keep documents that are no longer part of the default reading path
 - `[CURRENT]` `docs/demo-script.md`
 - `[CURRENT]` `docs/pilot-acceptance-checklist.md`
 - `[CURRENT]` `docs/sandbox-integration-log.md`
+- `[CURRENT]` `docs/leave-system-api-contract.md`
+- `[ACTIVE]` `docs/callback-field-mapping-design.md`
 - `[CURRENT]` `docs/pilot-sick-leave-samples-v1.md`
 - `[CURRENT]` `docs/sick-leave-verification-gap-analysis-v1.md`
 - `[CURRENT]` `docs/sick-leave-verification-fix-design-v1.md`

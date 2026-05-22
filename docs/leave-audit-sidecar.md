@@ -361,6 +361,16 @@ Accept: application/json
 
 首轮 sandbox 联调时，如果 pending 返回字段不在上表中，先在 `docs/sandbox-integration-log.md` 的“字段差异记录”中记录原始字段名，再追加到 `configs/leave_system_field_mapping.yaml` 或通过 `ID_DOC_OCR_LEAVE_SYSTEM_FIELD_MAPPING_FILE` 指向 sandbox 专用文件，避免为字段名差异改代码。
 
+推荐 pending 字段映射流程：
+
+1. 先用 `curl` 或 sandbox owner 提供的样例保存 pending 原始响应。
+2. 在 `docs/sandbox-integration-log.md` 的“Pending response 原始样例记录区”逐项记录：原始字段名、内部字段名、是否已配置 mapping、是否需要代码改动。
+3. 如果只是字段命名差异，例如 `applyNo` / `empName` / `fileUrl`，优先更新 `configs/leave_system_field_mapping.yaml` 或设置 `ID_DOC_OCR_LEAVE_SYSTEM_FIELD_MAPPING_FILE` 指向 sandbox 专用配置。
+4. 重新运行 `POST /leave-audit/sync` 验证 `LeaveAuditTask` / `LeaveAttachment` 是否可正常入库。
+5. 仅当真实 response 结构无法通过字段别名表达（例如附件需要多接口拼装、嵌套路径需要规则计算）时，才评估代码改动。
+
+不建议为了字段名差异直接修改 `HttpLeaveSystemAdapter`。该 adapter 应保持稳定，只负责 HTTP 调用、错误处理和调用 `normalize_pending_item()`；字段差异应由 mapping 配置吸收，避免每次 sandbox 字段变化都触发代码发布。
+
 #### 下载附件
 
 如果 `attachment_url` 是完整 `http://` 或 `https://` URL，adapter 会直接 GET 该 URL。

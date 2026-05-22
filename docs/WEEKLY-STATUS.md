@@ -8,6 +8,8 @@
 - 已新增 `scripts/reset_leave_audit_demo.py`，mock 演示可一键重置本地 SQLite 数据
 - 已完成试点联调准备材料：`docs/demo-script.md`、`docs/pilot-acceptance-checklist.md`、`.env.leave-audit.example`，并进一步进入“Sandbox dry-run 联调准备阶段”
 - 已新增 `docs/sandbox-integration-log.md`，用于逐项记录联调日期、环境、adapter 模式、dry-run、pending/download、OCR/verify、callback payload、真实回写、问题与结论
+- 已新增 `docs/leave-system-api-contract.md`，用于与真实假勤系统 owner 对齐 pending/download/callback、鉴权、字段映射、错误码、超时与重试约定
+- 已新增 `docs/callback-field-mapping-design.md`，预留未来 callback payload 字段名不一致时的配置化映射方案（本轮不实现代码）
 - 已将 FastAPI startup 从 `@app.on_event("startup")` 迁移到 lifespan，消除 deprecation warning 且保持既有 API 兼容
 - 已在 Vite 配置中增加 `antd` / `icons` / `vendor` manualChunks，降低试点演示构建 warning 噪音
 - 已增强 verification 输出：新增 `autoPassReadiness` 与规则中文展示文案，前端可优先展示 `display_message`
@@ -33,12 +35,14 @@
 - request_id 的组织责任边界已冻结，但真实调用方接入 owner 仍需最终点名确认
 - 真实或脱敏真实的 Normal 正样本占比仍可继续提高，但不再阻塞当前 go-live 冻结
 - sandbox pending/download/callback 的真实接口结果仍需按 `docs/sandbox-integration-log.md` 落表确认
+- 真实假勤系统 callback 目标字段名仍待 owner 确认；当前仅冻结配置化映射设计，不改回写代码
 
 ## 下周建议
 - 第一优先：按 `docs/demo-script.md` 完成一次 mock 演示彩排
-- 第二优先：按 `docs/sandbox-integration-log.md` 与假勤系统 owner 对齐 sandbox pending/download/callback dry-run 联调记录
-- 第三优先：dry-run payload 被业务侧确认后，再关闭 dry-run 做一次真实 callback 回写演练
-- 第四优先：在启动会前把占位审批人 roster 替换为真实命名名单，并确认 weekly review 邀请对象
+- 第二优先：按 `docs/leave-system-api-contract.md` 与假勤系统 owner 对齐接口契约，尤其是 pending 原始字段与 callback 目标字段
+- 第三优先：按 `docs/sandbox-integration-log.md` 记录 sandbox pending/download/callback dry-run 联调结果
+- 第四优先：dry-run payload 被业务侧确认后，再关闭 dry-run 做一次真实 callback 回写演练
+- 第五优先：在启动会前把占位审批人 roster 替换为真实命名名单，并确认 weekly review 邀请对象
 
 ## Management Summary Implication
 - 当前状态从“材料 ready”推进为“sandbox dry-run 联调可执行、可审计、可决定是否真实回写”。

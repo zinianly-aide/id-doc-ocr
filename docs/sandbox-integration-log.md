@@ -50,6 +50,26 @@ This template records each leave-system sandbox dry-run integration session befo
 - 需要新增或调整的别名：无 / 待填写
 - 异常或非预期字段：无 / 待填写
 
+#### Pending response 原始样例记录区
+
+粘贴 pending 原始响应样例，必要时先脱敏：
+
+```json
+{
+  "tasks": []
+}
+```
+
+字段映射检查表：
+
+| 原始字段名 | 原始样例值 | 内部字段名 | 是否已配置 mapping | 是否需要代码改动 | 备注 |
+| --- | --- | --- | --- | --- | --- |
+| `applyNo` | `LR-...` | `leave_request_id` | 是 / 否 | 否 | 示例 |
+| `empName` | `张三` | `employee_name` | 是 / 否 | 否 | 示例 |
+| `fileUrl` | `https://...` | `attachment_url` | 是 / 否 | 否 | 示例 |
+
+处理规则：字段名差异优先更新 `configs/leave_system_field_mapping.yaml` 或 `ID_DOC_OCR_LEAVE_SYSTEM_FIELD_MAPPING_FILE` 指向的外部 mapping 文件；只有 response 结构无法通过 mapping 表达时，才评估代码改动。
+
 ### 2. Download 接口结果
 
 - attachment_id：待填写

@@ -48,6 +48,7 @@ Sandbox dry-run 联调准备阶段
 - 已新增真实假勤系统 HTTP adapter 骨架与 adapter factory，支持从 mock 演示平滑切换到真实联调
 - 已新增 dry-run callback、结构化联调日志和 demo reset 脚本，sandbox 联调可先验 payload、可重置、可追踪
 - 已新增 `docs/sandbox-integration-log.md`，sandbox pending/download/OCR/verify/callback dry-run/真实回写结果可被结构化记录和复盘
+- 已新增 `docs/leave-system-api-contract.md` 与 `docs/callback-field-mapping-design.md`，真实假勤系统接口契约与 callback 字段映射预留设计可在联调前对齐
 - 已完成 FastAPI lifespan 迁移与 Vite manualChunks 小收口，降低联调前 warning 噪音
 - 已新增 `docs/demo-script.md`、`docs/pilot-acceptance-checklist.md`、`.env.leave-audit.example`，试点演示、验收和环境配置材料已收口
 - 已新增 `docs/leave-audit-sidecar.md` 作为假勤系统 sidecar 接入说明

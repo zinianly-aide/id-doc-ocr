@@ -14,6 +14,7 @@ Sandbox dry-run 联调准备阶段
 - 新增 dry-run callback 模式、联调结构化日志与 `scripts/reset_leave_audit_demo.py`，真实 sandbox 联调可先验 payload 再实际回写。
 - 新增 `docs/demo-script.md`、`docs/pilot-acceptance-checklist.md` 与 `.env.leave-audit.example`，试点联调演示与验收材料已收口。
 - 新增 `docs/sandbox-integration-log.md`，用于记录 sandbox pending/download/OCR/verify/callback dry-run/真实回写结果。
+- 新增 `docs/leave-system-api-contract.md` 与 `docs/callback-field-mapping-design.md`，真实假勤系统 sandbox 接口契约、pending 字段差异与 callback 字段映射预留设计可在联调前收口。
 - FastAPI startup 已迁移到 lifespan，避免 `@app.on_event("startup")` deprecation warning，同时保持 `/health`、`/capabilities`、`/infer`、`/analyze-document`、`/verify-attachment`、`/leave-audit/*` 兼容。
 - 前端 Vite build 已增加 `antd` / `icons` / `vendor` manualChunks，用于降低试点演示构建 warning 噪音。
 
@@ -21,6 +22,7 @@ Sandbox dry-run 联调准备阶段
 - 当前进入“Sandbox dry-run 联调准备阶段”
 - 使用 demo script 完成 mock 演示彩排
 - 使用 `docs/sandbox-integration-log.md` 逐项记录 sandbox pending/download/callback 联调结果
+- 使用 `docs/leave-system-api-contract.md` 与假勤系统 owner 冻结 pending/download/callback、鉴权、错误码、超时与重试约定
 - 先开启 dry-run 核对 callback payload，再关闭 dry-run 进行真实回写演练
 - 准备真实审批人 roster、调用方 owner 与首次 sandbox 联调窗口
 
@@ -32,7 +34,7 @@ Sandbox dry-run 联调准备阶段
 
 ## 下一检查点
 - 检查点类型：sandbox dry-run 联调记录是否完整、callback payload 是否被业务侧确认
-- 关注事项：pending/download/callback 接口返回、dry-run payload 字段、真实回写结果、request_id 日志可追踪性
+- 关注事项：pending/download/callback 接口返回、pending 原始字段映射、dry-run payload 字段、真实回写结果、request_id 日志可追踪性
 - 建议时间：首次 sandbox 联调完成后立即复盘
 
 ## Management Summary Implication
