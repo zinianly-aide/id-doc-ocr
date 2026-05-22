@@ -236,31 +236,209 @@ curl http://127.0.0.1:8000/leave-audit/stats
 
 前端应优先展示中文 `display_message`，不要直接把英文 `message` 作为审批文案。
 
-## 9. 接入真实假勤系统 adapter
+## 9. Adapter factory 与真实 HTTP adapter
 
-真实接入时替换 `LeaveSystemAdapter` 实现即可：
+`leave_audit` API 通过 adapter factory 创建假勤系统适配器：
 
-```python
-class RealLeaveSystemAdapter(LeaveSystemAdapter):
-    def fetch_pending_attachments(self) -> list[LeaveAuditTask]:
-        # 调用假勤系统待审核材料接口
-        ...
-
-    def download_attachment(self, attachment_url: str) -> bytes:
-        # 调用假勤系统或文件服务下载附件
-        ...
-
-    def push_audit_result(self, result: LeaveAuditResult) -> None:
-        # 回写 PASS / REVIEW / REJECT / ERROR 和 evidence 摘要
-        ...
+```text
+ID_DOC_OCR_LEAVE_SYSTEM_ADAPTER=mock -> MockLeaveSystemAdapter
+ID_DOC_OCR_LEAVE_SYSTEM_ADAPTER=http -> HttpLeaveSystemAdapter
+未配置 -> mock
 ```
+
+默认 `mock`，因此 `/leave-audit/sync` 的本地演示行为保持不变。
+
+### 9.1 mock adapter 用法
+
+```bash
+unset ID_DOC_OCR_LEAVE_SYSTEM_ADAPTER
+# 或
+export ID_DOC_OCR_LEAVE_SYSTEM_ADAPTER=mock
+```
+
+Mock 数据仍来自：
+
+```text
+fixtures/sample_leave_tasks.json
+```
+
+适用场景：
+
+- 本地演示
+- CI / pytest
+- 前端工作台联调
+- 不依赖真实假勤系统的 PASS / REVIEW / REJECT 链路验证
+
+### 9.2 http adapter 环境变量
+
+启用真实假勤系统 HTTP adapter：
+
+```bash
+export ID_DOC_OCR_LEAVE_SYSTEM_ADAPTER=http
+export ID_DOC_OCR_LEAVE_SYSTEM_BASE_URL=https://leave-system.example.com
+export ID_DOC_OCR_LEAVE_SYSTEM_TOKEN=replace-with-token
+export ID_DOC_OCR_LEAVE_SYSTEM_PENDING_API=/api/leave-audit/pending
+export ID_DOC_OCR_LEAVE_SYSTEM_DOWNLOAD_API=/api/leave-audit/download
+export ID_DOC_OCR_LEAVE_SYSTEM_CALLBACK_API=/api/leave-audit/callback
+export ID_DOC_OCR_LEAVE_SYSTEM_TIMEOUT_SECONDS=10
+```
+
+说明：
+
+- `BASE_URL`：真实假勤系统或 pilot gateway 地址，http adapter 必填
+- `TOKEN`：可选；配置后会发送 `Authorization: Bearer <token>`
+- `PENDING_API`：拉取待审核任务接口，默认 `/leave-audit/pending`
+- `DOWNLOAD_API`：下载附件接口，默认 `/leave-audit/download`
+- `CALLBACK_API`：回写审核结果接口，默认 `/leave-audit/callback`
+- `TIMEOUT_SECONDS`：HTTP 超时秒数，默认 `10`
+
+HTTP adapter 使用 `httpx`，并显式 `trust_env=False`，避免本机代理环境变量影响联调行为。
+
+### 9.3 真实假勤系统接口约定
+
+#### 拉取待审核任务
+
+请求：
+
+```http
+GET {BASE_URL}{PENDING_API}
+Authorization: Bearer <token>
+Accept: application/json
+```
+
+响应可以是数组，也可以是包含 `tasks` 或 `data` 的对象：
+
+```json
+{
+  "tasks": [
+    {
+      "request_id": "LV-SICK-20260522-000001",
+      "leave_request_id": "LR-20260522-000001",
+      "leave_type": "SICK",
+      "employee_id": "E001",
+      "employee_name": "张三",
+      "leave_start_date": "2026-05-22",
+      "leave_end_date": "2026-05-24",
+      "attachments": [
+        {
+          "attachment_id": "ATT-001",
+          "attachment_url": "file-001",
+          "filename": "diagnosis.jpg",
+          "content_type": "image/jpeg",
+          "plugin_name": "diagnosis_proof",
+          "metadata": {}
+        }
+      ]
+    }
+  ]
+}
+```
+
+字段兼容别名：
+
+- task id：`request_id` / `id` / `leave_request_id`
+- employee name：`employee_name` / `applicant_name` / `applicant`
+- date：`leave_start_date` / `start_date`，`leave_end_date` / `end_date`
+- attachments：`attachments` / `attachment_list`
+- attachment url：`attachment_url` / `url` / `download_url`
+- filename：`filename` / `attachment_name` / `name`
+
+#### 下载附件
+
+如果 `attachment_url` 是完整 `http://` 或 `https://` URL，adapter 会直接 GET 该 URL。
+
+否则会调用：
+
+```http
+GET {BASE_URL}{DOWNLOAD_API}?attachment_url=<attachment_url>
+Authorization: Bearer <token>
+```
+
+响应 body 直接作为附件 bytes。
+
+#### 回写结果 callback
+
+请求：
+
+```http
+POST {BASE_URL}{CALLBACK_API}
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+payload 示例：
+
+```json
+{
+  "request_id": "LV-SICK-20260522-000001",
+  "leave_request_id": "LR-20260522-000001",
+  "verify_status": "REVIEW",
+  "risk_level": "MEDIUM",
+  "risk_score": 45,
+  "needs_manual_review": true,
+  "summary": "REVIEW: MEDICAL_CERTIFICATE vs expected ['MEDICAL_CERTIFICATE']",
+  "rule_results": [
+    {
+      "rule_code": "applicant_name_match",
+      "passed": false,
+      "severity": "warning",
+      "display_message": "申请人与材料中的人员信息不一致"
+    }
+  ]
+}
+```
+
+### 9.4 HTTP 错误处理
+
+- 非 2xx 响应会抛出 `LeaveSystemHttpError`
+- 异常信息包含 action、HTTP status 和最多 500 字符响应 body
+- pending 响应不是 JSON 或不包含 list 时会抛出明确异常
+
+### 9.5 联调步骤
+
+1. 保持默认 mock，先验证本地链路：
+
+```bash
+unset ID_DOC_OCR_LEAVE_SYSTEM_ADAPTER
+.venv/bin/python -m pytest -q tests/test_leave_audit_api.py
+```
+
+2. 配置 HTTP adapter 环境变量。
+
+3. 启动 API：
+
+```bash
+.venv/bin/python -m uvicorn id_doc_ocr.service.app:app --host 127.0.0.1 --port 8000
+```
+
+4. 拉取真实待审核任务：
+
+```bash
+curl -X POST http://127.0.0.1:8000/leave-audit/sync
+```
+
+5. 运行单条核验：
+
+```bash
+curl -X POST http://127.0.0.1:8000/leave-audit/tasks/<request_id>/run
+```
+
+6. 打开 `ui/approval-verification/` 工作台，确认任务列表、详情 Drawer、人工复核与回写按钮可用。
+
+7. 回写结果：
+
+```bash
+curl -X POST http://127.0.0.1:8000/leave-audit/tasks/<request_id>/callback
+```
+
+8. 在假勤系统侧确认 request_id / leave_request_id / verify_status / summary / rule_results 已正确入库或进入审批流。
 
 替换建议：
 
-1. 先保持 `SQLiteRepository` 不变，只替换 adapter。
-2. 用真实假勤系统沙箱接口实现 `fetch_pending_attachments()`。
+1. 先保持 `SQLiteRepository` 不变，只切换 adapter。
+2. 用真实假勤系统沙箱接口验证 `fetch_pending_attachments()`。
 3. 确认 `request_id` 由调用方生成，并在假勤系统、旁路库、日志中一致。
-4. 先只回推 `request_id/status/summary/autoPassReadiness`，再逐步回推完整 evidence。
+4. 先只回推 callback payload 摘要，再逐步扩展完整 evidence。
 5. 真实环境中不要把业务请求字段注入 OCR extracted_fields；业务字段应只进入 verification request/evidence。
 
 ## 10. 兼容性

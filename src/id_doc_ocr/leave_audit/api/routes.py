@@ -7,7 +7,8 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.encoders import jsonable_encoder
 
 from id_doc_ocr.application.inference_service import InferenceService
-from id_doc_ocr.leave_audit.adapters.mock_leave_system import MockLeaveSystemAdapter
+from id_doc_ocr.leave_audit.adapters.base import LeaveSystemAdapter
+from id_doc_ocr.leave_audit.adapters.factory import create_leave_system_adapter
 from id_doc_ocr.leave_audit.api.schemas import ReviewRequest
 from id_doc_ocr.leave_audit.repository.sqlite_repository import SQLiteRepository
 from id_doc_ocr.leave_audit.service.audit_service import AuditService
@@ -25,10 +26,10 @@ def _repo(request: Request) -> SQLiteRepository:
     return repo
 
 
-def _adapter(request: Request) -> MockLeaveSystemAdapter:
+def _adapter(request: Request) -> LeaveSystemAdapter:
     adapter = getattr(request.app.state, "leave_system_adapter", None)
     if adapter is None:
-        adapter = MockLeaveSystemAdapter()
+        adapter = create_leave_system_adapter()
         request.app.state.leave_system_adapter = adapter
     return adapter
 
