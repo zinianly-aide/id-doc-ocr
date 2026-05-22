@@ -1,10 +1,10 @@
 # NOW
 
 ## 当前阶段
-试点联调准备完成
+Sandbox dry-run 联调准备阶段
 
 ## 当前主目标
-未来30天内，把当前 SICK 试点从“技术 ready”推进到“可启动试点”，优先完成 integration freeze、指标采集责任与周度 review 机制冻结、试点 roster 与启动时间窗冻结。
+在不新增大功能的前提下，完成试点联调前小收口：消除已知非业务 warning、冻结 sandbox 联调记录模板，并用 dry-run callback 验证 pending/download/OCR/verify/callback payload 全链路后再进入真实回写。
 
 ## 当前技术增量
 - 已新增 `leave_audit` 旁路审核业务域，使现有 OCR / plugin / pipeline / verify-attachment 能力可被假勤系统以 sidecar 模式接入。
@@ -13,12 +13,15 @@
 - 新增真实假勤系统 HTTP adapter 骨架与 adapter factory，可通过环境变量在 mock/http 间切换。
 - 新增 dry-run callback 模式、联调结构化日志与 `scripts/reset_leave_audit_demo.py`，真实 sandbox 联调可先验 payload 再实际回写。
 - 新增 `docs/demo-script.md`、`docs/pilot-acceptance-checklist.md` 与 `.env.leave-audit.example`，试点联调演示与验收材料已收口。
-- 保持 `/health`、`/capabilities`、`/infer`、`/analyze-document`、`/verify-attachment` 兼容。
+- 新增 `docs/sandbox-integration-log.md`，用于记录 sandbox pending/download/OCR/verify/callback dry-run/真实回写结果。
+- FastAPI startup 已迁移到 lifespan，避免 `@app.on_event("startup")` deprecation warning，同时保持 `/health`、`/capabilities`、`/infer`、`/analyze-document`、`/verify-attachment`、`/leave-audit/*` 兼容。
+- 前端 Vite build 已增加 `antd` / `icons` / `vendor` manualChunks，用于降低试点演示构建 warning 噪音。
 
 ## 本周重点
-- 当前进入“试点联调准备完成”阶段
+- 当前进入“Sandbox dry-run 联调准备阶段”
 - 使用 demo script 完成 mock 演示彩排
-- 使用 pilot acceptance checklist 对齐假勤系统 sandbox 联调验收项
+- 使用 `docs/sandbox-integration-log.md` 逐项记录 sandbox pending/download/callback 联调结果
+- 先开启 dry-run 核对 callback payload，再关闭 dry-run 进行真实回写演练
 - 准备真实审批人 roster、调用方 owner 与首次 sandbox 联调窗口
 
 ## 当前风险
@@ -28,6 +31,9 @@
 - 真实或脱敏真实 Normal 正样本占比仍可继续提高，但不再阻塞当前 go-live freeze
 
 ## 下一检查点
-- 检查点类型：是否满足小范围 SICK 试点启动条件
-- 关注事项：真实审批人名单、调用方接入责任人、weekly review 排期是否全部确认
-- 建议时间：启动会前最终 go/no-go 检查
+- 检查点类型：sandbox dry-run 联调记录是否完整、callback payload 是否被业务侧确认
+- 关注事项：pending/download/callback 接口返回、dry-run payload 字段、真实回写结果、request_id 日志可追踪性
+- 建议时间：首次 sandbox 联调完成后立即复盘
+
+## Management Summary Implication
+- 当前收口把项目从“演示材料 ready”推进到“sandbox dry-run 联调可记录、可复盘、可决定是否真实回写”的操作态。

@@ -6,6 +6,7 @@ import platform
 import sys
 import time
 import uuid
+from contextlib import asynccontextmanager
 from dataclasses import asdict, dataclass
 from typing import Any
 
@@ -268,18 +269,24 @@ async def _run_inference_request(
 
 def create_app(settings: ServiceSettings | None = None) -> FastAPI:
     service_settings = settings or ServiceSettings.from_env()
-    app = FastAPI(title=service_settings.service_name, version=service_settings.service_version)
-    app.state.settings = service_settings
-    app.include_router(leave_audit_router)
 
-    @app.on_event("startup")
-    async def _on_startup() -> None:
+    @asynccontextmanager
+    async def lifespan(_: FastAPI):
         logger.info(
             "service_startup name=%s version=%s default_failure_dir=%s",
             service_settings.service_name,
             service_settings.service_version,
             service_settings.default_failure_dir,
         )
+        yield
+
+    app = FastAPI(
+        title=service_settings.service_name,
+        version=service_settings.service_version,
+        lifespan=lifespan,
+    )
+    app.state.settings = service_settings
+    app.include_router(leave_audit_router)
 
     @app.middleware("http")
     async def _request_logging(request: Request, call_next):

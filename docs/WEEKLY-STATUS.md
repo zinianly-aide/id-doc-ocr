@@ -6,7 +6,10 @@
 - 已完成真实假勤系统 HTTP adapter 骨架：支持 Bearer Token、超时、非 2xx 明确异常、pending/download/callback 三类接口与 adapter factory 环境变量切换
 - 已完成 dry-run callback 模式与联调日志追踪，sandbox 联调可在不真实回写的情况下检查 callback payload
 - 已新增 `scripts/reset_leave_audit_demo.py`，mock 演示可一键重置本地 SQLite 数据
-- 已完成试点联调准备材料：`docs/demo-script.md`、`docs/pilot-acceptance-checklist.md`、`.env.leave-audit.example`，当前阶段进入“试点联调准备完成”
+- 已完成试点联调准备材料：`docs/demo-script.md`、`docs/pilot-acceptance-checklist.md`、`.env.leave-audit.example`，并进一步进入“Sandbox dry-run 联调准备阶段”
+- 已新增 `docs/sandbox-integration-log.md`，用于逐项记录联调日期、环境、adapter 模式、dry-run、pending/download、OCR/verify、callback payload、真实回写、问题与结论
+- 已将 FastAPI startup 从 `@app.on_event("startup")` 迁移到 lifespan，消除 deprecation warning 且保持既有 API 兼容
+- 已在 Vite 配置中增加 `antd` / `icons` / `vendor` manualChunks，降低试点演示构建 warning 噪音
 - 已增强 verification 输出：新增 `autoPassReadiness` 与规则中文展示文案，前端可优先展示 `display_message`
 - 已新增 `docs/leave-audit-sidecar.md`，说明架构、接入方式、mock adapter、API 示例、状态流转与真实 adapter 替换路径
 - 已从 P3.1 Pre-Launch Validation 进入 P3.2 Go-Live Freeze
@@ -29,8 +32,13 @@
 - 审批人名单目前仍为占位 roster，真实命名名单还需在启动会前最终确认
 - request_id 的组织责任边界已冻结，但真实调用方接入 owner 仍需最终点名确认
 - 真实或脱敏真实的 Normal 正样本占比仍可继续提高，但不再阻塞当前 go-live 冻结
+- sandbox pending/download/callback 的真实接口结果仍需按 `docs/sandbox-integration-log.md` 落表确认
 
 ## 下周建议
 - 第一优先：按 `docs/demo-script.md` 完成一次 mock 演示彩排
-- 第二优先：按 `docs/pilot-acceptance-checklist.md` 与假勤系统 owner 对齐 sandbox pending/download/callback 联调
-- 第三优先：在启动会前把占位审批人 roster 替换为真实命名名单，并确认 weekly review 邀请对象
+- 第二优先：按 `docs/sandbox-integration-log.md` 与假勤系统 owner 对齐 sandbox pending/download/callback dry-run 联调记录
+- 第三优先：dry-run payload 被业务侧确认后，再关闭 dry-run 做一次真实 callback 回写演练
+- 第四优先：在启动会前把占位审批人 roster 替换为真实命名名单，并确认 weekly review 邀请对象
+
+## Management Summary Implication
+- 当前状态从“材料 ready”推进为“sandbox dry-run 联调可执行、可审计、可决定是否真实回写”。
