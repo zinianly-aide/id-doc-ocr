@@ -1,7 +1,7 @@
 # NOW
 
 ## 当前阶段
-Go-Live Freeze
+试点联调准备完成
 
 ## 当前主目标
 未来30天内，把当前 SICK 试点从“技术 ready”推进到“可启动试点”，优先完成 integration freeze、指标采集责任与周度 review 机制冻结、试点 roster 与启动时间窗冻结。
@@ -11,13 +11,14 @@ Go-Live Freeze
 - 新增 `/leave-audit/*` API、SQLite 任务/结果/复核存储、MockLeaveSystemAdapter 与 `fixtures/sample_leave_tasks.json`。
 - 新增 React + Ant Design `ui/approval-verification/` 假勤材料旁路审核工作台，用于同步、核验、详情查看、人工复核与回写。
 - 新增真实假勤系统 HTTP adapter 骨架与 adapter factory，可通过环境变量在 mock/http 间切换。
+- 新增 `docs/demo-script.md`、`docs/pilot-acceptance-checklist.md` 与 `.env.leave-audit.example`，试点联调演示与验收材料已收口。
 - 保持 `/health`、`/capabilities`、`/infer`、`/analyze-document`、`/verify-attachment` 兼容。
 
 ## 本周重点
-- 进入“P3.2 试点启动前最终冻结（Go-Live Freeze）”阶段
-- 冻结 request_id 真实接入责任边界与接入 checklist
-- 冻结 metrics operation ownership 与 weekly review cadence
-- 冻结 pilot roster、启动时间窗、fallback 决策责任
+- 当前进入“试点联调准备完成”阶段
+- 使用 demo script 完成 mock 演示彩排
+- 使用 pilot acceptance checklist 对齐假勤系统 sandbox 联调验收项
+- 准备真实审批人 roster、调用方 owner 与首次 sandbox 联调窗口
 
 ## 当前风险
 - request_id 技术链路已验证，但真实调用方接入人还需最终点名确认

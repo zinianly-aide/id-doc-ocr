@@ -441,7 +441,135 @@ curl -X POST http://127.0.0.1:8000/leave-audit/tasks/<request_id>/callback
 4. 先只回推 callback payload 摘要，再逐步扩展完整 evidence。
 5. 真实环境中不要把业务请求字段注入 OCR extracted_fields；业务字段应只进入 verification request/evidence。
 
-## 10. 兼容性
+## 10. 试点推荐流程
+
+试点建议分四步推进：
+
+1. 本地 mock 演示
+   - 使用 `ID_DOC_OCR_LEAVE_SYSTEM_ADAPTER=mock`
+   - 运行 `POST /leave-audit/sync`
+   - 跑通 PASS / REVIEW / REJECT 三条 mock 链路
+   - 在 React 工作台中确认详情 Drawer、autoPassReadiness、rule_results 中文解释、HR 复核和 callback 操作
+
+2. 假勤系统 sandbox 联调
+   - 切换到 `ID_DOC_OCR_LEAVE_SYSTEM_ADAPTER=http`
+   - 使用 `.env.leave-audit.example` 复制出本地 `.env` 或 shell export
+   - 先只验证 pending / download / callback 三个接口连通
+   - 每个失败都记录 request_id、HTTP status、body preview
+
+3. 小样本端到端验证
+   - 病假、婚假、出生证明相关假别各至少一条真实或脱敏真实样例
+   - 确认任务入库、附件下载、OCR/analysis、verify_attachment、HR review、callback 全链路可用
+   - 对 REVIEW / REJECT 保留截图或 JSON 证据
+
+4. 试点验收
+   - 使用 `docs/pilot-acceptance-checklist.md` 逐项确认
+   - 明确负责人、通过标准和未解决备注
+   - 验收后再进入小范围审批人灰度
+
+## 11. mock -> http adapter 切换方式
+
+默认 mock：
+
+```bash
+export ID_DOC_OCR_LEAVE_SYSTEM_ADAPTER=mock
+```
+
+切换真实 HTTP adapter：
+
+```bash
+cp .env.leave-audit.example .env.leave-audit.local
+# 编辑 .env.leave-audit.local 后 export 对应变量，或用 shell/source 工具加载
+export ID_DOC_OCR_LEAVE_SYSTEM_ADAPTER=http
+export ID_DOC_OCR_LEAVE_SYSTEM_BASE_URL=http://localhost:8080
+export ID_DOC_OCR_LEAVE_SYSTEM_TOKEN=replace-me
+export ID_DOC_OCR_LEAVE_SYSTEM_PENDING_API=/api/leave/attachments/pending
+export ID_DOC_OCR_LEAVE_SYSTEM_DOWNLOAD_API=/api/leave/attachments/{attachment_id}/download
+export ID_DOC_OCR_LEAVE_SYSTEM_CALLBACK_API=/api/leave/audit-result
+export ID_DOC_OCR_LEAVE_SYSTEM_TIMEOUT_SECONDS=10
+export ID_DOC_OCR_LEAVE_AUDIT_DB=.local/leave_audit.db
+```
+
+切换后无需改前端，工作台仍调用同一组 `/leave-audit/*` API。
+
+## 12. 联调排障清单
+
+| 问题 | 检查点 | 处理建议 |
+| --- | --- | --- |
+| sync 无任务 | adapter 是否为 http、pending API 是否正确 | 先 curl 假勤系统 pending API；确认响应是 list 或包含 `tasks/data` |
+| 任务入库失败 | SQLite 路径、目录权限、request_id 是否为空 | 检查 `ID_DOC_OCR_LEAVE_AUDIT_DB`，确认父目录可写 |
+| run 失败 | 附件 URL、download API、插件映射 | 查看任务详情 error_message；确认附件 bytes 非空 |
+| OCR/analysis 异常 | backend 环境、插件名、文件内容 | 本地先用 mock backend；真实 OCR 问题单独记录样本 |
+| verify 结果不符合预期 | leave_type、employee_name、日期、rule_results | 查看 `verification_json.evidence.request` 与 `rule_results` |
+| callback 失败 | callback API、token、payload 字段 | 检查 HTTP status/body preview；确认假勤系统接受字段名 |
+| 前端无数据 | 后端端口、Vite proxy、浏览器 console | 确认后端在 127.0.0.1:8000，前端 `/api` proxy 生效 |
+
+## 13. 常见错误
+
+### token 缺失
+
+现象：pending/download/callback 返回 401 或 403。
+
+处理：
+
+- 确认 `ID_DOC_OCR_LEAVE_SYSTEM_TOKEN` 已设置
+- 确认真实假勤系统接受 `Authorization: Bearer <token>`
+- 如果 sandbox 暂不需要 token，可清空该变量并确认服务端允许匿名测试
+
+### pending 接口非 2xx
+
+现象：`/leave-audit/sync` 报错，日志包含 `leave system fetch pending leave attachments failed`。
+
+处理：
+
+- 检查 `ID_DOC_OCR_LEAVE_SYSTEM_BASE_URL`
+- 检查 `ID_DOC_OCR_LEAVE_SYSTEM_PENDING_API`
+- 用 curl 直接请求 pending API
+- 确认响应结构是数组或 `{ "tasks": [...] }` / `{ "data": [...] }`
+
+### 附件下载失败
+
+现象：任务运行时进入 `ERROR`，或 error_message 指向 download。
+
+处理：
+
+- 如果 `attachment_url` 是完整 http(s) URL，确认该 URL 可直接 GET
+- 如果是相对 id，确认 `DOWNLOAD_API` 支持 `attachment_url` query 参数
+- 若真实接口使用 `{attachment_id}` path 模板，需在真实联调阶段与 adapter 约定字段替换策略或让 pending 返回完整下载 URL
+
+### callback 失败
+
+现象：点击“回写”失败，HTTP adapter 抛出 `push leave audit result failed`。
+
+处理：
+
+- 检查 `ID_DOC_OCR_LEAVE_SYSTEM_CALLBACK_API`
+- 检查 token 和权限
+- 对照 callback payload 示例确认假勤系统字段名
+- 在假勤系统侧查看 request_id / leave_request_id 是否存在
+
+### 本机代理干扰
+
+现象：HTTP client 走了本机代理、报 socksio 或代理连接错误。
+
+处理：
+
+- 当前 `HttpLeaveSystemAdapter` 默认 `trust_env=False`，不会读取系统代理环境变量
+- 如果仍出现代理问题，确认测试是否手动传入了自定义 httpx client
+- 真实联调如必须走代理，应显式构造 client 并注入 adapter，而不是依赖环境变量
+
+### 数据库路径不可写
+
+现象：sync 或 run 时 SQLite 报 unable to open database file / permission denied。
+
+处理：
+
+- 检查 `ID_DOC_OCR_LEAVE_AUDIT_DB`
+- 确认父目录存在且当前用户可写
+- 本地建议使用 `.local/leave_audit.db`
+- CI 或容器环境建议使用临时目录或挂载卷
+
+## 14. 兼容性
 
 本次新增 `/leave-audit/*` 路由，不改变以下既有接口：
 
@@ -451,7 +579,7 @@ curl -X POST http://127.0.0.1:8000/leave-audit/tasks/<request_id>/callback
 - `POST /analyze-document`
 - `POST /verify-attachment`
 
-## 11. 验证命令
+## 15. 验证命令
 
 ```bash
 .venv/bin/python -m pytest -q \

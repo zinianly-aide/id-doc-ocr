@@ -1,7 +1,7 @@
 # ROADMAP
 
 ## 当前阶段定义
-试点准备冲刺期（Pilot Readiness Sprint）
+试点联调准备完成
 
 ## 30天成功标准
 - 病假场景可试点
@@ -46,6 +46,7 @@
 - 已新增 `leave_audit` 旁路审核中台能力：支持从假勤系统适配器同步任务、执行核验、保存结果、人工复核与回调
 - 已新增 React + Ant Design 假勤材料旁路审核工作台，支持任务同步、运行核验、状态筛选、详情查看、人工复核与回写
 - 已新增真实假勤系统 HTTP adapter 骨架与 adapter factory，支持从 mock 演示平滑切换到真实联调
+- 已新增 `docs/demo-script.md`、`docs/pilot-acceptance-checklist.md`、`.env.leave-audit.example`，试点演示、验收和环境配置材料已收口
 - 已新增 `docs/leave-audit-sidecar.md` 作为假勤系统 sidecar 接入说明
 - 新增 `docs/pilot-launch-readiness-v1.md` 作为试点准备主文档
 - 新增 `docs/METRICS.md`，冻结成功率 / REVIEW率 / P95耗时 / 人工复核占比口径

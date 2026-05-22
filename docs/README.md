@@ -38,6 +38,10 @@ Use this index before opening individual documents.
   - 小范围试点启动期风险与回滚文档：误放行、REVIEW率异常、接口失败、traceability 失败
 - `[CURRENT]` `docs/leave-audit-sidecar.md`
   - 假勤系统旁路审核模式：架构、mock adapter、API、状态流转、真实 adapter 替换路径
+- `[CURRENT]` `docs/demo-script.md`
+  - 假勤材料旁路审核本地演示脚本：后端/前端启动、mock 流程、PASS/REVIEW/REJECT、HR 复核、callback 话术
+- `[CURRENT]` `docs/pilot-acceptance-checklist.md`
+  - 假勤材料旁路审核试点验收清单：范围、旁路接入方式、验收项、负责人、通过标准
 - `[CURRENT]` `docs/pilot-sick-leave-samples-v1.md`
   - 病假样本台账、分类结构、最小样本规模、联调/回归/误判分析使用方式
 - `[CURRENT]` `docs/sick-leave-verification-gap-analysis-v1.md`
@@ -158,6 +162,8 @@ These folders keep documents that are no longer part of the default reading path
 - `[CURRENT]` `docs/METRICS.md`
 - `[CURRENT]` `docs/RISKS.md`
 - `[CURRENT]` `docs/leave-audit-sidecar.md`
+- `[CURRENT]` `docs/demo-script.md`
+- `[CURRENT]` `docs/pilot-acceptance-checklist.md`
 - `[CURRENT]` `docs/pilot-sick-leave-samples-v1.md`
 - `[CURRENT]` `docs/sick-leave-verification-gap-analysis-v1.md`
 - `[CURRENT]` `docs/sick-leave-verification-fix-design-v1.md`
