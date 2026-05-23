@@ -1,10 +1,10 @@
 # NOW
 
 ## 当前阶段
-Sandbox dry-run 联调准备阶段
+Mock 演示与 real OCR 演示均可复现，准备进入 sandbox dry-run 联调
 
 ## 当前主目标
-在不新增大功能的前提下，完成试点联调前小收口：消除已知非业务 warning、冻结 sandbox 联调记录模板，并用 dry-run callback 验证 pending/download/OCR/verify/callback payload 全链路后再进入真实回写。
+在不新增大功能的前提下，将 mock-rule-demo 与 real-ocr-demo 固化为可交接、可复现、可自检的一页 runbook；联调前按 runbook 完成 demo DB reset、mock 三分支、真实 OCR REVIEW、HR 复核与 dry-run callback payload 检查。
 
 ## 当前技术增量
 - 已新增 `leave_audit` 旁路审核业务域，使现有 OCR / plugin / pipeline / verify-attachment 能力可被假勤系统以 sidecar 模式接入。
@@ -17,10 +17,12 @@ Sandbox dry-run 联调准备阶段
 - 新增 `docs/leave-system-api-contract.md` 与 `docs/callback-field-mapping-design.md`，真实假勤系统 sandbox 接口契约、pending 字段差异与 callback 字段映射预留设计可在联调前收口。
 - FastAPI startup 已迁移到 lifespan，避免 `@app.on_event("startup")` deprecation warning，同时保持 `/health`、`/capabilities`、`/infer`、`/analyze-document`、`/verify-attachment`、`/leave-audit/*` 兼容。
 - 前端 Vite build 已增加 `antd` / `icons` / `vendor` manualChunks，用于降低试点演示构建 warning 噪音。
+- MockLeaveSystemAdapter 已支持 `ID_DOC_OCR_LEAVE_AUDIT_FIXTURE_FILE` 与 `ID_DOC_OCR_LEAVE_AUDIT_FIXTURE_DIR`，真实 OCR demo 可从本地真实样本文件读取 `fixture://` 附件。
+- 新增 `docs/real-ocr-demo.md` 与 `docs/demo-runbook.md`，mock-rule-demo 与 real-ocr-demo 均已形成可执行手册。
 
 ## 本周重点
-- 当前进入“Sandbox dry-run 联调准备阶段”
-- 使用 demo script 完成 mock 演示彩排
+- 当前进入“Mock 演示与 real OCR 演示均可复现，准备进入 sandbox dry-run 联调”阶段
+- 使用 `docs/demo-runbook.md` 完成 mock-rule-demo 与 real-ocr-demo 自检彩排
 - 使用 `docs/sandbox-integration-log.md` 逐项记录 sandbox pending/download/callback 联调结果
 - 使用 `docs/leave-system-api-contract.md` 与假勤系统 owner 冻结 pending/download/callback、鉴权、错误码、超时与重试约定
 - 先开启 dry-run 核对 callback payload，再关闭 dry-run 进行真实回写演练
@@ -38,4 +40,4 @@ Sandbox dry-run 联调准备阶段
 - 建议时间：首次 sandbox 联调完成后立即复盘
 
 ## Management Summary Implication
-- 当前收口把项目从“演示材料 ready”推进到“sandbox dry-run 联调可记录、可复盘、可决定是否真实回写”的操作态。
+- demo runbook 将“mock 三分支可讲清 + real OCR 链路可跑通”固化为 sandbox dry-run 前的标准自检入口，降低演示、交接和联调遗漏风险。

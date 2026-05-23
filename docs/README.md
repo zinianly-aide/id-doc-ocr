@@ -40,6 +40,10 @@ Use this index before opening individual documents.
   - 假勤系统旁路审核模式：架构、mock adapter、API、状态流转、真实 adapter 替换路径
 - `[CURRENT]` `docs/demo-script.md`
   - 假勤材料旁路审核本地演示脚本：后端/前端启动、mock 流程、PASS/REVIEW/REJECT、HR 复核、callback 话术
+- `[CURRENT]` `docs/demo-runbook.md`
+  - 一页可执行演示手册：mock-rule-demo 与 real-ocr-demo 路线、启动命令、页面步骤、dry-run callback 自检与收尾
+- `[CURRENT]` `docs/real-ocr-demo.md`
+  - 真实 OCR demo：本地真实图片 fixture、rapidocr + pil detector + pil rectify 启动方式与 REVIEW 预期说明
 - `[CURRENT]` `docs/pilot-acceptance-checklist.md`
   - 假勤材料旁路审核试点验收清单：范围、旁路接入方式、验收项、负责人、通过标准
 - `[CURRENT]` `docs/sandbox-integration-log.md`
@@ -169,6 +173,8 @@ These folders keep documents that are no longer part of the default reading path
 - `[CURRENT]` `docs/RISKS.md`
 - `[CURRENT]` `docs/leave-audit-sidecar.md`
 - `[CURRENT]` `docs/demo-script.md`
+- `[CURRENT]` `docs/demo-runbook.md`
+- `[CURRENT]` `docs/real-ocr-demo.md`
 - `[CURRENT]` `docs/pilot-acceptance-checklist.md`
 - `[CURRENT]` `docs/sandbox-integration-log.md`
 - `[CURRENT]` `docs/leave-system-api-contract.md`

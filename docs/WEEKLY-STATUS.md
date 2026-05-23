@@ -6,7 +6,9 @@
 - 已完成真实假勤系统 HTTP adapter 骨架：支持 Bearer Token、超时、非 2xx 明确异常、pending/download/callback 三类接口与 adapter factory 环境变量切换
 - 已完成 dry-run callback 模式与联调日志追踪，sandbox 联调可在不真实回写的情况下检查 callback payload
 - 已新增 `scripts/reset_leave_audit_demo.py`，mock 演示可一键重置本地 SQLite 数据
-- 已完成试点联调准备材料：`docs/demo-script.md`、`docs/pilot-acceptance-checklist.md`、`.env.leave-audit.example`，并进一步进入“Sandbox dry-run 联调准备阶段”
+- 已完成真实 OCR demo fixture 支持：mock adapter 可通过 `ID_DOC_OCR_LEAVE_AUDIT_FIXTURE_FILE` 切换任务文件，并通过 `ID_DOC_OCR_LEAVE_AUDIT_FIXTURE_DIR` 从本地真实样本读取 `fixture://` 附件
+- 已新增 `docs/real-ocr-demo.md` 与 `docs/demo-runbook.md`，mock-rule-demo 与 real-ocr-demo 两条演示路线已形成一页可执行手册
+- 已完成试点联调准备材料：`docs/demo-script.md`、`docs/demo-runbook.md`、`docs/pilot-acceptance-checklist.md`、`.env.leave-audit.example`，并进一步进入“Mock 演示与 real OCR 演示均可复现，准备进入 sandbox dry-run 联调”阶段
 - 已新增 `docs/sandbox-integration-log.md`，用于逐项记录联调日期、环境、adapter 模式、dry-run、pending/download、OCR/verify、callback payload、真实回写、问题与结论
 - 已新增 `docs/leave-system-api-contract.md`，用于与真实假勤系统 owner 对齐 pending/download/callback、鉴权、字段映射、错误码、超时与重试约定
 - 已新增 `docs/callback-field-mapping-design.md`，预留未来 callback payload 字段名不一致时的配置化映射方案（本轮不实现代码）
@@ -38,11 +40,11 @@
 - 真实假勤系统 callback 目标字段名仍待 owner 确认；当前仅冻结配置化映射设计，不改回写代码
 
 ## 下周建议
-- 第一优先：按 `docs/demo-script.md` 完成一次 mock 演示彩排
+- 第一优先：按 `docs/demo-runbook.md` 完成 mock-rule-demo 与 real-ocr-demo 双路线自检彩排
 - 第二优先：按 `docs/leave-system-api-contract.md` 与假勤系统 owner 对齐接口契约，尤其是 pending 原始字段与 callback 目标字段
 - 第三优先：按 `docs/sandbox-integration-log.md` 记录 sandbox pending/download/callback dry-run 联调结果
 - 第四优先：dry-run payload 被业务侧确认后，再关闭 dry-run 做一次真实 callback 回写演练
 - 第五优先：在启动会前把占位审批人 roster 替换为真实命名名单，并确认 weekly review 邀请对象
 
 ## Management Summary Implication
-- 当前状态从“材料 ready”推进为“sandbox dry-run 联调可执行、可审计、可决定是否真实回写”。
+- 当前状态从“材料 ready”进一步推进为“mock 演示与 real OCR 演示均可按 runbook 复现，sandbox dry-run 联调前自检入口已统一”。
