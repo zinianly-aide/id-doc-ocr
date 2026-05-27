@@ -1,4 +1,4 @@
-export type RequestIdStage = "analyze" | "verify";
+export type RequestIdStage = "analyze" | "verify" | "openai";
 
 function defaultUuid(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {

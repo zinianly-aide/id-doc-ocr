@@ -40,7 +40,7 @@ Failed samples or diagnostics can be written to the mounted host directory confi
 
 ## Docker OCR runtime notes
 
-The image now installs `rapidocr`, `paddleocr`, and `paddlepaddle` by default, so `/capabilities` should report `paddleocr` as available inside the API container.
+The image now installs `rapidocr`, `paddleocr`, and pinned `paddlepaddle==3.0.0` by default, so `/capabilities` should report `paddleocr` as available inside the API container.
 
 Useful knobs:
 

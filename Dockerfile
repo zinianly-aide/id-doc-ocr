@@ -57,7 +57,7 @@ COPY examples ./examples
 COPY docker ./docker
 
 RUN if [ "$ID_DOC_OCR_INSTALL_PADDLE" = "1" ]; then \
-      pip install --no-cache-dir --no-build-isolation '.[ocr,paddle-vl]' paddlepaddle; \
+      pip install --no-cache-dir --no-build-isolation '.[ocr,paddle-vl]' paddlepaddle==3.0.0; \
     else \
       pip install --no-cache-dir --no-build-isolation '.[ocr]'; \
     fi && \

@@ -3,16 +3,20 @@ from __future__ import annotations
 import logging
 import os
 import platform
+import json
 import sys
 import time
 import uuid
 from contextlib import asynccontextmanager
 from dataclasses import asdict, dataclass
+from pathlib import Path
 from typing import Any
+from urllib import request as urllib_request
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.responses import JSONResponse
 
 from id_doc_ocr import __version__, plugins as _plugins  # noqa: F401
@@ -185,6 +189,40 @@ def _serialize_log_value(value: Any) -> str:
     return str(value)
 
 
+def _resolve_simple_sample_dir() -> Path | None:
+    configured = os.getenv("ID_DOC_OCR_SIMPLE_SAMPLE_DIR")
+    candidates = [
+        Path(configured).expanduser() if configured else None,
+        Path.cwd() / "simple",
+        Path.cwd() / "examples" / "assets" / "sick_leave_public" / "simple",
+        Path.cwd() / "examples" / "assets" / "sick_leave_public" / "commons",
+        Path(__file__).resolve().parents[3] / "examples" / "assets" / "sick_leave_public" / "simple",
+        Path(__file__).resolve().parents[3] / "examples" / "assets" / "sick_leave_public" / "commons",
+    ]
+    for candidate in candidates:
+        if candidate and candidate.is_dir():
+            return candidate
+    return None
+
+
+def _resolve_repo_path_from_allowed_prefix(path_value: str) -> Path:
+    repo_root = Path(__file__).resolve().parents[3]
+    normalized = Path(path_value.strip())
+    if normalized.is_absolute():
+        raise HTTPException(status_code=400, detail="Only relative repo paths are allowed.")
+
+    resolved = (repo_root / normalized).resolve()
+    allowed_roots = [
+        (repo_root / "examples" / "assets").resolve(),
+        (repo_root / "simple").resolve(),
+    ]
+    if not any(root == resolved or root in resolved.parents for root in allowed_roots):
+        raise HTTPException(status_code=400, detail="Path is outside allowed demo sample roots.")
+    if not resolved.is_file():
+        raise HTTPException(status_code=404, detail=f"Sample file not found: {path_value}")
+    return resolved
+
+
 def _resolve_request_id(request: Request, form: Any | None = None) -> str:
     form_request_id = None
     if form is not None:
@@ -347,6 +385,29 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
     @app.get("/capabilities")
     def capabilities() -> dict[str, Any]:
         return build_capabilities(service_settings)
+
+    @app.head("/demo/samples/simple/{filename:path}")
+    @app.get("/demo/samples/simple/{filename:path}")
+    def get_simple_demo_sample(filename: str):
+        sample_dir = _resolve_simple_sample_dir()
+        if sample_dir is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Simple sample directory not found. Set ID_DOC_OCR_SIMPLE_SAMPLE_DIR or provide ./simple.",
+            )
+
+        file_path = (sample_dir / filename).resolve()
+        if sample_dir.resolve() not in file_path.parents and file_path != sample_dir.resolve():
+            raise HTTPException(status_code=400, detail="Invalid sample file path.")
+        if not file_path.is_file():
+            raise HTTPException(status_code=404, detail=f"Sample file not found: {filename}")
+        return FileResponse(file_path)
+
+    @app.head("/demo/samples/by-path")
+    @app.get("/demo/samples/by-path")
+    def get_demo_sample_by_path(path: str):
+        file_path = _resolve_repo_path_from_allowed_prefix(path)
+        return FileResponse(file_path)
 
     @app.post("/infer")
     async def infer(
@@ -551,6 +612,99 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
                 }
             )
         ), request_id)
+
+    @app.post("/verify-attachment-openai")
+    async def verify_attachment_openai_endpoint(
+        request: Request,
+        plugin_name: str | None = Form(None),
+        plugin: str | None = Form(None),
+        file: UploadFile = File(...),
+        llm_provider: str | None = Form(None),
+    ) -> JSONResponse:
+        form = await request.form()
+        request_id = _resolve_request_id(request, form)
+        result, _, _ = await _run_inference_request(
+            plugin_name=plugin_name,
+            plugin=plugin,
+            file=file,
+            ocr_backend=None,
+            vlm_backend=None,
+            detector_backend=None,
+            rectify_backend=None,
+            failure_dir=None,
+            service_settings=service_settings,
+            fields={},
+        )
+        analysis = result["analysis"]
+        provider = (llm_provider or os.getenv("ID_DOC_OCR_LLM_PROVIDER", "openai")).strip().lower()
+        api_key = os.getenv("OPENAI_API_KEY")
+        model = os.getenv("ID_DOC_OCR_OPENAI_MODEL", "gpt-4.1-mini")
+        prompt = {
+            "task": "判断请假证明材料是否通过审批：PASS/REVIEW/REJECT。",
+            "rules": "仅输出JSON，字段: decision, confidence(0-1), summary, reasons(string array)。",
+            "analysis": analysis,
+        }
+        parsed: dict[str, Any]
+        used_model = model
+        if provider == "dify":
+            dify_api_key = os.getenv("DIFY_API_KEY")
+            dify_base_url = os.getenv("DIFY_BASE_URL", "http://127.0.0.1/v1").rstrip("/")
+            if not dify_api_key:
+                raise HTTPException(status_code=500, detail="DIFY_API_KEY is not configured")
+            payload = json.dumps({
+                "inputs": {"ocr_analysis": analysis},
+                "query": json.dumps(prompt, ensure_ascii=False),
+                "response_mode": "blocking",
+                "user": request_id,
+            }).encode("utf-8")
+            req = urllib_request.Request(
+                f"{dify_base_url}/chat-messages",
+                data=payload,
+                headers={"Authorization": f"Bearer {dify_api_key}", "Content-Type": "application/json"},
+                method="POST",
+            )
+            try:
+                with urllib_request.urlopen(req, timeout=45) as resp:
+                    body = json.loads(resp.read().decode("utf-8"))
+            except Exception as exc:
+                raise HTTPException(status_code=502, detail=f"Dify request failed: {exc}") from exc
+            answer = body.get("answer", "{}")
+            parsed = json.loads(answer) if isinstance(answer, str) else (answer or {})
+            used_model = str(body.get("model") or "dify-chat")
+        else:
+            if not api_key:
+                raise HTTPException(status_code=500, detail="OPENAI_API_KEY is not configured")
+            payload = json.dumps({
+                "model": model,
+                "response_format": {"type": "json_object"},
+                "input": [{"role": "user", "content": [{"type": "input_text", "text": json.dumps(prompt, ensure_ascii=False)}]}],
+            }).encode("utf-8")
+            req = urllib_request.Request(
+                "https://api.openai.com/v1/responses",
+                data=payload,
+                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                method="POST",
+            )
+            try:
+                with urllib_request.urlopen(req, timeout=45) as resp:
+                    body = json.loads(resp.read().decode("utf-8"))
+            except Exception as exc:
+                raise HTTPException(status_code=502, detail=f"OpenAI request failed: {exc}") from exc
+            output_text = body.get("output_text", "{}")
+            parsed = json.loads(output_text) if isinstance(output_text, str) else (output_text or {})
+        decision = str(parsed.get("decision", "REVIEW")).upper()
+        if decision not in {"PASS", "REVIEW", "REJECT"}:
+            decision = "REVIEW"
+        confidence = float(parsed.get("confidence", 0.5))
+        confidence = min(1.0, max(0.0, confidence))
+        return _attach_request_id(JSONResponse(content=jsonable_encoder({
+            "request_id": request_id,
+            "model": used_model,
+            "decision": decision,
+            "confidence": confidence,
+            "summary": str(parsed.get("summary", "")),
+            "reasons": parsed.get("reasons", []),
+        })), request_id)
 
     return app
 

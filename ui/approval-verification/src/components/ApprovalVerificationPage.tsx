@@ -4,6 +4,7 @@ import type {
   AsyncStatus,
   DataSourceMode,
   MockScenario,
+  OpenAIVerificationResponse,
   RawAnalyzeResponse,
   RawVerifyResponse,
   VerifyStatus,
@@ -23,6 +24,7 @@ interface ApprovalVerificationPageProps {
   onPageVersionChange: (version: "default" | "v1") => void;
   onAnalyze: (selectedFile: File | null) => Promise<RawAnalyzeResponse>;
   onVerify: (selectedFile: File | null) => Promise<RawVerifyResponse>;
+  onOpenAIVerify: (selectedFile: File | null) => Promise<OpenAIVerificationResponse>;
   buildNextViewModel: (input: {
     rawAnalyzeResponse?: RawAnalyzeResponse;
     rawVerifyResponse?: RawVerifyResponse;
@@ -297,6 +299,7 @@ export function ApprovalVerificationPage({
   onPageVersionChange,
   onAnalyze,
   onVerify,
+  onOpenAIVerify,
   buildNextViewModel,
 }: ApprovalVerificationPageProps) {
   const [viewModel, setViewModel] = useState<ApprovalVerificationViewModel>(initialViewModel);
@@ -307,6 +310,8 @@ export function ApprovalVerificationPage({
   const [verifyStatus, setVerifyStatus] = useState<AsyncStatus>("success");
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [verifyError, setVerifyError] = useState<string | null>(null);
+  const [openAiStatus, setOpenAiStatus] = useState<AsyncStatus>("idle");
+  const [openAiMessage, setOpenAiMessage] = useState<string | null>(null);
   const [displayRequestId, setDisplayRequestId] = useState(initialViewModel.requestHeader.requestId);
   const [latestVerifyStartedAt, setLatestVerifyStartedAt] = useState<Date | null>(null);
   const [latestVerifyCompletedAt, setLatestVerifyCompletedAt] = useState<Date | null>(null);
@@ -321,6 +326,8 @@ export function ApprovalVerificationPage({
     setVerifyStatus("success");
     setAnalyzeError(null);
     setVerifyError(null);
+    setOpenAiStatus("idle");
+    setOpenAiMessage(null);
     setDisplayRequestId(initialViewModel.requestHeader.requestId);
     setLatestVerifyStartedAt(null);
     setLatestVerifyCompletedAt(null);
@@ -437,6 +444,25 @@ export function ApprovalVerificationPage({
       setLatestVerifyCompletedAt(new Date());
       setVerifyStatus("error");
       setVerifyError(error instanceof Error ? error.message : "verify failed");
+    }
+  }
+
+  async function handleOpenAIVerify() {
+    if (mode !== "real") {
+      setOpenAiStatus("error");
+      setOpenAiMessage("OpenAI 解析仅支持 Real mode。");
+      return;
+    }
+    setOpenAiStatus("loading");
+    setOpenAiMessage(null);
+    try {
+      const result = await onOpenAIVerify(selectedFile);
+      setDisplayRequestId(result.request_id);
+      setOpenAiStatus("success");
+      setOpenAiMessage(`模型:${result.model} 结论:${result.decision} 置信度:${Math.round(result.confidence * 100)}% · ${result.summary}`);
+    } catch (error) {
+      setOpenAiStatus("error");
+      setOpenAiMessage(error instanceof Error ? error.message : "openai verify failed");
     }
   }
 
@@ -610,7 +636,9 @@ export function ApprovalVerificationPage({
 
             <section className="glf-ops-row">
               <button type="button" className="action-button" onClick={handleVerify} disabled={verifyStatus === "loading"}>{verifyStatus === "loading" ? "核验中..." : "运行核验"}</button>
+              <button type="button" className="action-button" onClick={handleOpenAIVerify} disabled={openAiStatus === "loading" || mode !== "real"}>{openAiStatus === "loading" ? "OpenAI判断中..." : "OpenAI解析判断"}</button>
             </section>
+            {openAiMessage ? <p className="muted">{openAiMessage}</p> : null}
           </div>
         </section>
 
