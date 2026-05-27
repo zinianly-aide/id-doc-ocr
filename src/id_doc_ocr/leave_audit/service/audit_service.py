@@ -11,6 +11,7 @@ from id_doc_ocr.leave_audit.domain.enums import LeaveAuditStatus
 from id_doc_ocr.leave_audit.domain.mapping import resolve_plugin_for_leave_task
 from id_doc_ocr.leave_audit.domain.models import LeaveAuditResult, LeaveAuditTask
 from id_doc_ocr.leave_audit.repository.sqlite_repository import SQLiteRepository
+from id_doc_ocr.parsers.dify_field_parser import dify_configuration_message, is_dify_configured
 from id_doc_ocr.verification.rules import verify_attachment
 
 logger = logging.getLogger(__name__)
@@ -55,13 +56,17 @@ class AuditService:
         self.adapter = adapter
         self.inference_service = inference_service or InferenceService()
 
-    def run_task(self, request_id: str) -> LeaveAuditResult:
+    def run_task(self, request_id: str, field_parser_backend: str | None = None) -> LeaveAuditResult:
         task = self.repository.get_task(request_id)
         if task is None:
             raise KeyError(f"Leave audit task not found: {request_id}")
-        return self.process_task(task)
+        if field_parser_backend == "dify":
+            plugin_name = resolve_plugin_for_leave_task(task)
+            if not is_dify_configured(plugin_name):
+                raise ValueError(dify_configuration_message(plugin_name))
+        return self.process_task(task, field_parser_backend=field_parser_backend)
 
-    def process_task(self, task: LeaveAuditTask) -> LeaveAuditResult:
+    def process_task(self, task: LeaveAuditTask, field_parser_backend: str | None = None) -> LeaveAuditResult:
         self.repository.update_task_status(task.request_id, LeaveAuditStatus.PROCESSING)
         started = time.perf_counter()
         attachment_id = None
@@ -78,6 +83,7 @@ class AuditService:
                 image=payload,
                 filename=attachment.filename or f"{attachment.attachment_id}.jpg",
                 fields=mock_fields,
+                field_parser_backend=field_parser_backend,
             )
             analysis_json = analysis_result["analysis"]
             verification_request: dict[str, Any] = {

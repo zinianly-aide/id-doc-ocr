@@ -1,10 +1,12 @@
 import type {
+  DifyChatResponse,
   LeaveAuditDetailResponse,
   LeaveAuditResultResponse,
   LeaveAuditReviewResponse,
   LeaveAuditStatsResponse,
   LeaveAuditSyncResponse,
   LeaveAuditTaskListResponse,
+  OcrResponse,
 } from "@/types/leaveAudit";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
@@ -16,6 +18,21 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
       ...(init?.headers ?? {}),
     },
     ...init,
+  });
+
+  const text = await response.text();
+  const payload = text ? JSON.parse(text) : null;
+  if (!response.ok) {
+    const detail = payload?.detail ?? response.statusText;
+    throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+  }
+  return payload as T;
+}
+
+async function requestFormJson<T>(path: string, formData: FormData): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: "POST",
+    body: formData,
   });
 
   const text = await response.text();
@@ -43,8 +60,17 @@ export const leaveAuditApi = {
   syncTasks: (): Promise<LeaveAuditSyncResponse> =>
     requestJson<LeaveAuditSyncResponse>("/leave-audit/sync", { method: "POST" }),
 
-  runTask: (requestId: string): Promise<LeaveAuditResultResponse> =>
-    requestJson<LeaveAuditResultResponse>(`/leave-audit/tasks/${encodeURIComponent(requestId)}/run`, { method: "POST" }),
+  runTask: (requestId: string, fieldParserBackend?: "plugin" | "dify"): Promise<LeaveAuditResultResponse> => {
+    const searchParams = new URLSearchParams();
+    if (fieldParserBackend) {
+      searchParams.set("field_parser_backend", fieldParserBackend);
+    }
+    const query = searchParams.toString();
+    return requestJson<LeaveAuditResultResponse>(
+      `/leave-audit/tasks/${encodeURIComponent(requestId)}/run${query ? `?${query}` : ""}`,
+      { method: "POST" },
+    );
+  },
 
   submitReview: (
     requestId: string,
@@ -59,4 +85,19 @@ export const leaveAuditApi = {
     requestJson<LeaveAuditResultResponse>(`/leave-audit/tasks/${encodeURIComponent(requestId)}/callback`, { method: "POST" }),
 
   stats: (): Promise<LeaveAuditStatsResponse> => requestJson<LeaveAuditStatsResponse>("/leave-audit/stats"),
+
+  runOcr: (file: File, ocrBackend = "rapidocr"): Promise<OcrResponse> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    if (ocrBackend) {
+      formData.append("ocr_backend", ocrBackend);
+    }
+    return requestFormJson<OcrResponse>("/ocr", formData);
+  },
+
+  askDify: (body: { question: string; ocr_text?: string; conversation_id?: string | null }): Promise<DifyChatResponse> =>
+    requestJson<DifyChatResponse>("/dify-chat", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
 };

@@ -84,12 +84,14 @@ def sync_tasks(request: Request) -> dict[str, Any]:
 
 
 @router.post("/tasks/{request_id}/run")
-def run_task(request: Request, request_id: str) -> dict[str, Any]:
+def run_task(request: Request, request_id: str, field_parser_backend: str | None = None) -> dict[str, Any]:
     service = AuditService(_repo(request), _adapter(request), InferenceService(getattr(request.app.state, "settings", None)))
     try:
-        result = service.run_task(request_id)
+        result = service.run_task(request_id, field_parser_backend=field_parser_backend)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     return jsonable_encoder({"result": _result_to_dict(result)})
 
 

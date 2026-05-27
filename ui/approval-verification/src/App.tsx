@@ -3,6 +3,7 @@ import zhCN from "antd/locale/zh_CN";
 import dayjs from "dayjs";
 import "dayjs/locale/zh-cn";
 
+import { DifyOcrChatbot } from "@/components/DifyOcrChatbot";
 import { LeaveAuditWorkbench } from "@/components/LeaveAuditWorkbench";
 
 dayjs.locale("zh-cn");
@@ -21,6 +22,7 @@ export default function App() {
       }}
     >
       <LeaveAuditWorkbench />
+      <DifyOcrChatbot />
     </ConfigProvider>
   );
 }

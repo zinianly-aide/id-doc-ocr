@@ -127,6 +127,31 @@ export interface LeaveAuditStatsResponse {
   stats: Partial<Record<LeaveAuditStatus, number>>;
 }
 
+export interface OcrLine {
+  text?: string;
+  score?: number;
+  box?: unknown;
+  [key: string]: unknown;
+}
+
+export interface OcrResponse {
+  filename?: string | null;
+  content_type?: string | null;
+  ocr_backend: string;
+  text: string | string[];
+  lines: OcrLine[];
+  confidence?: number | null;
+  ocr: Record<string, unknown>;
+}
+
+export interface DifyChatResponse {
+  answer: string;
+  conversation_id?: string | null;
+  app_type: string;
+  response_mode: string;
+  ocr_text_chars: number;
+}
+
 export interface LeaveAuditTableRow {
   key: string;
   task: LeaveAuditTask;
