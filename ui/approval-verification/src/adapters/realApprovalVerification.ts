@@ -1,6 +1,7 @@
 import type {
   RawAnalyzeResponse,
   MockScenario,
+  OpenAIVerificationResponse,
   RawVerifyResponse,
 } from "@/types";
 import {
@@ -14,6 +15,7 @@ import { RequestTraceError } from "./requestTrace";
 import { nextRealRequestId } from "./verificationRequestId";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
+const LLM_PROVIDER = (import.meta.env.VITE_LLM_PROVIDER ?? "openai").toLowerCase();
 
 async function requestJson<T>(path: string, init: RequestInit, requestId: string): Promise<T> {
   let response: Response;
@@ -63,4 +65,20 @@ export async function verifyAttachmentReal(
 
 export async function getApprovalVerificationRealShell(scenario: MockScenario) {
   return getScenarioRawPageModel(scenario);
+}
+
+export async function verifyAttachmentWithOpenAIReal(
+  scenario: MockScenario = "pass",
+  selectedFile: File | null = null,
+): Promise<OpenAIVerificationResponse> {
+  const requestId = nextRealRequestId("openai");
+  const formData = selectedFile
+    ? buildVerifySelectedFileFormData(scenario, selectedFile)
+    : await buildVerifyDemoFormData(scenario);
+  formData.set("request_id", requestId);
+  formData.set("llm_provider", LLM_PROVIDER);
+  return requestJson<OpenAIVerificationResponse>("/verify-attachment-openai", {
+    method: "POST",
+    body: formData,
+  }, requestId);
 }

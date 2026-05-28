@@ -1,7 +1,7 @@
 # ROADMAP
 
 ## 当前阶段定义
-Sandbox dry-run 联调准备阶段
+Mock 演示与 real OCR 演示均可复现，准备进入 sandbox dry-run 联调
 
 ## 30天成功标准
 - 病假场景可试点
@@ -51,6 +51,8 @@ Sandbox dry-run 联调准备阶段
 - 已新增 `docs/leave-system-api-contract.md` 与 `docs/callback-field-mapping-design.md`，真实假勤系统接口契约与 callback 字段映射预留设计可在联调前对齐
 - 已完成 FastAPI lifespan 迁移与 Vite manualChunks 小收口，降低联调前 warning 噪音
 - 已新增 `docs/demo-script.md`、`docs/pilot-acceptance-checklist.md`、`.env.leave-audit.example`，试点演示、验收和环境配置材料已收口
+- 已新增真实 OCR demo fixture 支持与 `docs/real-ocr-demo.md`，mock adapter 可从本地真实样本读取 `fixture://` 附件以验证 rapidocr + pil detector + pil rectify 链路
+- 已新增 `docs/demo-runbook.md`，将 mock-rule-demo 与 real-ocr-demo 固化为一页可执行手册，支持演示、交接和 sandbox dry-run 前自检
 - 已新增 `docs/leave-audit-sidecar.md` 作为假勤系统 sidecar 接入说明
 - 新增 `docs/pilot-launch-readiness-v1.md` 作为试点准备主文档
 - 新增 `docs/METRICS.md`，冻结成功率 / REVIEW率 / P95耗时 / 人工复核占比口径

@@ -29,8 +29,12 @@ function renderValue(value: unknown): string {
 function humanizeKey(key: string): string {
   return key
     .replace(/_/g, " ")
-    .replace(/\w/g, (char) => char.toUpperCase());
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 }
+
+const QUALITY_RISK_PATTERN = /blur|glare|quality|置信度/i;
+const INTEGRITY_MESSAGE_PATTERN = /missing|seal|hospital|diagnosis|issue_date|certificate|盖章|医院|诊断|开具日期/i;
+const INTEGRITY_CODE_PATTERN = /missing_/i;
 
 function buildAttachmentViewModel(
   attachment: RawAttachmentItem,
@@ -158,8 +162,8 @@ function buildReviewReasonHint(response: RawVerifyResponse): string | null {
 
 function buildReviewReasonTags(response: RawVerifyResponse): string[] {
   const tags: string[] = [];
-  const hasQualityRisk = response.analysis.review.warnings.some((warning) => warning.stage === "quality" || /blur|glare|quality|置信度/i.test(warning.message));
-  const hasIntegrityRisk = response.analysis.validation.issues.some((issue) => /missing|seal|hospital|diagnosis|issue_date|certificate|盖章|医院|诊断|开具日期/i.test(issue.message) || /missing_/i.test(issue.code));
+  const hasQualityRisk = response.analysis.review.warnings.some((warning) => warning.stage === "quality" || QUALITY_RISK_PATTERN.test(warning.message));
+  const hasIntegrityRisk = response.analysis.validation.issues.some((issue) => INTEGRITY_MESSAGE_PATTERN.test(issue.message) || INTEGRITY_CODE_PATTERN.test(issue.code));
   const hasRuleMismatchRisk = response.verification.warnings.length > 0 || response.verification.rule_results.some((rule) => rule.passed === false);
 
   if (hasQualityRisk) tags.push("ocr_quality_risk");
@@ -215,7 +219,7 @@ function deriveVerificationRiskCategory(response: RawVerifyResponse, reviewReaso
 
 function buildExplainabilityGroups(response: RawVerifyResponse): ExplainabilityGroupViewModel[] {
   const qualityItems = response.analysis.review.warnings
-    .filter((warning) => warning.stage === "quality" || /blur|glare|quality|置信度/i.test(warning.message))
+    .filter((warning) => warning.stage === "quality" || QUALITY_RISK_PATTERN.test(warning.message))
     .map((warning) => localizeExplainabilityMessage(warning.message));
 
   const integrityItems = response.analysis.validation.issues

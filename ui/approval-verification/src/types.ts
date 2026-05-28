@@ -124,6 +124,15 @@ export interface RawVerifyResponse extends RawAnalyzeResponse {
   };
 }
 
+export interface OpenAIVerificationResponse {
+  request_id: string;
+  model: string;
+  decision: VerifyStatus;
+  confidence: number;
+  summary: string;
+  reasons: string[];
+}
+
 export interface RawApprovalVerificationPageModel {
   requestHeader: RequestHeader;
   attachments: RawAttachmentItem[];

@@ -12,7 +12,7 @@ This repo now includes a concrete `PaddleOCRAdapter` integration layer, but it s
 
 ## Local install options
 
-For Docker / Compose, the repo now builds an image with `paddleocr` + `paddlepaddle` by default. If you need a lighter image or your target platform cannot resolve Paddle wheels, set `ID_DOC_OCR_INSTALL_PADDLE=0` during build and use `rapidocr` or `mock` instead.
+For Docker / Compose, the repo now builds an image with `paddleocr` + pinned `paddlepaddle==3.0.0` by default. If you need a lighter image or your target platform cannot resolve Paddle wheels, set `ID_DOC_OCR_INSTALL_PADDLE=0` during build and use `rapidocr` or `mock` instead.
 
 Requirements observed on this machine:
 
@@ -28,7 +28,7 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -U pip setuptools wheel
 pip install -e '.[dev,paddle]'
-pip install paddlepaddle
+pip install paddlepaddle==3.0.0
 ```
 
 ### Option B: manual install
@@ -38,10 +38,10 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -U pip setuptools wheel
 pip install -e '.[dev]'
-pip install paddleocr paddlepaddle
+pip install paddleocr paddlepaddle==3.0.0
 ```
 
-Depending on your platform, you may need to choose a specific `paddlepaddle` build/version recommended by PaddleOCR.
+If your platform cannot resolve `paddlepaddle==3.0.0`, use Docker with `ID_DOC_OCR_INSTALL_PADDLE=0` and switch OCR backend to `rapidocr`/`mock`, or provide a compatible mirror/index that hosts this version.
 
 ## Environment knobs
 

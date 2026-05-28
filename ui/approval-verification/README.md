@@ -83,7 +83,10 @@ npm run dev -- --host 127.0.0.1 --port 4173
 Notes:
 - Vite dev server proxies `/api/*` to `http://127.0.0.1:8000`
 - `real adapter mode` uses a built-in sample image under `public/samples/`
+- it will first probe backend demo path `/api/demo/samples/simple/*` so both Docker and local runs can reuse the shared `simple` sample folder when available
+- it also supports probing `/api/demo/samples/by-path?path=...` for repo-relative sample paths (for example paths listed in demo manifest JSON files under `examples/assets`)
 - this is only for adapter integration; it is not real upload UI yet
+- OpenAI 按钮支持两种后端 LLM Provider：`openai`（默认）与 `dify`；可通过前端环境变量 `VITE_LLM_PROVIDER` 切换，并在后端分别配置 `OPENAI_API_KEY` 或 `DIFY_API_KEY`（可选 `DIFY_BASE_URL`，默认 `http://127.0.0.1/v1`）
 
 ## Raw response vs ViewModel boundary
 

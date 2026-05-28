@@ -1,5 +1,25 @@
 import type { DemoRequestConfig, MockScenario } from "@/types";
 
+const SIMPLE_SAMPLE_CANDIDATES = [
+  "/api/demo/samples/simple/diagnosis_generated_001.png",
+  "/api/demo/samples/simple/online_prescription_mobile.jpg",
+  "/api/demo/samples/simple/medical_care_card_usa_sample.jpg",
+  "/api/demo/samples/by-path?path=examples/assets/sick_leave_normal_generated/diagnosis_generated_001.png",
+  "/api/demo/samples/by-path?path=examples/assets/sick_leave_public/commons/online_prescription_mobile.jpg",
+];
+
+async function resolveSimpleSampleUrl(fallbackUrl: string): Promise<string> {
+  for (const candidate of SIMPLE_SAMPLE_CANDIDATES) {
+    try {
+      const response = await fetch(candidate, { method: "HEAD" });
+      if (response.ok) return candidate;
+    } catch {
+      // ignore and continue fallback probing
+    }
+  }
+  return fallbackUrl;
+}
+
 function getScenarioRequestConfig(scenario: MockScenario): DemoRequestConfig {
   if (scenario === "review") {
     return {
@@ -45,9 +65,10 @@ function getScenarioRequestConfig(scenario: MockScenario): DemoRequestConfig {
 }
 
 async function fetchDemoFile(config: DemoRequestConfig): Promise<File> {
-  const response = await fetch(config.sampleFileUrl);
+  const sampleUrl = await resolveSimpleSampleUrl(config.sampleFileUrl);
+  const response = await fetch(sampleUrl);
   if (!response.ok) {
-    throw new Error(`failed to load sample file: ${config.sampleFileUrl}`);
+    throw new Error(`failed to load sample file: ${sampleUrl}`);
   }
 
   const blob = await response.blob();

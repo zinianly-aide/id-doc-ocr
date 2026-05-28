@@ -1,0 +1,55 @@
+{
+  "tasks": [
+    {
+      "request_id": "sick-real-ocr-review-001",
+      "leave_type": "SICK",
+      "employee_id": "E101",
+      "employee_name": "张三",
+      "leave_start_date": "2026-04-01",
+      "leave_end_date": "2026-04-03",
+      "attachments": [
+        {
+          "attachment_id": "ATT-REAL-OCR-REVIEW-001",
+          "attachment_url": "fixture://sick-diagnosis-proof.jpg",
+          "filename": "sick-diagnosis-proof.jpg",
+          "content_type": "image/jpeg",
+          "plugin_name": "diagnosis_proof"
+        }
+      ]
+    },
+    {
+      "request_id": "sick-real-ocr-name-mismatch-001",
+      "leave_type": "SICK",
+      "employee_id": "E102",
+      "employee_name": "李四",
+      "leave_start_date": "2026-04-01",
+      "leave_end_date": "2026-04-03",
+      "attachments": [
+        {
+          "attachment_id": "ATT-REAL-OCR-NAME-MISMATCH-001",
+          "attachment_url": "fixture://sick-diagnosis-proof.jpg",
+          "filename": "sick-diagnosis-proof.jpg",
+          "content_type": "image/jpeg",
+          "plugin_name": "diagnosis_proof"
+        }
+      ]
+    },
+    {
+      "request_id": "sick-real-ocr-date-check-001",
+      "leave_type": "SICK",
+      "employee_id": "E103",
+      "employee_name": "张三",
+      "leave_start_date": "2026-04-10",
+      "leave_end_date": "2026-04-12",
+      "attachments": [
+        {
+          "attachment_id": "ATT-REAL-OCR-DATE-CHECK-001",
+          "attachment_url": "fixture://sick-diagnosis-proof.jpg",
+          "filename": "sick-diagnosis-proof.jpg",
+          "content_type": "image/jpeg",
+          "plugin_name": "diagnosis_proof"
+        }
+      ]
+    }
+  ]
+}
