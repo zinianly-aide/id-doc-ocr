@@ -5,6 +5,7 @@ import {
   Button,
   Card,
   Col,
+  Collapse,
   Descriptions,
   Divider,
   Drawer,
@@ -36,6 +37,7 @@ import { leaveAuditApi } from "@/api/leaveAuditApi";
 import type {
   AutoPassReadiness,
   LeaveAuditDetailResponse,
+  LeaveAuditResult,
   LeaveAuditStatus,
   LeaveAuditTableRow,
   LeaveAuditTask,
@@ -146,6 +148,19 @@ function JsonBlock({ value }: { value: unknown }) {
   return <pre className="leave-audit-json-block">{JSON.stringify(value ?? {}, null, 2)}</pre>;
 }
 
+function renderValue(value: unknown): string {
+  if (value === null || value === undefined || value === "") {
+    return "-";
+  }
+  if (Array.isArray(value)) {
+    return value.length ? value.map(renderValue).join("、") : "-";
+  }
+  if (typeof value === "object") {
+    return JSON.stringify(value);
+  }
+  return String(value);
+}
+
 function AutoPassReadinessView({ readiness }: { readiness?: AutoPassReadiness }) {
   if (!readiness) {
     return <Tag>未生成</Tag>;
@@ -185,6 +200,116 @@ function RuleResultsView({ rules }: { rules?: RuleResult[] }) {
   );
 }
 
+function getFieldParserBackend(result?: LeaveAuditResult | null): string {
+  const analysis = result?.analysis_json;
+  const classification = analysis?.classification_evidence ?? {};
+  const artifacts = analysis?.raw_artifacts ?? {};
+  return String(classification.field_parser_backend ?? artifacts.field_parser_backend ?? "-");
+}
+
+function AnalysisExplanation({ result }: { result?: LeaveAuditResult | null }) {
+  const analysis = result?.analysis_json;
+  const verification = result?.verification_json;
+  const parserBackend = getFieldParserBackend(result);
+  const fieldCount = Array.isArray(analysis?.extracted_fields) ? analysis.extracted_fields.length : 0;
+  const ruleCount = Array.isArray(verification?.rule_results) ? verification.rule_results.length : 0;
+  const failedRuleCount = Array.isArray(verification?.rule_results)
+    ? verification.rule_results.filter((rule) => !rule.passed).length
+    : 0;
+
+  if (result?.error_message) {
+    return (
+      <Alert
+        type="error"
+        showIcon
+        message="解析或核验失败"
+        description={result.error_message}
+      />
+    );
+  }
+
+  return (
+    <Space direction="vertical" size={12} className="leave-audit-full-width">
+      <Alert
+        type="info"
+        showIcon
+        message="说明"
+        description="analysis_json 是 OCR/解析器输出与质量判断；verification_json 是把解析结果和请假申请规则比对后的核验结论。下面已按业务视角拆成摘要、字段和规则，原始 JSON 仅保留在调试区。"
+      />
+      <Descriptions column={2} size="small">
+        <Descriptions.Item label="解析方式">
+          <Tag color={parserBackend === "dify" ? "purple" : "blue"}>{parserBackend === "dify" ? "Dify 解析" : "传统解析"}</Tag>
+        </Descriptions.Item>
+        <Descriptions.Item label="文档类型">{analysis?.doc_type ?? "-"}</Descriptions.Item>
+        <Descriptions.Item label="材料类型">{String((analysis?.classification_evidence ?? {}).attachment_label ?? verification?.matched_attachment_type ?? "-")}</Descriptions.Item>
+        <Descriptions.Item label="提取字段数">{fieldCount}</Descriptions.Item>
+        <Descriptions.Item label="核验规则数">{ruleCount}</Descriptions.Item>
+        <Descriptions.Item label="未通过规则">{failedRuleCount}</Descriptions.Item>
+      </Descriptions>
+    </Space>
+  );
+}
+
+function ExtractedFieldsView({ result }: { result?: LeaveAuditResult | null }) {
+  const analysisFields = Array.isArray(result?.analysis_json?.extracted_fields)
+    ? result?.analysis_json?.extracted_fields ?? []
+    : [];
+  const verificationFields = result?.verification_json?.extracted_fields;
+  const rows = analysisFields.length
+    ? analysisFields.map((field, index) => ({
+        key: String(field.name ?? index),
+        name: renderValue(field.name),
+        value: renderValue(field.value),
+        confidence: typeof field.confidence === "number" ? field.confidence.toFixed(2) : "-",
+        source: renderValue(field.source),
+        matched: field.matched === undefined ? "-" : field.matched ? "已匹配" : "未匹配",
+      }))
+    : Object.entries((verificationFields ?? {}) as Record<string, unknown>).map(([name, value]) => ({
+        key: name,
+        name,
+        value: renderValue(value),
+        confidence: "-",
+        source: "verification",
+        matched: "-",
+      }));
+
+  if (!rows.length) {
+    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无提取字段" />;
+  }
+
+  return (
+    <Table
+      size="small"
+      pagination={false}
+      dataSource={rows}
+      columns={[
+        { title: "字段", dataIndex: "name", width: 150 },
+        { title: "值", dataIndex: "value" },
+        { title: "置信度", dataIndex: "confidence", width: 90 },
+        { title: "来源", dataIndex: "source", width: 120 },
+        { title: "证据匹配", dataIndex: "matched", width: 100 },
+      ]}
+    />
+  );
+}
+
+function VerificationSummaryView({ result }: { result?: LeaveAuditResult | null }) {
+  const verification = result?.verification_json;
+  if (!verification || !Object.keys(verification).length) {
+    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无核验结论" />;
+  }
+  return (
+    <Descriptions column={1} size="small">
+      <Descriptions.Item label="核验结果">{verification.verify_status ? <Tag color={statusColor(String(verification.verify_status))}>{String(verification.verify_status)}</Tag> : "-"}</Descriptions.Item>
+      <Descriptions.Item label="风险等级">{verification.risk_level ? <Tag color={riskColor(String(verification.risk_level))}>{String(verification.risk_level)}</Tag> : "-"}</Descriptions.Item>
+      <Descriptions.Item label="风险分">{verification.risk_score ?? "-"}</Descriptions.Item>
+      <Descriptions.Item label="识别材料类型">{verification.matched_attachment_type ?? "-"}</Descriptions.Item>
+      <Descriptions.Item label="是否需要人工复核">{verification.needs_manual_review === undefined ? "-" : verification.needs_manual_review ? "是" : "否"}</Descriptions.Item>
+      <Descriptions.Item label="结论说明">{verification.summary_message ?? "-"}</Descriptions.Item>
+    </Descriptions>
+  );
+}
+
 export function LeaveAuditWorkbench() {
   const [tasks, setTasks] = useState<LeaveAuditTask[]>([]);
   const [detailsById, setDetailsById] = useState<Record<string, LeaveAuditDetailResponse | undefined>>({});
@@ -192,7 +317,7 @@ export function LeaveAuditWorkbench() {
   const [leaveTypeFilter, setLeaveTypeFilter] = useState<string | undefined>();
   const [keyword, setKeyword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [actionLoadingKey, setActionLoadingKey] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
   const [reviewForm] = Form.useForm<{ review_result: LeaveAuditStatus; review_comment?: string; reviewer: string }>();
@@ -273,17 +398,18 @@ export function LeaveAuditWorkbench() {
     }
   };
 
-  const runTask = async (requestId: string) => {
-    setActionLoadingId(requestId);
+  const runTask = async (requestId: string, fieldParserBackend: "plugin" | "dify") => {
+    const loadingKey = `${requestId}:${fieldParserBackend}`;
+    setActionLoadingKey(loadingKey);
     try {
-      const response = await leaveAuditApi.runTask(requestId);
-      message.success(`核验完成：${response.result.status}`);
+      const response = await leaveAuditApi.runTask(requestId, fieldParserBackend);
+      message.success(`${fieldParserBackend === "dify" ? "Dify解析" : "传统解析"}完成：${response.result.status}`);
       await fetchDetail(requestId);
       await refresh();
     } catch (error) {
       message.error(error instanceof Error ? error.message : "运行核验失败");
     } finally {
-      setActionLoadingId(null);
+      setActionLoadingKey(null);
     }
   };
 
@@ -299,7 +425,7 @@ export function LeaveAuditWorkbench() {
       return;
     }
     const values = await reviewForm.validateFields();
-    setActionLoadingId(selectedRequestId);
+    setActionLoadingKey(`${selectedRequestId}:review`);
     try {
       await leaveAuditApi.submitReview(selectedRequestId, {
         decision: values.review_result,
@@ -312,12 +438,13 @@ export function LeaveAuditWorkbench() {
     } catch (error) {
       message.error(error instanceof Error ? error.message : "提交复核失败");
     } finally {
-      setActionLoadingId(null);
+      setActionLoadingKey(null);
     }
   };
 
   const callbackTask = async (requestId: string) => {
-    setActionLoadingId(requestId);
+    const loadingKey = `${requestId}:callback`;
+    setActionLoadingKey(loadingKey);
     try {
       await leaveAuditApi.callbackTask(requestId);
       message.success("已回写假勤系统");
@@ -326,33 +453,36 @@ export function LeaveAuditWorkbench() {
     } catch (error) {
       message.error(error instanceof Error ? error.message : "回写失败");
     } finally {
-      setActionLoadingId(null);
+      setActionLoadingKey(null);
     }
   };
 
   const columns: ColumnsType<LeaveAuditTableRow> = [
-    { title: "request_id", dataIndex: "request_id", width: 210, fixed: "left" },
-    { title: "leave_request_id", dataIndex: "leave_request_id", width: 190 },
-    { title: "employee_name", dataIndex: "employee_name", width: 130 },
-    { title: "leave_type", dataIndex: "leave_type", width: 120, render: (value: string) => <Tag>{value}</Tag> },
-    { title: "attachment_name", dataIndex: "attachment_name", width: 180 },
-    { title: "matched_attachment_type", dataIndex: "matched_attachment_type", width: 220, render: (value?: string) => value ? <Tag color="blue">{value}</Tag> : "-" },
-    { title: "status", dataIndex: "status", width: 120, render: (value: string) => <Tag color={statusColor(value)}>{value}</Tag> },
-    { title: "risk_level", dataIndex: "risk_level", width: 120, render: (value?: string) => value ? <Tag color={riskColor(value)}>{value}</Tag> : "-" },
-    { title: "verify_status", dataIndex: "verify_status", width: 140, render: (value?: string) => value ? <Tag color={statusColor(value)}>{value}</Tag> : "-" },
-    { title: "updated_at", dataIndex: "updated_at", width: 170, render: formatTime },
+    { title: "任务编号", dataIndex: "request_id", width: 210, fixed: "left" },
+    { title: "申请单号", dataIndex: "leave_request_id", width: 190 },
+    { title: "员工姓名", dataIndex: "employee_name", width: 130 },
+    { title: "假别", dataIndex: "leave_type", width: 120, render: (value: string) => <Tag>{value}</Tag> },
+    { title: "附件名称", dataIndex: "attachment_name", width: 180 },
+    { title: "识别材料类型", dataIndex: "matched_attachment_type", width: 220, render: (value?: string) => value ? <Tag color="blue">{value}</Tag> : "-" },
+    { title: "任务状态", dataIndex: "status", width: 120, render: (value: string) => <Tag color={statusColor(value)}>{value}</Tag> },
+    { title: "风险等级", dataIndex: "risk_level", width: 120, render: (value?: string) => value ? <Tag color={riskColor(value)}>{value}</Tag> : "-" },
+    { title: "核验结果", dataIndex: "verify_status", width: 140, render: (value?: string) => value ? <Tag color={statusColor(value)}>{value}</Tag> : "-" },
+    { title: "更新时间", dataIndex: "updated_at", width: 170, render: formatTime },
     {
       title: "操作",
       key: "actions",
       fixed: "right",
-      width: 230,
+      width: 300,
       render: (_, row) => (
         <Space size={6} wrap>
-          <Button size="small" type="primary" icon={<SyncOutlined />} loading={actionLoadingId === row.request_id} onClick={() => void runTask(row.request_id)}>
-            运行核验
+          <Button size="small" type="primary" icon={<SyncOutlined />} loading={actionLoadingKey === `${row.request_id}:plugin`} onClick={() => void runTask(row.request_id, "plugin")}>
+            传统解析
+          </Button>
+          <Button size="small" icon={<SyncOutlined />} loading={actionLoadingKey === `${row.request_id}:dify`} onClick={() => void runTask(row.request_id, "dify")}>
+            Dify解析
           </Button>
           <Button size="small" onClick={() => void openDetail(row.request_id)}>详情</Button>
-          <Button size="small" icon={<RollbackOutlined />} loading={actionLoadingId === row.request_id} onClick={() => void callbackTask(row.request_id)}>
+          <Button size="small" icon={<RollbackOutlined />} loading={actionLoadingKey === `${row.request_id}:callback`} onClick={() => void callbackTask(row.request_id)}>
             回写
           </Button>
         </Space>
@@ -423,8 +553,9 @@ export function LeaveAuditWorkbench() {
         onClose={() => setDrawerOpen(false)}
         extra={selectedRequestId ? (
           <Space>
-            <Button icon={<SyncOutlined />} onClick={() => void runTask(selectedRequestId)} loading={actionLoadingId === selectedRequestId}>运行核验</Button>
-            <Button type="primary" icon={<RollbackOutlined />} onClick={() => void callbackTask(selectedRequestId)} loading={actionLoadingId === selectedRequestId}>回写</Button>
+            <Button icon={<SyncOutlined />} onClick={() => void runTask(selectedRequestId, "plugin")} loading={actionLoadingKey === `${selectedRequestId}:plugin`}>传统解析</Button>
+            <Button icon={<SyncOutlined />} onClick={() => void runTask(selectedRequestId, "dify")} loading={actionLoadingKey === `${selectedRequestId}:dify`}>Dify解析</Button>
+            <Button type="primary" icon={<RollbackOutlined />} onClick={() => void callbackTask(selectedRequestId)} loading={actionLoadingKey === `${selectedRequestId}:callback`}>回写</Button>
           </Space>
         ) : null}
       >
@@ -453,25 +584,23 @@ export function LeaveAuditWorkbench() {
               </Descriptions>
             </Card>
 
-            <Card title="核验结论" size="small">
-              <Descriptions column={1} size="small">
-                <Descriptions.Item label="verify_status">{verification?.verify_status ? <Tag color={statusColor(String(verification.verify_status))}>{String(verification.verify_status)}</Tag> : "-"}</Descriptions.Item>
-                <Descriptions.Item label="risk_level">{verification?.risk_level ? <Tag color={riskColor(String(verification.risk_level))}>{String(verification.risk_level)}</Tag> : "-"}</Descriptions.Item>
-                <Descriptions.Item label="risk_score">{verification?.risk_score ?? "-"}</Descriptions.Item>
-                <Descriptions.Item label="matched_attachment_type">{verification?.matched_attachment_type ?? "-"}</Descriptions.Item>
-                <Descriptions.Item label="summary_message">{verification?.summary_message ?? selectedResult?.error_message ?? "-"}</Descriptions.Item>
-              </Descriptions>
+            <Card title="解析说明" size="small">
+              <AnalysisExplanation result={selectedResult} />
             </Card>
 
-            <Card title="autoPassReadiness" size="small">
+            <Card title="核验结论" size="small">
+              <VerificationSummaryView result={selectedResult} />
+            </Card>
+
+            <Card title="自动通过判断" size="small">
               <AutoPassReadinessView readiness={readiness} />
             </Card>
 
-            <Card title="extracted_fields" size="small">
-              <JsonBlock value={verification?.extracted_fields ?? analysis?.extracted_fields} />
+            <Card title="提取字段" size="small">
+              <ExtractedFieldsView result={selectedResult} />
             </Card>
 
-            <Card title="rule_results" size="small">
+            <Card title="规则核验" size="small">
               <RuleResultsView rules={verification?.rule_results} />
             </Card>
 
@@ -486,7 +615,7 @@ export function LeaveAuditWorkbench() {
                 <Form.Item name="review_comment" label="review_comment">
                   <Input.TextArea rows={3} placeholder="请输入复核说明" />
                 </Form.Item>
-                <Button type="primary" onClick={() => void submitReview()} loading={selectedRequestId === actionLoadingId}>提交复核按钮</Button>
+                <Button type="primary" onClick={() => void submitReview()} loading={actionLoadingKey === `${selectedRequestId}:review`}>提交复核按钮</Button>
               </Form>
               {selectedDetail.reviews?.length ? (
                 <>
@@ -505,12 +634,22 @@ export function LeaveAuditWorkbench() {
               ) : null}
             </Card>
 
-            <Card title="analysis_json" size="small">
-              <JsonBlock value={analysis} />
-            </Card>
-
-            <Card title="verification_json" size="small">
-              <JsonBlock value={verification} />
+            <Card title="原始数据（调试）" size="small">
+              <Collapse
+                size="small"
+                items={[
+                  {
+                    key: "analysis_json",
+                    label: "analysis_json：解析与质量判断原始数据",
+                    children: <JsonBlock value={analysis} />,
+                  },
+                  {
+                    key: "verification_json",
+                    label: "verification_json：规则核验原始数据",
+                    children: <JsonBlock value={verification} />,
+                  },
+                ]}
+              />
             </Card>
           </Space>
         )}

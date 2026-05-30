@@ -39,6 +39,7 @@ def test_health_exposes_runtime_and_capability_summary():
     assert payload["default_vlm_backend"] == "mock"
     assert payload["default_detector_backend"] == "pil"
     assert payload["default_rectify_backend"] == "pil"
+    assert payload["default_field_parser_backend"] == "plugin"
     assert payload["summary"]["plugin_count"] >= 1
     assert payload["summary"]["backbones"]["ocr"]["total"] >= 1
     assert payload["summary"]["detectors"]["detector"]["total"] >= 1
@@ -67,6 +68,7 @@ def test_capabilities_exposes_plugins_backbones_runtime_and_availability():
     assert payload["service"]["service_name"] == "id-doc-ocr"
     assert payload["service"]["default_ocr_backend"] == "paddleocr"
     assert payload["service"]["default_vlm_backend"] == "mock"
+    assert payload["service"]["default_field_parser_backend"] == "plugin"
     assert payload["summary"]["plugin_count"] == len(payload["plugins"])
     assert payload["availability"]["plugins"]["total"] == len(payload["plugins"])
     assert payload["runtime"]["python"]["implementation"]
@@ -150,6 +152,70 @@ def test_infer_accepts_plugin_alias_field():
     )
     assert response.status_code == 200
     assert response.json()["result"]["plugin"] == "boarding_pass"
+
+
+def test_ocr_endpoint_can_run_selected_backend():
+    client = build_client()
+    response = client.post(
+        "/ocr",
+        data={"ocr_backend": "mock"},
+        files={"file": ("sample.jpg", b"fake-image-bytes", "image/jpeg")},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["filename"] == "sample.jpg"
+    assert payload["ocr_backend"] == "mock"
+    assert "text" in payload
+    assert isinstance(payload["lines"], list)
+    assert payload["ocr"]["engine"] == "paddleocr"
+
+
+def test_dify_chat_endpoint_accepts_streaming_response(monkeypatch):
+    calls = []
+
+    class FakeDifyResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self):
+            first = json.dumps({"event": "agent_message", "conversation_id": "conv-1", "answer": "<think>内部推理</think>可以"})
+            second = json.dumps({"event": "agent_message", "conversation_id": "conv-1", "answer": "通过核验。"})
+            return f"data: {first}\n\ndata: {second}\n\n".encode("utf-8")
+
+    def fake_urlopen(request, timeout):
+        calls.append(
+            {
+                "url": request.full_url,
+                "headers": dict(request.header_items()),
+                "body": json.loads(request.data.decode("utf-8")),
+                "timeout": timeout,
+            }
+        )
+        return FakeDifyResponse()
+
+    monkeypatch.setenv("ID_DOC_OCR_DIFY_API_KEY", "app-test-secret")
+    monkeypatch.setenv("ID_DOC_OCR_DIFY_BASE_URL", "https://dify.example.test/v1")
+    monkeypatch.setenv("ID_DOC_OCR_DIFY_APP_TYPE", "chat")
+    monkeypatch.setenv("ID_DOC_OCR_DIFY_RESPONSE_MODE", "streaming")
+    monkeypatch.setattr("id_doc_ocr.service.app.urllib_request.urlopen", fake_urlopen)
+
+    client = build_client()
+    response = client.post("/dify-chat", json={"question": "能通过吗？", "ocr_text": "姓名 张三"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["answer"] == "可以通过核验。"
+    assert payload["conversation_id"] == "conv-1"
+    assert payload["ocr_text_chars"] == 5
+    assert "app-test-secret" not in json.dumps(payload)
+    assert calls[0]["url"] == "https://dify.example.test/v1/chat-messages"
+    assert calls[0]["headers"]["Authorization"] == "Bearer app-test-secret"
+    assert calls[0]["body"]["response_mode"] == "streaming"
+    assert "OCR 文本" in calls[0]["body"]["query"]
 
 
 
@@ -393,6 +459,7 @@ def test_infer_uses_service_default_backends_when_request_omits_them():
     assert payload["ocr_backend"] == "mock"
     assert payload["detector_backend"] == "mock"
     assert payload["rectify_backend"] == "mock"
+    assert payload["field_parser_backend"] == "plugin"
 
 
 def test_infer_uses_configured_detector_and_rectify_backends(monkeypatch):
@@ -429,7 +496,13 @@ def test_infer_uses_default_failure_dir_for_invalid_result(tmp_path: Path):
     payload = json.loads(failure_log.read_text())
     assert payload["sample_id"] == "sample"
     assert payload["plugin"] == "passport"
-    assert payload["backend"] == {"ocr": "mock", "vlm": "paddleocr_vl", "detector": "mock", "rectify": "mock"}
+    assert payload["backend"] == {
+        "ocr": "mock",
+        "vlm": "paddleocr_vl",
+        "detector": "mock",
+        "rectify": "mock",
+        "field_parser": "plugin",
+    }
     assert payload["validation"]["accepted"] is False
     assert payload["source"] == {"kind": "path", "name": "sample.jpg"}
     assert payload["result"]["sample_id"] == "sample"
@@ -493,6 +566,7 @@ def test_infer_returns_422_when_runner_init_raises_runtime_error(monkeypatch):
         ("vlm_backend", "missing_vlm", "Unknown VLM backend: missing_vlm. Supported values: auto, mock, paddleocr_vl"),
         ("detector_backend", "missing_detector", "Unknown detector backend: missing_detector. Supported values: mock, pil"),
         ("rectify_backend", "missing_rectify", "Unknown rectify backend: missing_rectify. Supported values: mock, pil"),
+        ("field_parser_backend", "missing_parser", "Unknown field parser backend: missing_parser. Supported values: dify, plugin"),
     ],
 )
 def test_infer_rejects_unknown_backend(field: str, value: str, expected_detail: str):

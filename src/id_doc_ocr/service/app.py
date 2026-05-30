@@ -4,6 +4,7 @@ import logging
 import os
 import platform
 import json
+import re
 import sys
 import time
 import uuid
@@ -11,6 +12,7 @@ from contextlib import asynccontextmanager
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
+from urllib.error import HTTPError, URLError
 from urllib import request as urllib_request
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
@@ -30,6 +32,7 @@ from id_doc_ocr.leave_audit.api.routes import router as leave_audit_router
 from id_doc_ocr.pipeline.runner import BackendSelectionError, DemoPipelineRunner
 from id_doc_ocr.tools.plugin_inventory import build_plugin_inventory
 from id_doc_ocr.verification.rules import verify_attachment
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -38,6 +41,12 @@ runtime_logger.setLevel(logging.INFO)
 
 REQUEST_ID_HEADER = "x-request-id"
 REQUEST_ID_FORM_FIELD = "request_id"
+
+
+class DifyChatRequest(BaseModel):
+    question: str
+    ocr_text: str | None = None
+    conversation_id: str | None = None
 
 
 @dataclass(slots=True)
@@ -49,6 +58,7 @@ class ServiceSettings:
     default_vlm_backend: str = "mock"
     default_detector_backend: str = "pil"
     default_rectify_backend: str = "pil"
+    default_field_parser_backend: str = "plugin"
 
     @classmethod
     def from_env(cls) -> "ServiceSettings":
@@ -60,6 +70,7 @@ class ServiceSettings:
             default_vlm_backend=os.getenv("ID_DOC_OCR_DEFAULT_VLM_BACKEND", "mock"),
             default_detector_backend=os.getenv("ID_DOC_OCR_DEFAULT_DETECTOR_BACKEND", "pil"),
             default_rectify_backend=os.getenv("ID_DOC_OCR_DEFAULT_RECTIFY_BACKEND", "pil"),
+            default_field_parser_backend=os.getenv("ID_DOC_OCR_DEFAULT_FIELD_PARSER_BACKEND", "plugin"),
         )
 
 
@@ -245,6 +256,186 @@ def _log_stage(event: str, request_id: str, **fields: Any) -> None:
     runtime_logger.info("%s request_id=%s%s", event, request_id, suffix)
 
 
+def _select_real_ocr_backend(requested_backend: str | None, service_settings: ServiceSettings) -> str:
+    if requested_backend:
+        return requested_backend
+    configured = os.getenv("ID_DOC_OCR_REAL_OCR_BACKEND")
+    candidates = [configured, "rapidocr", "paddleocr", service_settings.default_ocr_backend]
+    for candidate in candidates:
+        if not candidate or candidate == "mock":
+            continue
+        spec = DemoPipelineRunner.STAGE_BACKENDS["ocr"].get(candidate)
+        if spec and spec.availability_check():
+            return candidate
+    raise HTTPException(
+        status_code=422,
+        detail="No real OCR backend is available. Install rapidocr_onnxruntime or paddleocr, or pass ocr_backend=mock for local smoke tests.",
+    )
+
+
+def _run_ocr_backend(*, image: bytes, ocr_backend: str) -> dict[str, Any]:
+    try:
+        DemoPipelineRunner._validate_stage_backend("ocr", ocr_backend)
+        adapter = DemoPipelineRunner.STAGE_BACKENDS["ocr"][ocr_backend].builder()
+        return adapter.infer(image)
+    except BackendSelectionError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except Exception as exc:  # pragma: no cover
+        raise HTTPException(status_code=500, detail=f"OCR failed [{exc.__class__.__name__}]: {exc}") from exc
+
+
+def _dify_api_key() -> str:
+    api_key = (
+        os.getenv("ID_DOC_OCR_DIFY_QA_API_KEY")
+        or os.getenv("DIFY_QA_API_KEY")
+        or os.getenv("ID_DOC_OCR_DIFY_API_KEY")
+        or os.getenv("DIFY_API_KEY")
+    )
+    if not api_key:
+        raise HTTPException(status_code=503, detail="Dify API key is not configured on the backend.")
+    return api_key
+
+
+def _dify_endpoint(base_url: str, app_type: str) -> str:
+    if app_type == "chat":
+        return f"{base_url}/chat-messages"
+    if app_type == "completion":
+        return f"{base_url}/completion-messages"
+    if app_type == "workflow":
+        return f"{base_url}/workflows/run"
+    raise HTTPException(status_code=422, detail=f"Unsupported Dify app type: {app_type}")
+
+
+def _build_dify_qa_query(question: str, ocr_text: str) -> str:
+    return "\n".join(
+        [
+            "你是假勤材料审核工作台里的问答助手。",
+            "请结合 OCR 文本回答用户问题。若 OCR 文本不足以回答，请明确说明缺少哪些信息。",
+            "回答要简洁、可执行，必要时指出可疑字段或下一步核验动作。",
+            "OCR 文本：",
+            ocr_text.strip() or "（未提供 OCR 文本）",
+            "用户问题：",
+            question.strip(),
+        ]
+    )
+
+
+def _parse_dify_streaming_response(raw_body: str) -> tuple[str, str | None]:
+    chunks: list[str] = []
+    conversation_id: str | None = None
+    for line in raw_body.splitlines():
+        line = line.strip()
+        if not line.startswith("data:"):
+            continue
+        payload = line.removeprefix("data:").strip()
+        if not payload or payload == "[DONE]":
+            continue
+        try:
+            event = json.loads(payload)
+        except json.JSONDecodeError:
+            continue
+        if conversation_id is None and isinstance(event.get("conversation_id"), str):
+            conversation_id = event["conversation_id"]
+        answer = event.get("answer")
+        if isinstance(answer, str):
+            chunks.append(answer)
+    answer_text = "".join(chunks).strip()
+    if not answer_text:
+        raise HTTPException(status_code=502, detail="Dify streaming response did not contain an answer.")
+    return answer_text, conversation_id
+
+
+def _parse_dify_blocking_response(raw_body: str) -> tuple[str, str | None]:
+    try:
+        payload = json.loads(raw_body)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=502, detail="Dify response is not valid JSON.") from exc
+
+    conversation_id = payload.get("conversation_id") if isinstance(payload.get("conversation_id"), str) else None
+    answer = payload.get("answer")
+    data = payload.get("data")
+    if not isinstance(answer, str) and isinstance(data, dict):
+        outputs = data.get("outputs")
+        if isinstance(outputs, dict):
+            answer = outputs.get("answer") or outputs.get("result") or outputs.get("text")
+    if isinstance(answer, (dict, list)):
+        answer = json.dumps(answer, ensure_ascii=False)
+    if not isinstance(answer, str) or not answer.strip():
+        raise HTTPException(status_code=502, detail="Dify response did not contain an answer.")
+    return answer.strip(), conversation_id
+
+
+def _clean_dify_answer(answer: str) -> str:
+    cleaned = re.sub(r"<think>.*?</think>", "", answer, flags=re.DOTALL | re.IGNORECASE).strip()
+    return cleaned or answer.strip()
+
+
+def _call_dify_qa(body: DifyChatRequest) -> dict[str, Any]:
+    question = body.question.strip()
+    if not question:
+        raise HTTPException(status_code=422, detail="question is required")
+
+    ocr_text = (body.ocr_text or "").strip()
+    app_type = os.getenv("ID_DOC_OCR_DIFY_QA_APP_TYPE") or os.getenv("ID_DOC_OCR_DIFY_APP_TYPE", "chat")
+    app_type = app_type.strip().lower()
+    response_mode = os.getenv("ID_DOC_OCR_DIFY_QA_RESPONSE_MODE") or os.getenv("ID_DOC_OCR_DIFY_RESPONSE_MODE", "streaming")
+    response_mode = response_mode.strip().lower()
+    base_url = (os.getenv("ID_DOC_OCR_DIFY_BASE_URL") or os.getenv("DIFY_BASE_URL") or "https://api.dify.ai/v1").rstrip("/")
+
+    query = _build_dify_qa_query(question, ocr_text)
+    payload: dict[str, Any]
+    if app_type == "workflow":
+        payload = {
+            "inputs": {"question": question, "ocr_text": ocr_text},
+            "response_mode": response_mode,
+            "user": "leave-audit-ui",
+        }
+    else:
+        payload = {
+            "inputs": {"question": question, "ocr_text": ocr_text},
+            "query": query,
+            "response_mode": response_mode,
+            "user": "leave-audit-ui",
+        }
+        if app_type == "chat" and body.conversation_id:
+            payload["conversation_id"] = body.conversation_id
+
+    request = urllib_request.Request(
+        _dify_endpoint(base_url, app_type),
+        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {_dify_api_key()}",
+            "Content-Type": "application/json",
+            "User-Agent": "curl/8.7.1",
+        },
+        method="POST",
+    )
+    try:
+        with urllib_request.urlopen(request, timeout=float(os.getenv("ID_DOC_OCR_DIFY_QA_TIMEOUT_SECONDS", "60"))) as response:
+            raw_body = response.read().decode("utf-8")
+    except HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        raise HTTPException(status_code=502, detail=f"Dify request failed with HTTP {exc.code}: {detail}") from exc
+    except URLError as exc:
+        raise HTTPException(status_code=502, detail=f"Dify request failed: {exc.reason}") from exc
+    except TimeoutError as exc:
+        raise HTTPException(status_code=504, detail="Dify request timed out.") from exc
+
+    if response_mode == "streaming":
+        answer, conversation_id = _parse_dify_streaming_response(raw_body)
+    else:
+        answer, conversation_id = _parse_dify_blocking_response(raw_body)
+    return {
+        "answer": _clean_dify_answer(answer),
+        "conversation_id": conversation_id or body.conversation_id,
+        "app_type": app_type,
+        "response_mode": response_mode,
+        "ocr_text_chars": len(ocr_text),
+    }
+
+
 async def _run_inference_request(
     *,
     plugin_name: str | None,
@@ -254,6 +445,7 @@ async def _run_inference_request(
     vlm_backend: str | None,
     detector_backend: str | None,
     rectify_backend: str | None,
+    field_parser_backend: str | None,
     failure_dir: str | None,
     service_settings: ServiceSettings,
     fields: dict[str, Any] | None = None,
@@ -273,18 +465,21 @@ async def _run_inference_request(
     effective_vlm_backend = vlm_backend or service_settings.default_vlm_backend
     effective_detector_backend = detector_backend or service_settings.default_detector_backend
     effective_rectify_backend = rectify_backend or service_settings.default_rectify_backend
+    effective_field_parser_backend = field_parser_backend or service_settings.default_field_parser_backend
     try:
         DemoPipelineRunner.validate_backend_selection(
             ocr_backend=effective_ocr_backend,
             vlm_backend=effective_vlm_backend,
             detector_backend=effective_detector_backend,
             rectify_backend=effective_rectify_backend,
+            field_parser_backend=effective_field_parser_backend,
         )
         runner = DemoPipelineRunner(
             ocr_backend=effective_ocr_backend,
             vlm_backend=effective_vlm_backend,
             detector_backend=effective_detector_backend,
             rectify_backend=effective_rectify_backend,
+            field_parser_backend=effective_field_parser_backend,
             failure_dir=effective_failure_dir,
         )
         result = runner.run(
@@ -380,6 +575,7 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
             "default_vlm_backend": service_settings.default_vlm_backend,
             "default_detector_backend": service_settings.default_detector_backend,
             "default_rectify_backend": service_settings.default_rectify_backend,
+            "default_field_parser_backend": service_settings.default_field_parser_backend,
         }
 
     @app.get("/capabilities")
@@ -418,6 +614,7 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
         vlm_backend: str | None = Form(None),
         detector_backend: str | None = Form(None),
         rectify_backend: str | None = Form(None),
+        field_parser_backend: str | None = Form(None),
         failure_dir: str | None = Form(None),
     ) -> JSONResponse:
         result, _, _ = await _run_inference_request(
@@ -428,6 +625,7 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
             vlm_backend=vlm_backend,
             detector_backend=detector_backend,
             rectify_backend=rectify_backend,
+            field_parser_backend=field_parser_backend,
             failure_dir=failure_dir,
             service_settings=service_settings,
         )
@@ -441,6 +639,34 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
             )
         )
 
+    @app.post("/ocr")
+    async def ocr_endpoint(
+        file: UploadFile = File(...),
+        ocr_backend: str | None = Form(None),
+    ) -> JSONResponse:
+        payload = await file.read()
+        if not payload:
+            raise HTTPException(status_code=400, detail="Uploaded file is empty")
+        effective_ocr_backend = _select_real_ocr_backend(ocr_backend, service_settings)
+        ocr_result = _run_ocr_backend(image=payload, ocr_backend=effective_ocr_backend)
+        return JSONResponse(
+            content=jsonable_encoder(
+                {
+                    "filename": file.filename,
+                    "content_type": file.content_type,
+                    "ocr_backend": effective_ocr_backend,
+                    "text": ocr_result.get("text", ""),
+                    "lines": ocr_result.get("lines", []),
+                    "confidence": ocr_result.get("confidence"),
+                    "ocr": ocr_result,
+                }
+            )
+        )
+
+    @app.post("/dify-chat")
+    async def dify_chat_endpoint(body: DifyChatRequest) -> JSONResponse:
+        return JSONResponse(content=jsonable_encoder(_call_dify_qa(body)))
+
     @app.post("/analyze-document")
     async def analyze_document_endpoint(
         request: Request,
@@ -451,6 +677,7 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
         vlm_backend: str | None = Form(None),
         detector_backend: str | None = Form(None),
         rectify_backend: str | None = Form(None),
+        field_parser_backend: str | None = Form(None),
         failure_dir: str | None = Form(None),
     ) -> JSONResponse:
         form = await request.form()
@@ -464,6 +691,7 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
             "vlm_backend",
             "detector_backend",
             "rectify_backend",
+            "field_parser_backend",
             "failure_dir",
         }
         provided_fields = {str(key): value for key, value in form.items() if key not in reserved_keys and not hasattr(value, "filename")}
@@ -483,6 +711,7 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
             vlm_backend=vlm_backend,
             detector_backend=detector_backend,
             rectify_backend=rectify_backend,
+            field_parser_backend=field_parser_backend,
             failure_dir=failure_dir,
             service_settings=service_settings,
             fields=provided_fields,
@@ -518,6 +747,7 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
         vlm_backend: str | None = Form(None),
         detector_backend: str | None = Form(None),
         rectify_backend: str | None = Form(None),
+        field_parser_backend: str | None = Form(None),
         failure_dir: str | None = Form(None),
         expected_attachment_type: str | None = Form(None),
         expected_attachment_types: str | None = Form(None),
@@ -542,6 +772,7 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
             "vlm_backend",
             "detector_backend",
             "rectify_backend",
+            "field_parser_backend",
             "failure_dir",
             "expected_attachment_type",
             "expected_attachment_types",
@@ -573,6 +804,7 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
             vlm_backend=vlm_backend,
             detector_backend=detector_backend,
             rectify_backend=rectify_backend,
+            field_parser_backend=field_parser_backend,
             failure_dir=failure_dir,
             service_settings=service_settings,
             fields={},
@@ -631,6 +863,7 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
             vlm_backend=None,
             detector_backend=None,
             rectify_backend=None,
+            field_parser_backend=None,
             failure_dir=None,
             service_settings=service_settings,
             fields={},

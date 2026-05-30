@@ -15,6 +15,7 @@ from id_doc_ocr.core.registry import registry
 from id_doc_ocr.datasets.schema import FieldAnnotation, InternalAnnotation, RegionAnnotation
 from id_doc_ocr.detector.mock import MockDocumentDetectorAdapter
 from id_doc_ocr.detector.pillow import PillowDocumentDetectorAdapter
+from id_doc_ocr.parsers.dify_field_parser import DifyFieldParser
 from id_doc_ocr.rectify.mock import MockRectifyPipeline
 from id_doc_ocr.rectify.pillow import PillowRectifyPipeline
 from id_doc_ocr.review import ReviewDecision, ReviewEvidence, ReviewEvidenceItem, ReviewReadyPayload, ReviewWarning
@@ -126,24 +127,33 @@ class DemoPipelineRunner:
         vlm_backend: str = "auto",
         detector_backend: str = "mock",
         rectify_backend: str = "mock",
+        field_parser_backend: str = "plugin",
         failure_dir: str | None = None,
     ) -> None:
+        if field_parser_backend not in {"plugin", "dify"}:
+            raise BackendSelectionError(
+                "Unknown field parser backend: "
+                f"{field_parser_backend}. Supported values: dify, plugin"
+            )
         self.backend_selection = {
             "ocr": ocr_backend,
             "vlm": vlm_backend,
             "detector": detector_backend,
             "rectify": rectify_backend,
+            "field_parser": field_parser_backend,
         }
         self.ocr_backend = ocr_backend
         self.vlm_backend = vlm_backend
         self.detector_backend = detector_backend
         self.rectify_backend = rectify_backend
+        self.field_parser_backend = field_parser_backend
         self.failure_dir = failure_dir
         self.ocr = self._build_stage_backend("ocr", ocr_backend)
         self.vlm = self._build_stage_backend("vlm", vlm_backend)
         self.detector = self._build_stage_backend("detector", detector_backend)
         self.region_ocr = MockGOTOCRAdapter()
         self.rectify = self._build_stage_backend("rectify", rectify_backend)
+        self.field_parser = DifyFieldParser() if field_parser_backend == "dify" else None
 
     @classmethod
     def stage_backend_names(cls, stage: str) -> list[str]:
@@ -188,6 +198,7 @@ class DemoPipelineRunner:
         vlm_backend: str,
         detector_backend: str = "mock",
         rectify_backend: str = "mock",
+        field_parser_backend: str = "plugin",
     ) -> None:
         selections = {
             "ocr": ocr_backend,
@@ -197,6 +208,11 @@ class DemoPipelineRunner:
         }
         for stage, backend_name in selections.items():
             cls._validate_stage_backend(stage, backend_name)
+        if field_parser_backend not in {"plugin", "dify"}:
+            raise BackendSelectionError(
+                "Unknown field parser backend: "
+                f"{field_parser_backend}. Supported values: dify, plugin"
+            )
 
     @classmethod
     def _validate_stage_backend(cls, stage: str, backend_name: str) -> None:
@@ -231,7 +247,7 @@ class DemoPipelineRunner:
         rectify_result = self.rectify.process(image, detection=detector_result.primary)
         rectified_image = rectify_result.image
         ocr_result = self.ocr.infer(rectified_image)
-        parsed_fields = self.parse_plugin_fields(plugin, ocr_result)
+        parsed_fields = self.parse_fields(plugin, ocr_result)
         merged_fields = {**parsed_fields, **provided_fields}
         vlm_result = self.vlm.infer(rectified_image)
         vlm_backend_name = getattr(self.vlm, "info", None).name if getattr(self.vlm, "info", None) else self.vlm_backend
@@ -259,6 +275,7 @@ class DemoPipelineRunner:
             validation=validation,
             ocr_backend=self.ocr_backend,
             vlm_backend=vlm_backend_name,
+            field_parser_backend=self.field_parser_backend,
         )
 
         result = {
@@ -269,6 +286,7 @@ class DemoPipelineRunner:
             "vlm_backend": vlm_backend_name,
             "detector_backend": self.detector_backend,
             "rectify_backend": self.rectify_backend,
+            "field_parser_backend": self.field_parser_backend,
             "detector": detector_result.model_dump(),
             "rectify": rectify_payload,
             "quality": {
@@ -304,11 +322,19 @@ class DemoPipelineRunner:
                     "vlm_backend": vlm_backend_name,
                     "detector_backend": self.detector_backend,
                     "rectify_backend": self.rectify_backend,
+                    "field_parser_backend": self.field_parser_backend,
                     "source_kind": resolved_source_kind,
                     "source_name": resolved_source_name,
                 },
             )
         return result
+
+    def parse_fields(self, plugin: Any, ocr_result: dict[str, Any]) -> dict[str, Any]:
+        if self.field_parser_backend == "dify":
+            if self.field_parser is None:
+                self.field_parser = DifyFieldParser()
+            return self.field_parser.parse(plugin=plugin, ocr_result=ocr_result)
+        return self.parse_plugin_fields(plugin, ocr_result)
 
     def parse_plugin_fields(self, plugin: Any, ocr_result: dict[str, Any]) -> dict[str, Any]:
         parse_fn = getattr(plugin, "parse_fields", None)
@@ -326,6 +352,7 @@ class DemoPipelineRunner:
         validation: dict[str, Any],
         ocr_backend: str,
         vlm_backend: str,
+        field_parser_backend: str,
     ) -> dict[str, Any]:
         detector_primary = detector_result.get("primary") or {}
         attachment_classification = classify_leave_attachment({"lines": review_ready.evidence.ocr_lines})
@@ -355,6 +382,7 @@ class DemoPipelineRunner:
                 "detector_doc_type": detector_primary.get("doc_type"),
                 "ocr_backend": ocr_backend,
                 "vlm_backend": vlm_backend,
+                "field_parser_backend": field_parser_backend,
                 "attachment_label": attachment_classification["label"],
                 "attachment_confidence": attachment_classification["confidence"],
                 "matched_keywords": attachment_classification["matched_keywords"],
@@ -374,6 +402,7 @@ class DemoPipelineRunner:
                 "ocr_line_count": len(review_ready.evidence.ocr_lines),
                 "warning_count": len(review_ready.warnings),
                 "merged_field_count": len(merged_fields),
+                "field_parser_backend": field_parser_backend,
             },
         )
         return analysis.model_dump()

@@ -13,6 +13,7 @@ class InferenceServiceSettings:
     default_vlm_backend: str = "mock"
     default_detector_backend: str = "mock"
     default_rectify_backend: str = "mock"
+    default_field_parser_backend: str = "plugin"
     default_failure_dir: str | None = None
 
 
@@ -33,6 +34,7 @@ class InferenceService:
         vlm_backend: str | None = None,
         detector_backend: str | None = None,
         rectify_backend: str | None = None,
+        field_parser_backend: str | None = None,
         failure_dir: str | None = None,
     ) -> dict[str, Any]:
         if not plugin_name:
@@ -46,6 +48,9 @@ class InferenceService:
         effective_vlm_backend = vlm_backend or getattr(self.settings, "default_vlm_backend", "mock")
         effective_detector_backend = detector_backend or getattr(self.settings, "default_detector_backend", "mock")
         effective_rectify_backend = rectify_backend or getattr(self.settings, "default_rectify_backend", "mock")
+        effective_field_parser_backend = field_parser_backend or getattr(
+            self.settings, "default_field_parser_backend", "plugin"
+        )
         effective_failure_dir = failure_dir or getattr(self.settings, "default_failure_dir", None)
 
         DemoPipelineRunner.validate_backend_selection(
@@ -53,12 +58,14 @@ class InferenceService:
             vlm_backend=effective_vlm_backend,
             detector_backend=effective_detector_backend,
             rectify_backend=effective_rectify_backend,
+            field_parser_backend=effective_field_parser_backend,
         )
         runner = DemoPipelineRunner(
             ocr_backend=effective_ocr_backend,
             vlm_backend=effective_vlm_backend,
             detector_backend=effective_detector_backend,
             rectify_backend=effective_rectify_backend,
+            field_parser_backend=effective_field_parser_backend,
             failure_dir=effective_failure_dir,
         )
         return runner.run(

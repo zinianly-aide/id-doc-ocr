@@ -16,6 +16,7 @@ def test_demo_runner_tracks_selected_stage_backends():
         "vlm": "mock",
         "detector": "mock",
         "rectify": "mock",
+        "field_parser": "plugin",
     }
 
 

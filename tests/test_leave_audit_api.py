@@ -45,3 +45,21 @@ def test_leave_audit_api_sync_list_detail_run_and_review(tmp_path):
     stats = client.get("/leave-audit/stats")
     assert stats.status_code == 200
     assert stats.json()["stats"]["REVIEW"] >= 1
+
+
+def test_leave_audit_dify_run_requires_config_without_mutating_task(tmp_path, monkeypatch):
+    monkeypatch.delenv("ID_DOC_OCR_DIFY_API_KEY", raising=False)
+    monkeypatch.delenv("DIFY_API_KEY", raising=False)
+    client = build_client(tmp_path)
+
+    sync = client.post("/leave-audit/sync")
+    assert sync.status_code == 200
+
+    run = client.post("/leave-audit/tasks/LV-MOCK-SICK-PASS-001/run?field_parser_backend=dify")
+    assert run.status_code == 422
+    assert "Dify parser is not configured" in run.json()["detail"]
+
+    detail = client.get("/leave-audit/tasks/LV-MOCK-SICK-PASS-001")
+    assert detail.status_code == 200
+    assert detail.json()["task"]["status"] == "PULLED"
+    assert detail.json()["result"] is None
