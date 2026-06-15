@@ -14,6 +14,7 @@ coverage.xml
 htmlcov/
 
 # local runtime artifacts
+.local/
 data/failures/
 data/paddle-model-cache/
 .hermes/

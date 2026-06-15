@@ -1022,6 +1022,21 @@ summary { cursor: pointer; }
     linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
 }
 
+.leave-audit-app-tabs {
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+.leave-audit-app-tabs > .ant-tabs-nav {
+  margin: 0;
+  padding: 0 28px;
+  background: #ffffff;
+}
+
+.leave-audit-app-tabs > .ant-tabs-content-holder > .ant-tabs-content > .ant-tabs-tabpane {
+  min-height: 100vh;
+}
+
 .leave-audit-header {
   display: flex;
   align-items: flex-start;

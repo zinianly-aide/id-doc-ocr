@@ -6,6 +6,9 @@ import type {
   LeaveAuditStatsResponse,
   LeaveAuditSyncResponse,
   LeaveAuditTaskListResponse,
+  LeaveAuditConfigResponse,
+  FieldMappingItem,
+  RuleConfigItem,
   OcrResponse,
 } from "@/types/leaveAudit";
 
@@ -85,6 +88,20 @@ export const leaveAuditApi = {
     requestJson<LeaveAuditResultResponse>(`/leave-audit/tasks/${encodeURIComponent(requestId)}/callback`, { method: "POST" }),
 
   stats: (): Promise<LeaveAuditStatsResponse> => requestJson<LeaveAuditStatsResponse>("/leave-audit/stats"),
+
+  getConfig: (): Promise<LeaveAuditConfigResponse> => requestJson<LeaveAuditConfigResponse>("/leave-audit/config"),
+
+  updateFieldMappings: (mappings: FieldMappingItem[]): Promise<{ field_mappings: FieldMappingItem[] }> =>
+    requestJson<{ field_mappings: FieldMappingItem[] }>("/leave-audit/config/field-mappings", {
+      method: "PUT",
+      body: JSON.stringify({ mappings }),
+    }),
+
+  updateRuleConfigs: (configs: RuleConfigItem[]): Promise<{ rule_configs: RuleConfigItem[] }> =>
+    requestJson<{ rule_configs: RuleConfigItem[] }>("/leave-audit/config/rules", {
+      method: "PUT",
+      body: JSON.stringify({ configs }),
+    }),
 
   runOcr: (file: File, ocrBackend = "rapidocr"): Promise<OcrResponse> => {
     const formData = new FormData();

@@ -14,4 +14,8 @@ def create_leave_system_adapter(kind: str | None = None) -> LeaveSystemAdapter:
         from id_doc_ocr.leave_audit.adapters.http_leave_system import HttpLeaveSystemAdapter
 
         return HttpLeaveSystemAdapter()
-    raise ValueError("ID_DOC_OCR_LEAVE_SYSTEM_ADAPTER must be one of: mock, http")
+    if adapter_kind in {"oracle_tna", "oracle-tna"}:
+        from id_doc_ocr.leave_audit.adapters.oracle_tna import OracleTNALeaveSystemAdapter
+
+        return OracleTNALeaveSystemAdapter()
+    raise ValueError("ID_DOC_OCR_LEAVE_SYSTEM_ADAPTER must be one of: mock, http, oracle_tna")

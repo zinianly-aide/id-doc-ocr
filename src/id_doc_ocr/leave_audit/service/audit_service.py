@@ -12,7 +12,7 @@ from id_doc_ocr.leave_audit.domain.mapping import resolve_plugin_for_leave_task
 from id_doc_ocr.leave_audit.domain.models import LeaveAuditResult, LeaveAuditTask
 from id_doc_ocr.leave_audit.repository.sqlite_repository import SQLiteRepository
 from id_doc_ocr.parsers.dify_field_parser import dify_configuration_message, is_dify_configured
-from id_doc_ocr.verification.rules import verify_attachment
+from id_doc_ocr.verification.rules import DEFAULT_FIELD_MAPPING_CONFIG, DEFAULT_RULE_CONFIGS, verify_attachment
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +95,14 @@ class AuditService:
                 "leave_end_date": task.leave_end_date,
             }
             verification_request.update(dict(task.raw_payload.get("verification_context") or {}))
-            verification_json = verify_attachment(analysis_json, verification_request)
+            field_mapping_config = self._field_mapping_config()
+            rule_config = self._rule_config(task.leave_type)
+            verification_json = verify_attachment(
+                analysis_json,
+                verification_request,
+                field_mapping_config=field_mapping_config,
+                rule_config=rule_config,
+            )
             status = LeaveAuditStatus(str(verification_json.get("verify_status") or "REVIEW"))
             result = LeaveAuditResult(
                 request_id=task.request_id,
@@ -128,6 +135,18 @@ class AuditService:
             error_message=result.error_message,
         )
         return result
+
+    def _field_mapping_config(self) -> dict[str, list[str]]:
+        config = {key: list(values) for key, values in DEFAULT_FIELD_MAPPING_CONFIG.items()}
+        config.update(self.repository.get_field_mappings())
+        return config
+
+    def _rule_config(self, leave_type: str) -> dict[str, Any] | None:
+        normalized_leave_type = str(leave_type).upper()
+        stored = self.repository.get_rule_config(normalized_leave_type)
+        if stored is not None:
+            return stored
+        return DEFAULT_RULE_CONFIGS.get(normalized_leave_type)
 
     def push_callback(self, request_id: str) -> LeaveAuditResult:
         result, _ = self.push_callback_with_metadata(request_id)

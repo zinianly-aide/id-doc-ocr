@@ -69,6 +69,18 @@ class SQLiteRepository:
                     comment TEXT,
                     created_at TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS leave_audit_field_mapping (
+                    canonical_field TEXT PRIMARY KEY,
+                    candidates_json TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS leave_audit_rule_config (
+                    leave_type TEXT PRIMARY KEY,
+                    prompt_text TEXT NOT NULL,
+                    rules_json TEXT NOT NULL,
+                    enabled INTEGER NOT NULL DEFAULT 1,
+                    updated_at TEXT NOT NULL
+                );
                 """
             )
 
@@ -199,6 +211,77 @@ class SQLiteRepository:
         with self.connect() as conn:
             rows = conn.execute("SELECT status, COUNT(*) AS count FROM leave_audit_task GROUP BY status").fetchall()
         return {row["status"]: row["count"] for row in rows}
+
+    def get_field_mappings(self) -> dict[str, list[str]]:
+        with self.connect() as conn:
+            rows = conn.execute("SELECT canonical_field, candidates_json FROM leave_audit_field_mapping ORDER BY canonical_field").fetchall()
+        return {row["canonical_field"]: [str(item) for item in _loads(row["candidates_json"], []) if str(item).strip()] for row in rows}
+
+    def save_field_mapping(self, canonical_field: str, candidates: list[str]) -> None:
+        normalized = [str(candidate).strip() for candidate in candidates if str(candidate).strip()]
+        if not canonical_field.strip():
+            raise ValueError("canonical_field is required")
+        if not normalized:
+            raise ValueError("candidates must not be empty")
+        with self.connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO leave_audit_field_mapping (canonical_field, candidates_json, updated_at)
+                VALUES (?, ?, ?)
+                ON CONFLICT(canonical_field) DO UPDATE SET
+                    candidates_json=excluded.candidates_json,
+                    updated_at=excluded.updated_at
+                """,
+                (canonical_field.strip(), _json(normalized), utc_now_iso()),
+            )
+
+    def get_rule_configs(self) -> list[dict[str, Any]]:
+        with self.connect() as conn:
+            rows = conn.execute("SELECT leave_type, prompt_text, rules_json, enabled, updated_at FROM leave_audit_rule_config ORDER BY leave_type").fetchall()
+        return [
+            {
+                "leave_type": row["leave_type"],
+                "prompt_text": row["prompt_text"],
+                "rules": _loads(row["rules_json"], []),
+                "enabled": bool(row["enabled"]),
+                "updated_at": row["updated_at"],
+            }
+            for row in rows
+        ]
+
+    def get_rule_config(self, leave_type: str) -> dict[str, Any] | None:
+        with self.connect() as conn:
+            row = conn.execute(
+                "SELECT leave_type, prompt_text, rules_json, enabled, updated_at FROM leave_audit_rule_config WHERE leave_type = ?",
+                (str(leave_type).upper(),),
+            ).fetchone()
+        if not row:
+            return None
+        return {
+            "leave_type": row["leave_type"],
+            "prompt_text": row["prompt_text"],
+            "rules": _loads(row["rules_json"], []),
+            "enabled": bool(row["enabled"]),
+            "updated_at": row["updated_at"],
+        }
+
+    def save_rule_config(self, leave_type: str, prompt_text: str, rules: list[dict[str, Any]], enabled: bool = True) -> None:
+        normalized_leave_type = str(leave_type).upper().strip()
+        if not normalized_leave_type:
+            raise ValueError("leave_type is required")
+        with self.connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO leave_audit_rule_config (leave_type, prompt_text, rules_json, enabled, updated_at)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(leave_type) DO UPDATE SET
+                    prompt_text=excluded.prompt_text,
+                    rules_json=excluded.rules_json,
+                    enabled=excluded.enabled,
+                    updated_at=excluded.updated_at
+                """,
+                (normalized_leave_type, prompt_text, _json(rules), 1 if enabled else 0, utc_now_iso()),
+            )
 
     def _row_to_task(self, row: sqlite3.Row) -> LeaveAuditTask:
         attachments = [

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from datetime import date
 from typing import Any
 
 
 NAME_FIELD_CANDIDATES = (
+    "name",
     "patient_name",
     "holder_name",
     "person_a_name",
@@ -46,6 +48,39 @@ RULE_CODE_ZH_MESSAGES = {
 }
 
 
+DEFAULT_FIELD_MAPPING_CONFIG: dict[str, list[str]] = {
+    "applicant_name": list(NAME_FIELD_CANDIDATES),
+    "related_person_name": list(RELATED_PERSON_FIELD_CANDIDATES),
+    "leave_start_date": list(START_DATE_FIELD_CANDIDATES),
+    "leave_end_date": list(END_DATE_FIELD_CANDIDATES),
+}
+
+DEFAULT_RULE_CONFIGS: dict[str, dict[str, Any]] = {
+    "MARRIAGE": {
+        "leave_type": "MARRIAGE",
+        "prompt_text": "核验婚假材料时，优先确认结婚登记日期、请假起止日期和请假人姓名是否满足公司婚假规则。",
+        "enabled": True,
+        "rules": [
+            {
+                "type": "date_window",
+                "rule_code": "marriage_registration_date_window",
+                "date_field": "registration_date",
+                "max_years": 1,
+                "on_fail": "REJECT",
+                "message": "marriage leave dates must be within one year after registration date",
+                "message_zh": "婚假日期必须在结婚登记日期起一年内",
+            },
+            {
+                "type": "required_name",
+                "rule_code": "marriage_applicant_name_present",
+                "on_fail": "REJECT",
+                "message": "marriage certificate must contain applicant name",
+                "message_zh": "婚假附件必须出现请假人姓名",
+            },
+        ],
+    }
+}
+
 
 def _field_map(analysis: dict[str, Any]) -> dict[str, Any]:
     return {field.get("name"): field.get("value") for field in analysis.get("extracted_fields", []) if isinstance(field, dict)}
@@ -58,6 +93,30 @@ def _pick_first(fields: dict[str, Any], names: tuple[str, ...]) -> Any:
         if value not in (None, "", []):
             return value
     return None
+
+
+def _candidates(config: dict[str, list[str]] | None, key: str, fallback: tuple[str, ...]) -> tuple[str, ...]:
+    configured = (config or {}).get(key)
+    if configured:
+        return tuple(str(item) for item in configured if str(item).strip())
+    return fallback
+
+
+def _parse_date(value: Any) -> date | None:
+    if value in (None, "", []):
+        return None
+    text = str(value).strip()[:10]
+    try:
+        return date.fromisoformat(text)
+    except ValueError:
+        return None
+
+
+def _add_years(value: date, years: int) -> date:
+    try:
+        return value.replace(year=value.year + years)
+    except ValueError:
+        return value.replace(month=2, day=28, year=value.year + years)
 
 
 
@@ -73,6 +132,69 @@ def _build_rule(rule_code: str, passed: bool, severity: str, score_delta: int, m
         "display_message": message_zh,
         "evidence": evidence,
     }
+
+
+def _build_config_rule(rule: dict[str, Any], passed: bool, evidence: dict[str, Any]) -> dict[str, Any]:
+    rule_code = str(rule.get("rule_code") or rule.get("type") or "configured_rule")
+    on_fail = str(rule.get("on_fail") or "REVIEW").upper()
+    severity = "error" if on_fail == "REJECT" else "warning"
+    message = str(rule.get("message") or rule_code)
+    result = _build_rule(rule_code, passed, severity if not passed else "info", int(rule.get("score_delta") or (80 if severity == "error" else 35)), message, evidence)
+    if rule.get("message_zh"):
+        result["message_zh"] = str(rule["message_zh"])
+        result["display_message"] = str(rule["message_zh"])
+    return result
+
+
+def _apply_configured_rules(
+    request: dict[str, Any],
+    fields: dict[str, Any],
+    extracted_name: Any,
+    rule_config: dict[str, Any] | None,
+) -> tuple[list[dict[str, Any]], str | None]:
+    if not rule_config or not rule_config.get("enabled", True):
+        return [], None
+    configured_results: list[dict[str, Any]] = []
+    forced_status: str | None = None
+    for rule in rule_config.get("rules") or []:
+        if not isinstance(rule, dict):
+            continue
+        rule_type = str(rule.get("type") or "")
+        passed = True
+        evidence: dict[str, Any] = {}
+        if rule_type == "date_window":
+            date_field = str(rule.get("date_field") or "registration_date")
+            registration_date = _parse_date(fields.get(date_field))
+            leave_start_date = _parse_date(request.get("leave_start_date"))
+            leave_end_date = _parse_date(request.get("leave_end_date"))
+            max_years = int(rule.get("max_years") or 1)
+            window_end = _add_years(registration_date, max_years) if registration_date else None
+            passed = bool(registration_date and leave_start_date and leave_end_date and leave_start_date >= registration_date and window_end and leave_end_date <= window_end)
+            evidence = {
+                "date_field": date_field,
+                "registration_date": fields.get(date_field),
+                "leave_start_date": request.get("leave_start_date"),
+                "leave_end_date": request.get("leave_end_date"),
+                "window_end_date": window_end.isoformat() if window_end else None,
+            }
+        elif rule_type == "required_name":
+            applicant_name = request.get("applicant_name")
+            configured_candidates = tuple(str(item) for item in rule.get("candidates", []) if str(item).strip())
+            candidate_value = _pick_first(fields, configured_candidates) if configured_candidates else extracted_name
+            values = [str(value) for value in fields.values() if value not in (None, "", [])]
+            passed = bool(applicant_name and (candidate_value == applicant_name or str(applicant_name) in values))
+            evidence = {
+                "applicant_name": applicant_name,
+                "extracted_name": candidate_value,
+                "configured_candidates": list(configured_candidates),
+            }
+        else:
+            continue
+        result = _build_config_rule(rule, passed, evidence)
+        configured_results.append(result)
+        if not passed and str(rule.get("on_fail") or "REVIEW").upper() == "REJECT":
+            forced_status = "REJECT"
+    return configured_results, forced_status
 
 
 def _build_auto_pass_readiness(verify_status: str, rule_results: list[dict[str, Any]]) -> dict[str, Any]:
@@ -184,7 +306,12 @@ def _apply_marriage_pass_gating(analysis: dict[str, Any], request: dict[str, Any
 
 
 
-def verify_attachment(analysis: dict[str, Any], request: dict[str, Any]) -> dict[str, Any]:
+def verify_attachment(
+    analysis: dict[str, Any],
+    request: dict[str, Any],
+    field_mapping_config: dict[str, list[str]] | None = None,
+    rule_config: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     fields = _field_map(analysis)
     classification = analysis.get("classification_evidence") or {}
     predicted_type = classification.get("attachment_label") or "UNKNOWN"
@@ -192,12 +319,12 @@ def verify_attachment(analysis: dict[str, Any], request: dict[str, Any]) -> dict
     applicant_name = request.get("applicant_name")
     related_person_name = request.get("related_person_name")
     related_person_relation = request.get("related_person_relation")
-    extracted_name = _pick_first(fields, NAME_FIELD_CANDIDATES)
-    extracted_related_person_name = _pick_first(fields, RELATED_PERSON_FIELD_CANDIDATES)
+    extracted_name = _pick_first(fields, _candidates(field_mapping_config, "applicant_name", NAME_FIELD_CANDIDATES))
+    extracted_related_person_name = _pick_first(fields, _candidates(field_mapping_config, "related_person_name", RELATED_PERSON_FIELD_CANDIDATES))
     leave_start_date = request.get("leave_start_date")
     leave_end_date = request.get("leave_end_date")
-    extracted_start_date = _pick_first(fields, START_DATE_FIELD_CANDIDATES)
-    extracted_end_date = _pick_first(fields, END_DATE_FIELD_CANDIDATES)
+    extracted_start_date = _pick_first(fields, _candidates(field_mapping_config, "leave_start_date", START_DATE_FIELD_CANDIDATES))
+    extracted_end_date = _pick_first(fields, _candidates(field_mapping_config, "leave_end_date", END_DATE_FIELD_CANDIDATES))
 
     rule_results: list[dict[str, Any]] = []
 
@@ -225,11 +352,14 @@ def verify_attachment(analysis: dict[str, Any], request: dict[str, Any]) -> dict
         )
     )
 
+    configured_rules = (rule_config or {}).get("rules") or []
+    has_configured_date_window = any(isinstance(rule, dict) and rule.get("type") == "date_window" for rule in configured_rules)
     date_match = True
-    if leave_start_date and extracted_start_date and leave_start_date != extracted_start_date:
-        date_match = False
-    if leave_end_date and extracted_end_date and leave_end_date != extracted_end_date:
-        date_match = False
+    if not has_configured_date_window:
+        if leave_start_date and extracted_start_date and leave_start_date != extracted_start_date:
+            date_match = False
+        if leave_end_date and extracted_end_date and leave_end_date != extracted_end_date:
+            date_match = False
     rule_results.append(
         _build_rule(
             "leave_date_match",
@@ -262,6 +392,9 @@ def verify_attachment(analysis: dict[str, Any], request: dict[str, Any]) -> dict
         )
     )
 
+    configured_rule_results, forced_status = _apply_configured_rules(request, fields, extracted_name, rule_config)
+    rule_results.extend(configured_rule_results)
+
     base_risk = int(round(float((analysis.get("risk") or {}).get("score") or 0)))
     total_risk = min(100, base_risk + sum(rule["score_delta"] for rule in rule_results if not rule["passed"]))
     has_error = any((not rule["passed"]) and rule["severity"] == "error" for rule in rule_results)
@@ -276,6 +409,8 @@ def verify_attachment(analysis: dict[str, Any], request: dict[str, Any]) -> dict
 
     verify_status = _apply_sick_pass_gating(analysis, request, fields, verify_status)
     verify_status = _apply_marriage_pass_gating(analysis, request, fields, verify_status)
+    if forced_status:
+        verify_status = forced_status
 
     warnings = [rule["display_message"] for rule in rule_results if not rule["passed"]]
     request_evidence = dict(request)
@@ -294,6 +429,8 @@ def verify_attachment(analysis: dict[str, Any], request: dict[str, Any]) -> dict
             "classification": classification,
             "request": request_evidence,
             "fields": fields,
+            "field_mapping_config": field_mapping_config or DEFAULT_FIELD_MAPPING_CONFIG,
+            "rule_config": rule_config,
         },
         "needs_manual_review": verify_status != "PASS",
         "summary_message": f"{verify_status}: {predicted_type} vs expected {expected_types or ['UNSPECIFIED']}",

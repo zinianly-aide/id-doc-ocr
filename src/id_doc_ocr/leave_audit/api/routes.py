@@ -9,11 +9,12 @@ from fastapi.encoders import jsonable_encoder
 from id_doc_ocr.application.inference_service import InferenceService
 from id_doc_ocr.leave_audit.adapters.base import LeaveSystemAdapter
 from id_doc_ocr.leave_audit.adapters.factory import create_leave_system_adapter
-from id_doc_ocr.leave_audit.api.schemas import ReviewRequest
+from id_doc_ocr.leave_audit.api.schemas import FieldMappingUpdateRequest, ReviewRequest, RuleConfigUpdateRequest
 from id_doc_ocr.leave_audit.repository.sqlite_repository import SQLiteRepository
 from id_doc_ocr.leave_audit.service.audit_service import AuditService
 from id_doc_ocr.leave_audit.service.review_service import ReviewService
 from id_doc_ocr.leave_audit.service.task_service import TaskService
+from id_doc_ocr.verification.rules import DEFAULT_FIELD_MAPPING_CONFIG, DEFAULT_RULE_CONFIGS
 
 router = APIRouter(prefix="/leave-audit", tags=["leave-audit"])
 
@@ -52,6 +53,34 @@ def _review_to_dict(review) -> dict[str, Any]:
     payload = asdict(review)
     payload["decision"] = review.decision.value
     return payload
+
+
+def _merged_field_mappings(repository: SQLiteRepository) -> dict[str, list[str]]:
+    mappings = {key: list(values) for key, values in DEFAULT_FIELD_MAPPING_CONFIG.items()}
+    mappings.update(repository.get_field_mappings())
+    return mappings
+
+
+def _merged_rule_configs(repository: SQLiteRepository) -> list[dict[str, Any]]:
+    configs = {key: dict(value) for key, value in DEFAULT_RULE_CONFIGS.items()}
+    for item in repository.get_rule_configs():
+        configs[str(item["leave_type"]).upper()] = item
+    return list(configs.values())
+
+
+CONFIG_GUIDANCE = {
+    "field_mapping": [
+        "canonical_field 是系统内部字段，例如 applicant_name、related_person_name、leave_start_date、leave_end_date。",
+        "candidates 是 OCR/解析结果里可能出现的字段名，系统会按顺序取第一个非空值。",
+        "如果材料返回 name 字段，就把 name 加到 applicant_name 的 candidates 中。",
+    ],
+    "rule_config": [
+        "leave_type 使用假别编码，例如 MARRIAGE、SICK。",
+        "prompt_text 用于记录给 OCR/LLM 的业务提示词，可写清楚材料要点和审核口径。",
+        "rules 目前支持 date_window 和 required_name。date_window 可配置 date_field、max_years、on_fail；required_name 可配置 candidates、on_fail。",
+        "on_fail=REJECT 会直接驳回；否则进入 REVIEW。",
+    ],
+}
 
 
 @router.get("/tasks")
@@ -120,3 +149,34 @@ def callback_task(request: Request, request_id: str) -> dict[str, Any]:
 @router.get("/stats")
 def stats(request: Request) -> dict[str, Any]:
     return {"stats": _repo(request).stats()}
+
+
+@router.get("/config")
+def get_config(request: Request) -> dict[str, Any]:
+    repository = _repo(request)
+    return jsonable_encoder(
+        {
+            "field_mappings": [
+                {"canonical_field": key, "candidates": value}
+                for key, value in _merged_field_mappings(repository).items()
+            ],
+            "rule_configs": _merged_rule_configs(repository),
+            "guidance": CONFIG_GUIDANCE,
+        }
+    )
+
+
+@router.put("/config/field-mappings")
+def update_field_mappings(request: Request, body: FieldMappingUpdateRequest) -> dict[str, Any]:
+    repository = _repo(request)
+    for item in body.mappings:
+        repository.save_field_mapping(item.canonical_field, item.candidates)
+    return jsonable_encoder({"field_mappings": [{"canonical_field": key, "candidates": value} for key, value in _merged_field_mappings(repository).items()]})
+
+
+@router.put("/config/rules")
+def update_rule_configs(request: Request, body: RuleConfigUpdateRequest) -> dict[str, Any]:
+    repository = _repo(request)
+    for item in body.configs:
+        repository.save_rule_config(item.leave_type, item.prompt_text, item.rules, item.enabled)
+    return jsonable_encoder({"rule_configs": _merged_rule_configs(repository)})

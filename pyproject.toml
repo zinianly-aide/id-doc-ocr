@@ -34,6 +34,9 @@ paddle = [
   "paddleocr>=2.7.3,<4.0.0",
   "pillow>=10.0,<12.0",
 ]
+oracle = [
+  "oracledb>=2.0,<4.0",
+]
 
 [project.scripts]
 id-doc-ocr = "id_doc_ocr.cli.main:main"

@@ -1,4 +1,6 @@
 from pathlib import Path
+import json
+import sqlite3
 
 from fastapi.testclient import TestClient
 
@@ -63,3 +65,80 @@ def test_leave_audit_dify_run_requires_config_without_mutating_task(tmp_path, mo
     assert detail.status_code == 200
     assert detail.json()["task"]["status"] == "PULLED"
     assert detail.json()["result"] is None
+
+
+def test_leave_audit_config_api(tmp_path):
+    client = build_client(tmp_path)
+
+    config = client.get("/leave-audit/config")
+    assert config.status_code == 200
+    assert any(item["canonical_field"] == "applicant_name" for item in config.json()["field_mappings"])
+    assert "field_mapping" in config.json()["guidance"]
+
+    update_mapping = client.put(
+        "/leave-audit/config/field-mappings",
+        json={"mappings": [{"canonical_field": "applicant_name", "candidates": ["name", "patient_name"]}]},
+    )
+    assert update_mapping.status_code == 200
+    applicant_mapping = next(item for item in update_mapping.json()["field_mappings"] if item["canonical_field"] == "applicant_name")
+    assert applicant_mapping["candidates"] == ["name", "patient_name"]
+
+    update_rules = client.put(
+        "/leave-audit/config/rules",
+        json={
+            "configs": [
+                {
+                    "leave_type": "MARRIAGE",
+                    "prompt_text": "婚假核验",
+                    "enabled": True,
+                    "rules": [{"type": "required_name", "rule_code": "must_have_name", "on_fail": "REJECT"}],
+                }
+            ]
+        },
+    )
+    assert update_rules.status_code == 200
+    marriage_config = next(item for item in update_rules.json()["rule_configs"] if item["leave_type"] == "MARRIAGE")
+    assert marriage_config["prompt_text"] == "婚假核验"
+
+
+def test_leave_audit_sync_from_oracle_tna_sqlite_source(tmp_path, monkeypatch):
+    source_db = tmp_path / "oracle_tna.db"
+    payload = {
+        "request_id": "LV-TNA-001",
+        "leave_type": "SICK",
+        "employee_id": "E001",
+        "employee_name": "张三",
+        "leave_start_date": "2026-04-01",
+        "leave_end_date": "2026-04-03",
+        "attachments": [
+            {
+                "attachment_id": "ATT-TNA-001",
+                "attachment_url": "./testfile/test1.png",
+                "filename": "sick-pass.jpg",
+                "content_type": "image/jpeg",
+                "plugin_name": "diagnosis_proof",
+                "metadata": {},
+            }
+        ],
+    }
+    with sqlite3.connect(source_db) as conn:
+        conn.execute("CREATE TABLE tna_leave_audit_task (payload_json TEXT NOT NULL)")
+        conn.execute("INSERT INTO tna_leave_audit_task (payload_json) VALUES (?)", (json.dumps(payload, ensure_ascii=False),))
+
+    monkeypatch.setenv("ID_DOC_OCR_ORACLE_TNA_DB", str(source_db))
+    client = build_client(tmp_path)
+    sync = client.post("/leave-audit/sync")
+    assert sync.status_code == 200
+    assert sync.json()["tasks"][0]["request_id"] == "LV-TNA-001"
+
+    detail = client.get("/leave-audit/tasks/LV-TNA-001")
+    assert detail.status_code == 200
+    assert detail.json()["task"]["employee_id"] == "E001"
+    assert detail.json()["task"]["attachments"][0] == {
+        "attachment_id": "ATT-TNA-001",
+        "attachment_url": "./testfile/test1.png",
+        "filename": "sick-pass.jpg",
+        "content_type": "image/jpeg",
+        "plugin_name": "diagnosis_proof",
+        "metadata": {},
+    }

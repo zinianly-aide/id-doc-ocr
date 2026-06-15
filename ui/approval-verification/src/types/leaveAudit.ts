@@ -127,6 +127,30 @@ export interface LeaveAuditStatsResponse {
   stats: Partial<Record<LeaveAuditStatus, number>>;
 }
 
+export interface FieldMappingItem {
+  canonical_field: string;
+  candidates: string[];
+}
+
+export interface RuleConfigItem {
+  leave_type: string;
+  prompt_text: string;
+  rules: Array<Record<string, unknown>>;
+  enabled: boolean;
+  updated_at?: string;
+}
+
+export interface LeaveAuditConfigGuidance {
+  field_mapping: string[];
+  rule_config: string[];
+}
+
+export interface LeaveAuditConfigResponse {
+  field_mappings: FieldMappingItem[];
+  rule_configs: RuleConfigItem[];
+  guidance: LeaveAuditConfigGuidance;
+}
+
 export interface OcrLine {
   text?: string;
   score?: number;

@@ -5,6 +5,7 @@ import time
 from typing import Any
 
 from id_doc_ocr.leave_audit.adapters.base import LeaveSystemAdapter
+from id_doc_ocr.leave_audit.adapters.oracle_tna import OracleTNALeaveSystemAdapter, OracleTNASource, oracle_tna_sync_configured
 from id_doc_ocr.leave_audit.domain.enums import LeaveAuditStatus
 from id_doc_ocr.leave_audit.domain.models import LeaveAuditTask
 from id_doc_ocr.leave_audit.repository.sqlite_repository import SQLiteRepository
@@ -28,7 +29,10 @@ class TaskService:
         error_type = None
         error_message = None
         try:
-            tasks = self.adapter.fetch_pending_attachments()
+            if isinstance(self.adapter, OracleTNALeaveSystemAdapter):
+                tasks = self.adapter.fetch_pending_attachments()
+            else:
+                tasks = OracleTNASource().fetch_tasks() if oracle_tna_sync_configured() else self.adapter.fetch_pending_attachments()
             for task in tasks:
                 task.status = LeaveAuditStatus.PULLED
                 self.repository.save_task(task)
