@@ -207,6 +207,10 @@ function getFieldParserBackend(result?: LeaveAuditResult | null): string {
   return String(classification.field_parser_backend ?? artifacts.field_parser_backend ?? "-");
 }
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+
 function AnalysisExplanation({ result }: { result?: LeaveAuditResult | null }) {
   const analysis = result?.analysis_json;
   const verification = result?.verification_json;
@@ -250,6 +254,39 @@ function AnalysisExplanation({ result }: { result?: LeaveAuditResult | null }) {
   );
 }
 
+function PromptTraceView({ result }: { result?: LeaveAuditResult | null }) {
+  const artifacts = asRecord(result?.analysis_json?.raw_artifacts);
+  const promptContext = asRecord(artifacts.prompt_context);
+  const promptTexts = asRecord(promptContext.prompt_texts);
+
+  if (!Object.keys(promptContext).length) {
+    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无提示词追踪信息" />;
+  }
+
+  return (
+    <Space direction="vertical" size={12} className="leave-audit-full-width">
+      <Descriptions column={1} size="small">
+        <Descriptions.Item label="识别类型">{renderValue(promptContext.recognition_type)}</Descriptions.Item>
+        <Descriptions.Item label="假别">{renderValue(promptContext.leave_type)}</Descriptions.Item>
+        <Descriptions.Item label="字段抽取提示">{renderValue(promptContext.custom_prompt)}</Descriptions.Item>
+        <Descriptions.Item label="审核口径提示">{renderValue(promptContext.verification_prompt)}</Descriptions.Item>
+      </Descriptions>
+      {Object.keys(promptTexts).length ? (
+        <Collapse
+          size="small"
+          items={[
+            {
+              key: "prompt_texts",
+              label: "全部提示词类型",
+              children: <JsonBlock value={promptTexts} />,
+            },
+          ]}
+        />
+      ) : null}
+    </Space>
+  );
+}
+
 function ExtractedFieldsView({ result }: { result?: LeaveAuditResult | null }) {
   const analysisFields = Array.isArray(result?.analysis_json?.extracted_fields)
     ? result?.analysis_json?.extracted_fields ?? []
@@ -262,16 +299,20 @@ function ExtractedFieldsView({ result }: { result?: LeaveAuditResult | null }) {
         value: renderValue(field.value),
         confidence: typeof field.confidence === "number" ? field.confidence.toFixed(2) : "-",
         source: renderValue(field.source),
+        document_page: renderValue(field.document_page),
+        source_document: renderValue(field.source_document),
         matched: field.matched === undefined ? "-" : field.matched ? "已匹配" : "未匹配",
       }))
     : Object.entries((verificationFields ?? {}) as Record<string, unknown>).map(([name, value]) => ({
         key: name,
         name,
         value: renderValue(value),
-        confidence: "-",
-        source: "verification",
-        matched: "-",
-      }));
+      confidence: "-",
+      source: "verification",
+      document_page: "-",
+      source_document: "-",
+      matched: "-",
+    }));
 
   if (!rows.length) {
     return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无提取字段" />;
@@ -287,6 +328,8 @@ function ExtractedFieldsView({ result }: { result?: LeaveAuditResult | null }) {
         { title: "值", dataIndex: "value" },
         { title: "置信度", dataIndex: "confidence", width: 90 },
         { title: "来源", dataIndex: "source", width: 120 },
+        { title: "页码", dataIndex: "document_page", width: 80 },
+        { title: "源文件", dataIndex: "source_document", width: 140 },
         { title: "证据匹配", dataIndex: "matched", width: 100 },
       ]}
     />
@@ -586,6 +629,10 @@ export function LeaveAuditWorkbench() {
 
             <Card title="解析说明" size="small">
               <AnalysisExplanation result={selectedResult} />
+            </Card>
+
+            <Card title="提示词追踪" size="small">
+              <PromptTraceView result={selectedResult} />
             </Card>
 
             <Card title="核验结论" size="small">
