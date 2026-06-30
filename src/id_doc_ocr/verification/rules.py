@@ -112,6 +112,37 @@ def _parse_date(value: Any) -> date | None:
         return None
 
 
+def _field_names(rule: dict[str, Any], *keys: str, default: str | None = None) -> list[str]:
+    for key in keys:
+        value = rule.get(key)
+        if isinstance(value, list):
+            return [str(item).strip() for item in value if str(item).strip()]
+        if isinstance(value, str) and value.strip():
+            return [item.strip() for item in value.split(",") if item.strip()]
+    return [default] if default else []
+
+
+def _rule_expected_value(rule: dict[str, Any], request: dict[str, Any]) -> Any:
+    if "expected" in rule:
+        return rule.get("expected")
+    if "expected_value" in rule:
+        return rule.get("expected_value")
+    request_field = rule.get("request_field")
+    if request_field:
+        return request.get(str(request_field))
+    return None
+
+
+def _contains_text(value: Any, expected: Any) -> bool:
+    if expected in (None, "", []):
+        return False
+    if isinstance(expected, list):
+        return any(_contains_text(value, item) for item in expected)
+    if isinstance(value, list):
+        return any(_contains_text(item, expected) for item in value)
+    return str(expected) in str(value or "")
+
+
 def _add_years(value: date, years: int) -> date:
     try:
         return value.replace(year=value.year + years)
@@ -187,6 +218,69 @@ def _apply_configured_rules(
                 "applicant_name": applicant_name,
                 "extracted_name": candidate_value,
                 "configured_candidates": list(configured_candidates),
+            }
+        elif rule_type == "required_field":
+            required_fields = _field_names(rule, "fields", "field")
+            mode = str(rule.get("mode") or "all").lower()
+            present = {field_name: fields.get(field_name) not in (None, "", []) for field_name in required_fields}
+            passed = any(present.values()) if mode == "any" else all(present.values())
+            evidence = {
+                "required_fields": required_fields,
+                "mode": mode,
+                "present": present,
+            }
+        elif rule_type == "date_coverage":
+            document_start_field = str(rule.get("document_start_field") or rule.get("start_field") or "rest_start_date")
+            document_end_field = str(rule.get("document_end_field") or rule.get("end_field") or "rest_end_date")
+            request_start_field = str(rule.get("request_start_field") or "leave_start_date")
+            request_end_field = str(rule.get("request_end_field") or "leave_end_date")
+            document_start_date = _parse_date(fields.get(document_start_field))
+            document_end_date = _parse_date(fields.get(document_end_field))
+            request_start_date = _parse_date(request.get(request_start_field))
+            request_end_date = _parse_date(request.get(request_end_field))
+            passed = bool(
+                document_start_date
+                and document_end_date
+                and request_start_date
+                and request_end_date
+                and document_start_date <= request_start_date
+                and document_end_date >= request_end_date
+            )
+            evidence = {
+                "document_start_field": document_start_field,
+                "document_end_field": document_end_field,
+                "request_start_field": request_start_field,
+                "request_end_field": request_end_field,
+                "document_start_date": fields.get(document_start_field),
+                "document_end_date": fields.get(document_end_field),
+                "request_start_date": request.get(request_start_field),
+                "request_end_date": request.get(request_end_field),
+            }
+        elif rule_type == "field_equals":
+            field_name = str(rule.get("field") or "")
+            expected = _rule_expected_value(rule, request)
+            actual = fields.get(field_name)
+            passed = bool(field_name and actual == expected)
+            evidence = {
+                "field": field_name,
+                "actual": actual,
+                "expected": expected,
+                "request_field": rule.get("request_field"),
+            }
+        elif rule_type == "field_contains":
+            field_name = str(rule.get("field") or "")
+            expected = rule.get("contains")
+            if expected is None:
+                expected = rule.get("any_of")
+            if expected is None:
+                expected = _rule_expected_value(rule, request)
+            actual = fields.get(field_name)
+            passed = bool(field_name and _contains_text(actual, expected))
+            evidence = {
+                "field": field_name,
+                "actual": actual,
+                "expected": expected,
+                "request_field": rule.get("request_field"),
             }
         else:
             continue
@@ -354,8 +448,9 @@ def verify_attachment(
 
     configured_rules = (rule_config or {}).get("rules") or []
     has_configured_date_window = any(isinstance(rule, dict) and rule.get("type") == "date_window" for rule in configured_rules)
+    has_configured_date_coverage = any(isinstance(rule, dict) and rule.get("type") == "date_coverage" for rule in configured_rules)
     date_match = True
-    if not has_configured_date_window:
+    if not has_configured_date_window and not has_configured_date_coverage:
         if leave_start_date and extracted_start_date and leave_start_date != extracted_start_date:
             date_match = False
         if leave_end_date and extracted_end_date and leave_end_date != extracted_end_date:

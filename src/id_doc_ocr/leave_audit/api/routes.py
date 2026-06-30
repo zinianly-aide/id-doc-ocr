@@ -82,7 +82,7 @@ CONFIG_GUIDANCE = {
     "rule_config": [
         "leave_type 使用假别编码，例如 MARRIAGE、SICK。",
         "prompt_text 兼容旧配置：未配置 prompt_config.field_extraction 时，会作为 Dify 字段抽取提示词兜底。",
-        "rules 目前支持 date_window 和 required_name。date_window 可配置 date_field、max_years、on_fail；required_name 可配置 candidates、on_fail。",
+        "rules 支持 date_window、required_name、required_field、date_coverage、field_equals、field_contains。",
         "on_fail=REJECT 会直接驳回；否则进入 REVIEW。",
     ],
     "prompt_config": [
