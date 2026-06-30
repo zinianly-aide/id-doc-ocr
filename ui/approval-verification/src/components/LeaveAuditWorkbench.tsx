@@ -287,6 +287,91 @@ function PromptTraceView({ result }: { result?: LeaveAuditResult | null }) {
   );
 }
 
+function getAttachmentResultItems(result?: LeaveAuditResult | null): Record<string, unknown>[] {
+  const verificationItems = result?.verification_json?.attachment_results;
+  if (Array.isArray(verificationItems)) {
+    return verificationItems.filter((item) => item && typeof item === "object" && !Array.isArray(item)) as Record<string, unknown>[];
+  }
+
+  const artifacts = asRecord(result?.analysis_json?.raw_artifacts);
+  const artifactItems = artifacts.attachment_results;
+  if (Array.isArray(artifactItems)) {
+    return artifactItems.filter((item) => item && typeof item === "object" && !Array.isArray(item)) as Record<string, unknown>[];
+  }
+
+  return [];
+}
+
+function AttachmentResultsView({ result }: { result?: LeaveAuditResult | null }) {
+  const selectedAttachmentId = renderValue(result?.verification_json?.selected_attachment_id);
+  const rows = getAttachmentResultItems(result).map((item, index) => {
+    const attachmentId = renderValue(item.attachment_id);
+    return {
+      key: `${attachmentId}-${index}`,
+      attachment_id: attachmentId,
+      filename: renderValue(item.filename),
+      plugin_name: renderValue(item.plugin_name),
+      content_type: renderValue(item.content_type),
+      status: renderValue(item.status),
+      verify_status: renderValue(item.verify_status),
+      matched_attachment_type: renderValue(item.matched_attachment_type),
+      risk_level: renderValue(item.risk_level),
+      error_message: renderValue(item.error_message),
+      selected: selectedAttachmentId !== "-" && attachmentId === selectedAttachmentId,
+    };
+  });
+
+  if (!rows.length) {
+    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无多附件处理结果" />;
+  }
+
+  return (
+    <Table
+      size="small"
+      pagination={false}
+      dataSource={rows}
+      scroll={{ x: 900 }}
+      columns={[
+        {
+          title: "附件",
+          dataIndex: "filename",
+          width: 190,
+          render: (value: string, row) => (
+            <Space direction="vertical" size={2}>
+              <Text>{value}</Text>
+              <Space size={4} wrap>
+                <Text type="secondary">{row.attachment_id}</Text>
+                {row.selected ? <Tag color="blue">已选用</Tag> : null}
+              </Space>
+            </Space>
+          ),
+        },
+        { title: "插件", dataIndex: "plugin_name", width: 150 },
+        {
+          title: "处理状态",
+          dataIndex: "status",
+          width: 110,
+          render: (value: string) => value === "-" ? "-" : <Tag color={statusColor(value)}>{value}</Tag>,
+        },
+        {
+          title: "核验状态",
+          dataIndex: "verify_status",
+          width: 110,
+          render: (value: string) => value === "-" ? "-" : <Tag color={statusColor(value)}>{value}</Tag>,
+        },
+        { title: "材料类型", dataIndex: "matched_attachment_type", width: 170 },
+        {
+          title: "风险",
+          dataIndex: "risk_level",
+          width: 90,
+          render: (value: string) => value === "-" ? "-" : <Tag color={riskColor(value)}>{value}</Tag>,
+        },
+        { title: "错误信息", dataIndex: "error_message", width: 220 },
+      ]}
+    />
+  );
+}
+
 function ExtractedFieldsView({ result }: { result?: LeaveAuditResult | null }) {
   const analysisFields = Array.isArray(result?.analysis_json?.extracted_fields)
     ? result?.analysis_json?.extracted_fields ?? []
@@ -625,6 +710,10 @@ export function LeaveAuditWorkbench() {
                 <Descriptions.Item label="plugin_name">{selectedTask.attachments?.[0]?.plugin_name ?? selectedResult?.plugin_name ?? "-"}</Descriptions.Item>
                 <Descriptions.Item label="content_type">{selectedTask.attachments?.[0]?.content_type ?? "-"}</Descriptions.Item>
               </Descriptions>
+            </Card>
+
+            <Card title="附件处理结果" size="small">
+              <AttachmentResultsView result={selectedResult} />
             </Card>
 
             <Card title="解析说明" size="small">
