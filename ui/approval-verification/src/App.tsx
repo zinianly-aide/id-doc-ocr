@@ -6,6 +6,7 @@ import "dayjs/locale/zh-cn";
 import { DifyOcrChatbot } from "@/components/DifyOcrChatbot";
 import { FieldMappingConfigPage } from "@/components/FieldMappingConfigPage";
 import { LeaveAuditWorkbench } from "@/components/LeaveAuditWorkbench";
+import { PromptConfigPage } from "@/components/PromptConfigPage";
 import { RuleConfigPage } from "@/components/RuleConfigPage";
 
 dayjs.locale("zh-cn");
@@ -29,6 +30,7 @@ export default function App() {
         items={[
           { key: "workbench", label: "审核工作台", children: <LeaveAuditWorkbench /> },
           { key: "field-mapping", label: "字段映射", children: <FieldMappingConfigPage /> },
+          { key: "prompts", label: "提示词配置", children: <PromptConfigPage /> },
           { key: "rules", label: "规则配置", children: <RuleConfigPage /> },
         ]}
       />
