@@ -74,6 +74,8 @@ def test_leave_audit_config_api(tmp_path):
     assert config.status_code == 200
     assert any(item["canonical_field"] == "applicant_name" for item in config.json()["field_mappings"])
     assert "field_mapping" in config.json()["guidance"]
+    assert "prompt_config" in config.json()["guidance"]
+    assert config.json()["prompt_configs"] == []
 
     update_mapping = client.put(
         "/leave-audit/config/field-mappings",
@@ -99,6 +101,24 @@ def test_leave_audit_config_api(tmp_path):
     assert update_rules.status_code == 200
     marriage_config = next(item for item in update_rules.json()["rule_configs"] if item["leave_type"] == "MARRIAGE")
     assert marriage_config["prompt_text"] == "婚假核验"
+
+    update_prompts = client.put(
+        "/leave-audit/config/prompts",
+        json={
+            "configs": [
+                {
+                    "recognition_type": "diagnosis_proof",
+                    "prompt_type": "field_extraction",
+                    "prompt_text": "只抽取病假证明字段",
+                    "enabled": True,
+                }
+            ]
+        },
+    )
+    assert update_prompts.status_code == 200
+    assert update_prompts.json()["prompt_configs"][0]["recognition_type"] == "diagnosis_proof"
+    assert update_prompts.json()["prompt_configs"][0]["prompt_type"] == "field_extraction"
+    assert update_prompts.json()["prompt_configs"][0]["prompt_text"] == "只抽取病假证明字段"
 
 
 def test_leave_audit_sync_from_oracle_tna_sqlite_source(tmp_path, monkeypatch):

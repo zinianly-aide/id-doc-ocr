@@ -140,14 +140,24 @@ export interface RuleConfigItem {
   updated_at?: string;
 }
 
+export interface PromptConfigItem {
+  recognition_type: string;
+  prompt_type: string;
+  prompt_text: string;
+  enabled: boolean;
+  updated_at?: string;
+}
+
 export interface LeaveAuditConfigGuidance {
   field_mapping: string[];
   rule_config: string[];
+  prompt_config: string[];
 }
 
 export interface LeaveAuditConfigResponse {
   field_mappings: FieldMappingItem[];
   rule_configs: RuleConfigItem[];
+  prompt_configs: PromptConfigItem[];
   guidance: LeaveAuditConfigGuidance;
 }
 

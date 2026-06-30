@@ -234,6 +234,7 @@ class DemoPipelineRunner:
         plugin_name: str,
         image: bytes | str | Path,
         fields: dict | None = None,
+        prompt_context: dict[str, Any] | None = None,
         sample_id: str | None = None,
         source_name: str | None = None,
         source_kind: str | None = None,
@@ -247,7 +248,7 @@ class DemoPipelineRunner:
         rectify_result = self.rectify.process(image, detection=detector_result.primary)
         rectified_image = rectify_result.image
         ocr_result = self.ocr.infer(rectified_image)
-        parsed_fields = self.parse_fields(plugin, ocr_result)
+        parsed_fields = self.parse_fields(plugin, ocr_result, prompt_context=prompt_context)
         merged_fields = {**parsed_fields, **provided_fields}
         vlm_result = self.vlm.infer(rectified_image)
         vlm_backend_name = getattr(self.vlm, "info", None).name if getattr(self.vlm, "info", None) else self.vlm_backend
@@ -329,11 +330,11 @@ class DemoPipelineRunner:
             )
         return result
 
-    def parse_fields(self, plugin: Any, ocr_result: dict[str, Any]) -> dict[str, Any]:
+    def parse_fields(self, plugin: Any, ocr_result: dict[str, Any], prompt_context: dict[str, Any] | None = None) -> dict[str, Any]:
         if self.field_parser_backend == "dify":
             if self.field_parser is None:
                 self.field_parser = DifyFieldParser()
-            return self.field_parser.parse(plugin=plugin, ocr_result=ocr_result)
+            return self.field_parser.parse(plugin=plugin, ocr_result=ocr_result, prompt_context=prompt_context)
         return self.parse_plugin_fields(plugin, ocr_result)
 
     def parse_plugin_fields(self, plugin: Any, ocr_result: dict[str, Any]) -> dict[str, Any]:

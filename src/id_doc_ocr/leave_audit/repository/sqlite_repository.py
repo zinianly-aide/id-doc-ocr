@@ -81,6 +81,14 @@ class SQLiteRepository:
                     enabled INTEGER NOT NULL DEFAULT 1,
                     updated_at TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS leave_audit_prompt_config (
+                    recognition_type TEXT NOT NULL,
+                    prompt_type TEXT NOT NULL,
+                    prompt_text TEXT NOT NULL,
+                    enabled INTEGER NOT NULL DEFAULT 1,
+                    updated_at TEXT NOT NULL,
+                    PRIMARY KEY (recognition_type, prompt_type)
+                );
                 """
             )
 
@@ -281,6 +289,65 @@ class SQLiteRepository:
                     updated_at=excluded.updated_at
                 """,
                 (normalized_leave_type, prompt_text, _json(rules), 1 if enabled else 0, utc_now_iso()),
+            )
+
+    def get_prompt_configs(self) -> list[dict[str, Any]]:
+        with self.connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT recognition_type, prompt_type, prompt_text, enabled, updated_at
+                FROM leave_audit_prompt_config
+                ORDER BY recognition_type, prompt_type
+                """
+            ).fetchall()
+        return [
+            {
+                "recognition_type": row["recognition_type"],
+                "prompt_type": row["prompt_type"],
+                "prompt_text": row["prompt_text"],
+                "enabled": bool(row["enabled"]),
+                "updated_at": row["updated_at"],
+            }
+            for row in rows
+        ]
+
+    def get_effective_prompt_texts(self, recognition_type: str) -> dict[str, str]:
+        normalized = str(recognition_type).strip()
+        with self.connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT recognition_type, prompt_type, prompt_text
+                FROM leave_audit_prompt_config
+                WHERE enabled = 1 AND recognition_type IN ('*', ?)
+                ORDER BY CASE WHEN recognition_type = '*' THEN 0 ELSE 1 END, prompt_type
+                """,
+                (normalized,),
+            ).fetchall()
+        prompts: dict[str, str] = {}
+        for row in rows:
+            text = str(row["prompt_text"] or "").strip()
+            if text:
+                prompts[str(row["prompt_type"])] = text
+        return prompts
+
+    def save_prompt_config(self, recognition_type: str, prompt_type: str, prompt_text: str, enabled: bool = True) -> None:
+        normalized_recognition_type = str(recognition_type).strip()
+        normalized_prompt_type = str(prompt_type).strip()
+        if not normalized_recognition_type:
+            raise ValueError("recognition_type is required")
+        if not normalized_prompt_type:
+            raise ValueError("prompt_type is required")
+        with self.connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO leave_audit_prompt_config (recognition_type, prompt_type, prompt_text, enabled, updated_at)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(recognition_type, prompt_type) DO UPDATE SET
+                    prompt_text=excluded.prompt_text,
+                    enabled=excluded.enabled,
+                    updated_at=excluded.updated_at
+                """,
+                (normalized_recognition_type, normalized_prompt_type, prompt_text, 1 if enabled else 0, utc_now_iso()),
             )
 
     def _row_to_task(self, row: sqlite3.Row) -> LeaveAuditTask:

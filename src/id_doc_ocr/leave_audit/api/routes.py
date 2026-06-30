@@ -9,7 +9,12 @@ from fastapi.encoders import jsonable_encoder
 from id_doc_ocr.application.inference_service import InferenceService
 from id_doc_ocr.leave_audit.adapters.base import LeaveSystemAdapter
 from id_doc_ocr.leave_audit.adapters.factory import create_leave_system_adapter
-from id_doc_ocr.leave_audit.api.schemas import FieldMappingUpdateRequest, ReviewRequest, RuleConfigUpdateRequest
+from id_doc_ocr.leave_audit.api.schemas import (
+    FieldMappingUpdateRequest,
+    PromptConfigUpdateRequest,
+    ReviewRequest,
+    RuleConfigUpdateRequest,
+)
 from id_doc_ocr.leave_audit.repository.sqlite_repository import SQLiteRepository
 from id_doc_ocr.leave_audit.service.audit_service import AuditService
 from id_doc_ocr.leave_audit.service.review_service import ReviewService
@@ -76,9 +81,15 @@ CONFIG_GUIDANCE = {
     ],
     "rule_config": [
         "leave_type 使用假别编码，例如 MARRIAGE、SICK。",
-        "prompt_text 用于记录给 OCR/LLM 的业务提示词，可写清楚材料要点和审核口径。",
+        "prompt_text 兼容旧配置：未配置 prompt_config.field_extraction 时，会作为 Dify 字段抽取提示词兜底。",
         "rules 目前支持 date_window 和 required_name。date_window 可配置 date_field、max_years、on_fail；required_name 可配置 candidates、on_fail。",
         "on_fail=REJECT 会直接驳回；否则进入 REVIEW。",
+    ],
+    "prompt_config": [
+        "recognition_type 使用识别插件名，例如 diagnosis_proof、marriage_certificate；也可以用 * 配全局默认。",
+        "prompt_type=field_extraction 会传给 Dify 字段解析；workflow 可读取 inputs.custom_prompt，chat/completion 会拼进 query。",
+        "prompt_type=verification 用于记录审核口径，并会进入 prompt_texts；当前规则审核仍以 rules JSON 为准。",
+        "prompt_type=review_summary、qa_assistant 可先用于沉淀文案，后续接入 LLM 复核或问答时复用。",
     ],
 }
 
@@ -161,6 +172,7 @@ def get_config(request: Request) -> dict[str, Any]:
                 for key, value in _merged_field_mappings(repository).items()
             ],
             "rule_configs": _merged_rule_configs(repository),
+            "prompt_configs": repository.get_prompt_configs(),
             "guidance": CONFIG_GUIDANCE,
         }
     )
@@ -180,3 +192,11 @@ def update_rule_configs(request: Request, body: RuleConfigUpdateRequest) -> dict
     for item in body.configs:
         repository.save_rule_config(item.leave_type, item.prompt_text, item.rules, item.enabled)
     return jsonable_encoder({"rule_configs": _merged_rule_configs(repository)})
+
+
+@router.put("/config/prompts")
+def update_prompt_configs(request: Request, body: PromptConfigUpdateRequest) -> dict[str, Any]:
+    repository = _repo(request)
+    for item in body.configs:
+        repository.save_prompt_config(item.recognition_type, item.prompt_type, item.prompt_text, item.enabled)
+    return jsonable_encoder({"prompt_configs": repository.get_prompt_configs()})

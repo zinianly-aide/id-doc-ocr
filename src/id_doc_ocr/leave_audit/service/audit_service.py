@@ -12,6 +12,7 @@ from id_doc_ocr.leave_audit.domain.mapping import resolve_plugin_for_leave_task
 from id_doc_ocr.leave_audit.domain.models import LeaveAuditResult, LeaveAuditTask
 from id_doc_ocr.leave_audit.repository.sqlite_repository import SQLiteRepository
 from id_doc_ocr.parsers.dify_field_parser import dify_configuration_message, is_dify_configured
+from id_doc_ocr.utils.document_pages import DocumentPage, expand_document_pages
 from id_doc_ocr.verification.rules import DEFAULT_FIELD_MAPPING_CONFIG, DEFAULT_RULE_CONFIGS, verify_attachment
 
 logger = logging.getLogger(__name__)
@@ -42,6 +43,179 @@ def _callback_payload_from_result(result: LeaveAuditResult) -> dict[str, Any]:
         "needs_manual_review": verification.get("needs_manual_review", result.status != LeaveAuditStatus.PASS),
         "summary": verification.get("summary_message") or result.error_message,
         "rule_results": verification.get("rule_results") or [],
+    }
+
+
+def _attachment_filename(attachment_id: str, filename: str | None, content_type: str | None) -> str:
+    if filename:
+        return filename
+    if str(content_type or "").split(";", 1)[0].strip().lower() in {"application/pdf", "application/x-pdf"}:
+        return f"{attachment_id}.pdf"
+    return f"{attachment_id}.jpg"
+
+
+def _non_empty(value: Any) -> bool:
+    return value not in (None, "", [])
+
+
+def _field_score(field: dict[str, Any]) -> tuple[int, float]:
+    confidence = field.get("confidence")
+    try:
+        confidence_score = float(confidence) if confidence is not None else 0.0
+    except (TypeError, ValueError):
+        confidence_score = 0.0
+    return (1 if _non_empty(field.get("value")) else 0, confidence_score)
+
+
+def _merge_extracted_fields(page_runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    merged: dict[str, dict[str, Any]] = {}
+    for run in page_runs:
+        page: DocumentPage = run["page"]
+        analysis = run["analysis"]
+        for raw_field in analysis.get("extracted_fields") or []:
+            if not isinstance(raw_field, dict) or not raw_field.get("name"):
+                continue
+            field = dict(raw_field)
+            field["document_page"] = page.page_number
+            field.setdefault("source_document", page.source_filename)
+            name = str(field["name"])
+            existing = merged.get(name)
+            if existing is None or _field_score(field) > _field_score(existing):
+                merged[name] = field
+    return list(merged.values())
+
+
+def _best_classification(page_runs: list[dict[str, Any]]) -> dict[str, Any]:
+    best: dict[str, Any] = {}
+    best_score = (-1, -1.0)
+    for run in page_runs:
+        page: DocumentPage = run["page"]
+        classification = dict((run["analysis"].get("classification_evidence") or {}))
+        label = str(classification.get("attachment_label") or "UNKNOWN")
+        try:
+            confidence = float(classification.get("attachment_confidence") or 0.0)
+        except (TypeError, ValueError):
+            confidence = 0.0
+        score = (0 if label == "UNKNOWN" else 1, confidence)
+        if score > best_score:
+            best = classification
+            best["document_page"] = page.page_number
+            best_score = score
+    return best
+
+
+def _merge_validation(page_runs: list[dict[str, Any]]) -> dict[str, Any]:
+    issues: list[dict[str, Any]] = []
+    accepted = True
+    for run in page_runs:
+        page: DocumentPage = run["page"]
+        validation = run["analysis"].get("validation") or {}
+        accepted = accepted and bool(validation.get("accepted", True))
+        for raw_issue in validation.get("issues") or []:
+            if isinstance(raw_issue, dict):
+                issue = dict(raw_issue)
+                issue["document_page"] = page.page_number
+                issues.append(issue)
+    return {"accepted": accepted, "issues": issues}
+
+
+def _merge_risk(page_runs: list[dict[str, Any]]) -> dict[str, Any]:
+    action_rank = {"accept": 0, "accept_with_warning": 1, "review": 2, "reject": 3}
+    merged = {
+        "score": 0.0,
+        "review_action": "accept_with_warning",
+        "review_recommended": False,
+        "quality_passed": True,
+        "validation_accepted": True,
+    }
+    best_action_rank = action_rank[merged["review_action"]]
+    for run in page_runs:
+        risk = run["analysis"].get("risk") or {}
+        try:
+            merged["score"] = max(float(merged["score"]), float(risk.get("score") or 0.0))
+        except (TypeError, ValueError):
+            pass
+        action = str(risk.get("review_action") or "")
+        if action_rank.get(action, -1) > best_action_rank:
+            merged["review_action"] = action
+            best_action_rank = action_rank[action]
+        merged["review_recommended"] = bool(merged["review_recommended"] or risk.get("review_recommended"))
+        merged["quality_passed"] = bool(merged["quality_passed"] and risk.get("quality_passed", True))
+        merged["validation_accepted"] = bool(merged["validation_accepted"] and risk.get("validation_accepted", True))
+    return merged
+
+
+def _page_summary(page: DocumentPage, analysis: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "page_number": page.page_number,
+        "page_count": page.page_count,
+        "filename": page.filename,
+        "content_type": page.content_type,
+        "document_kind": page.document_kind,
+        "doc_type": analysis.get("doc_type"),
+        "classification_evidence": analysis.get("classification_evidence") or {},
+        "extracted_fields": analysis.get("extracted_fields") or [],
+        "validation": analysis.get("validation") or {},
+        "risk": analysis.get("risk") or {},
+    }
+
+
+def _merge_page_analyses(
+    *,
+    plugin_name: str,
+    attachment_id: str,
+    source_filename: str | None,
+    source_content_type: str | None,
+    page_runs: list[dict[str, Any]],
+) -> dict[str, Any]:
+    if len(page_runs) == 1 and page_runs[0]["page"].document_kind != "pdf":
+        return page_runs[0]["analysis"]
+
+    first_analysis = dict(page_runs[0]["analysis"])
+    pages = [_page_summary(run["page"], run["analysis"]) for run in page_runs]
+    raw_artifacts = dict(first_analysis.get("raw_artifacts") or {})
+    raw_artifacts["document_pages"] = pages
+    raw_artifacts["page_count"] = len(page_runs)
+
+    first_analysis.update(
+        {
+            "doc_type": plugin_name,
+            "classification_evidence": _best_classification(page_runs),
+            "extracted_fields": _merge_extracted_fields(page_runs),
+            "validation": _merge_validation(page_runs),
+            "risk": _merge_risk(page_runs),
+            "raw_artifacts": raw_artifacts,
+            "document": {
+                "attachment_id": attachment_id,
+                "source_filename": source_filename,
+                "source_content_type": source_content_type,
+                "document_kind": page_runs[0]["page"].document_kind,
+                "page_count": len(page_runs),
+            },
+            "document_pages": pages,
+        }
+    )
+    return first_analysis
+
+
+def _prompt_context(
+    *,
+    repository: SQLiteRepository,
+    plugin_name: str,
+    task: LeaveAuditTask,
+    rule_config: dict[str, Any] | None,
+) -> dict[str, Any]:
+    prompt_texts = repository.get_effective_prompt_texts(plugin_name)
+    legacy_prompt = str((rule_config or {}).get("prompt_text") or "").strip()
+    if legacy_prompt:
+        prompt_texts.setdefault("field_extraction", legacy_prompt)
+        prompt_texts.setdefault("verification", legacy_prompt)
+    return {
+        "recognition_type": plugin_name,
+        "leave_type": task.leave_type,
+        "prompt_texts": prompt_texts,
+        "custom_prompt": prompt_texts.get("field_extraction", ""),
+        "verification_prompt": prompt_texts.get("verification", ""),
     }
 
 
@@ -78,14 +252,34 @@ class AuditService:
             plugin_name = resolve_plugin_for_leave_task(task)
             payload = self.adapter.download_attachment(attachment.attachment_url)
             mock_fields = dict(attachment.metadata.get("mock_fields") or task.raw_payload.get("mock_fields") or {})
-            analysis_result = self.inference_service.run(
+            filename = _attachment_filename(attachment.attachment_id, attachment.filename, attachment.content_type)
+            pages = expand_document_pages(payload, filename=filename, content_type=attachment.content_type)
+            page_runs: list[dict[str, Any]] = []
+            rule_config = self._rule_config(task.leave_type)
+            prompt_context = _prompt_context(
+                repository=self.repository,
                 plugin_name=plugin_name,
-                image=payload,
-                filename=attachment.filename or f"{attachment.attachment_id}.jpg",
-                fields=mock_fields,
-                field_parser_backend=field_parser_backend,
+                task=task,
+                rule_config=rule_config,
             )
-            analysis_json = analysis_result["analysis"]
+            for page in pages:
+                analysis_result = self.inference_service.run(
+                    plugin_name=plugin_name,
+                    image=page.content,
+                    filename=page.filename or filename,
+                    fields=mock_fields,
+                    field_parser_backend=field_parser_backend,
+                    prompt_context=prompt_context,
+                )
+                page_runs.append({"page": page, "analysis": analysis_result["analysis"]})
+            analysis_json = _merge_page_analyses(
+                plugin_name=plugin_name,
+                attachment_id=attachment.attachment_id,
+                source_filename=filename,
+                source_content_type=attachment.content_type,
+                page_runs=page_runs,
+            )
+            analysis_json.setdefault("raw_artifacts", {})["prompt_context"] = prompt_context
             verification_request: dict[str, Any] = {
                 "request_id": task.request_id,
                 "leave_request_id": _leave_request_id_from_task(task),
@@ -96,7 +290,6 @@ class AuditService:
             }
             verification_request.update(dict(task.raw_payload.get("verification_context") or {}))
             field_mapping_config = self._field_mapping_config()
-            rule_config = self._rule_config(task.leave_type)
             verification_json = verify_attachment(
                 analysis_json,
                 verification_request,

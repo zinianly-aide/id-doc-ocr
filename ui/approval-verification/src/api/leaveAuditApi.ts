@@ -8,6 +8,7 @@ import type {
   LeaveAuditTaskListResponse,
   LeaveAuditConfigResponse,
   FieldMappingItem,
+  PromptConfigItem,
   RuleConfigItem,
   OcrResponse,
 } from "@/types/leaveAudit";
@@ -99,6 +100,12 @@ export const leaveAuditApi = {
 
   updateRuleConfigs: (configs: RuleConfigItem[]): Promise<{ rule_configs: RuleConfigItem[] }> =>
     requestJson<{ rule_configs: RuleConfigItem[] }>("/leave-audit/config/rules", {
+      method: "PUT",
+      body: JSON.stringify({ configs }),
+    }),
+
+  updatePromptConfigs: (configs: PromptConfigItem[]): Promise<{ prompt_configs: PromptConfigItem[] }> =>
+    requestJson<{ prompt_configs: PromptConfigItem[] }>("/leave-audit/config/prompts", {
       method: "PUT",
       body: JSON.stringify({ configs }),
     }),

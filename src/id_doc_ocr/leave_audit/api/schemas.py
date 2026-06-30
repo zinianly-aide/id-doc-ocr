@@ -31,6 +31,17 @@ class RuleConfigUpdateRequest(BaseModel):
     configs: list[RuleConfigItem]
 
 
+class PromptConfigItem(BaseModel):
+    recognition_type: str = Field(..., description="Plugin/recognition type, for example diagnosis_proof, marriage_certificate, or *")
+    prompt_type: str = Field(..., description="Prompt purpose, for example field_extraction, verification, review_summary")
+    prompt_text: str = ""
+    enabled: bool = True
+
+
+class PromptConfigUpdateRequest(BaseModel):
+    configs: list[PromptConfigItem]
+
+
 class TaskListResponse(BaseModel):
     tasks: list[dict[str, Any]]
 

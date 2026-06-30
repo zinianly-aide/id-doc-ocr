@@ -150,7 +150,7 @@ Authorization: Bearer <token>
 - Body: raw file bytes
 - Successful status: 2xx
 - Recommended headers:
-  - `Content-Type: image/jpeg` or other real MIME type
+  - `Content-Type: image/jpeg`, `image/png`, `application/pdf`, or other real MIME type
   - `Content-Length: <bytes>` when available
 
 ### Items to confirm
@@ -160,7 +160,7 @@ Authorization: Bearer <token>
 | Direct URL allowed | TBD | TBD | If no, use configured download API |
 | Download auth | Same Bearer token | TBD | Confirm if file service uses separate token |
 | Max file size | TBD | TBD | Record large attachment behavior |
-| Supported file types | image/jpeg, image/png initially | TBD | PDF support is not in this sandbox scope unless explicitly enabled |
+| Supported file types | image/jpeg, image/png, application/pdf | TBD | PDF bytes are rendered page-by-page before OCR; multi-page PDFs are supported |
 
 ## 3. Callback API
 

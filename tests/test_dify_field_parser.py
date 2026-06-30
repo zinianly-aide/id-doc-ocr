@@ -84,6 +84,54 @@ def test_infer_can_use_dify_field_parser_backend(monkeypatch):
     assert calls[0]["headers"]["User-agent"] == "curl/8.7.1"
     assert calls[0]["body"]["inputs"]["schema_name"] == "diagnosis_proof"
     assert calls[0]["body"]["inputs"]["target_fields"] == ["hospital_name", "diagnosis", "issue_date"]
+    assert calls[0]["body"]["inputs"]["custom_prompt"] == ""
+
+
+def test_dify_field_parser_sends_custom_prompt_context_to_workflow():
+    calls = []
+
+    def fake_urlopen(request, timeout):
+        calls.append(json.loads(request.data.decode("utf-8")))
+        return FakeDifyResponse({"data": {"outputs": {"fields": {"patient_name": "张三"}}}})
+
+    class Plugin:
+        metadata = type("Metadata", (), {"name": "diagnosis_proof"})()
+
+        def get_schema_name(self):
+            return "diagnosis_proof"
+
+        def get_default_config(self):
+            return {"fields": [{"name": "patient_name"}]}
+
+    parser = __import__(
+        "id_doc_ocr.parsers.dify_field_parser",
+        fromlist=["DifyFieldParser", "DifyFieldParserConfig"],
+    )
+    field_parser = parser.DifyFieldParser(
+        config_factory=lambda schema_name: parser.DifyFieldParserConfig(
+            base_url="https://dify.example.test/v1",
+            api_key="app-test",
+            app_type="workflow",
+        ),
+        urlopen=fake_urlopen,
+    )
+
+    fields = field_parser.parse(
+        plugin=Plugin(),
+        ocr_result={"text": "姓名 张三"},
+        prompt_context={
+            "recognition_type": "diagnosis_proof",
+            "leave_type": "SICK",
+            "prompt_texts": {"field_extraction": "优先抽取患者姓名", "verification": "核对病假日期"},
+        },
+    )
+
+    assert fields == {"patient_name": "张三"}
+    inputs = calls[0]["inputs"]
+    assert inputs["custom_prompt"] == "优先抽取患者姓名"
+    assert inputs["verification_prompt"] == "核对病假日期"
+    assert inputs["recognition_type"] == "diagnosis_proof"
+    assert inputs["leave_type"] == "SICK"
 
 
 def test_dify_field_parser_accepts_streaming_chat_response():
@@ -119,9 +167,14 @@ def test_dify_field_parser_accepts_streaming_chat_response():
         urlopen=fake_urlopen,
     )
 
-    fields = field_parser.parse(plugin=Plugin(), ocr_result={"text": "姓名 张三"})
+    fields = field_parser.parse(
+        plugin=Plugin(),
+        ocr_result={"text": "姓名 张三"},
+        prompt_context={"prompt_texts": {"field_extraction": "只返回病假证明字段"}},
+    )
 
     assert fields == {"patient_name": "张三", "issue_date": "2026-05-20"}
     assert calls[0]["query"].startswith("You are an information extraction parser")
     assert '"fields": {}' in calls[0]["query"]
     assert "Do not invent placeholder field names." in calls[0]["query"]
+    assert "只返回病假证明字段" in calls[0]["query"]

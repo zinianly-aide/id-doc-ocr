@@ -63,9 +63,21 @@ The parser sends these workflow inputs:
   "ocr_lines": [],
   "ocr_lines_json": "[]",
   "target_fields": ["hospital_name", "diagnosis", "issue_date"],
-  "target_fields_json": "[\"hospital_name\", \"diagnosis\", \"issue_date\"]"
+  "target_fields_json": "[\"hospital_name\", \"diagnosis\", \"issue_date\"]",
+  "recognition_type": "diagnosis_proof",
+  "leave_type": "SICK",
+  "custom_prompt": "只抽取病假证明相关字段...",
+  "verification_prompt": "病假证明必须覆盖请假日期...",
+  "prompt_texts": {
+    "field_extraction": "只抽取病假证明相关字段...",
+    "verification": "病假证明必须覆盖请假日期..."
+  },
+  "prompt_texts_json": "{\"field_extraction\":\"只抽取病假证明相关字段...\"}"
 }
 ```
+
+`custom_prompt` comes from `leave_audit_prompt_config` where `prompt_type=field_extraction`.
+If no recognition-type prompt is configured, `leave_audit_rule_config.prompt_text` is used as a compatibility fallback.
 
 ## Dify Output Contract
 

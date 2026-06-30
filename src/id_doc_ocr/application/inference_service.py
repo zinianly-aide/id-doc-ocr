@@ -35,6 +35,7 @@ class InferenceService:
         detector_backend: str | None = None,
         rectify_backend: str | None = None,
         field_parser_backend: str | None = None,
+        prompt_context: dict[str, Any] | None = None,
         failure_dir: str | None = None,
     ) -> dict[str, Any]:
         if not plugin_name:
@@ -72,6 +73,7 @@ class InferenceService:
             plugin_name=plugin_name,
             image=image,
             fields=fields or {},
+            prompt_context=prompt_context,
             sample_id=(filename.rsplit(".", 1)[0] if filename else "leave_audit_attachment"),
             source_name=filename,
             source_kind="leave_audit_attachment",

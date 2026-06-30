@@ -86,10 +86,12 @@ class DifyFieldParser:
         self._config_factory = config_factory
         self._urlopen = urlopen or urllib_request.urlopen
 
-    def parse(self, *, plugin: Any, ocr_result: dict[str, Any]) -> dict[str, Any]:
+    def parse(self, *, plugin: Any, ocr_result: dict[str, Any], prompt_context: dict[str, Any] | None = None) -> dict[str, Any]:
         schema_name = plugin.get_schema_name()
         config = self._config_factory(schema_name)
         target_fields = _resolve_target_fields(schema_name, plugin)
+        prompt_context = prompt_context or {}
+        prompt_texts = prompt_context.get("prompt_texts") if isinstance(prompt_context.get("prompt_texts"), dict) else {}
         inputs = {
             "schema_name": schema_name,
             "plugin_name": getattr(getattr(plugin, "metadata", None), "name", schema_name),
@@ -98,6 +100,12 @@ class DifyFieldParser:
             "ocr_lines_json": json.dumps(ocr_result.get("lines", []), ensure_ascii=False),
             "target_fields": target_fields,
             "target_fields_json": json.dumps(target_fields, ensure_ascii=False),
+            "recognition_type": prompt_context.get("recognition_type") or getattr(getattr(plugin, "metadata", None), "name", schema_name),
+            "leave_type": prompt_context.get("leave_type"),
+            "custom_prompt": prompt_context.get("custom_prompt") or prompt_texts.get("field_extraction") or "",
+            "verification_prompt": prompt_context.get("verification_prompt") or prompt_texts.get("verification") or "",
+            "prompt_texts": prompt_texts,
+            "prompt_texts_json": json.dumps(prompt_texts, ensure_ascii=False),
         }
         response_payload = self._call_dify(config, inputs)
         fields = _extract_fields(response_payload)
@@ -216,6 +224,10 @@ def _build_chat_query(inputs: dict[str, Any]) -> str:
             "You are an information extraction parser for leave-audit document OCR text.",
             f"Schema name: {schema_name}",
             f"Target fields JSON: {json.dumps(target_fields, ensure_ascii=False)}",
+            "Custom extraction instructions:",
+            str(inputs.get("custom_prompt") or "").strip() or "(none)",
+            "Additional prompt texts JSON:",
+            str(inputs.get("prompt_texts_json") or "{}"),
             "Return ONLY one valid JSON object. Do not include markdown, explanation, or extra keys.",
             "Use exactly this JSON shape and exactly these field names:",
             json.dumps(output_template, ensure_ascii=False),
