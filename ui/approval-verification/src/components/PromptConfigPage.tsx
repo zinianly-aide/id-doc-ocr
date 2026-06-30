@@ -25,9 +25,24 @@ const RECOGNITION_TYPE_OPTIONS = [
 const PROMPT_TYPE_OPTIONS = [
   "field_extraction",
   "verification",
+  "classification",
+  "normalization",
+  "risk_assessment",
   "review_summary",
   "qa_assistant",
+  "callback_summary",
 ];
+
+const PROMPT_TYPE_HINTS: Record<string, string> = {
+  field_extraction: "会传给 Dify inputs.custom_prompt；字段抽取提示优先配置这个类型。",
+  verification: "会传给 Dify inputs.verification_prompt，并记录在审核追踪里；规则判断仍以规则 JSON 为准。",
+  classification: "会进入 prompt_texts_json；Dify 工作流需自行读取这个 key 才会生效。",
+  normalization: "会进入 prompt_texts_json；适合配置日期、姓名、医院名等归一化口径。",
+  risk_assessment: "会进入 prompt_texts_json；适合配置风险评分、复核建议等 LLM 辅助口径。",
+  review_summary: "会进入 prompt_texts_json；适合生成复核摘要或人工复核说明。",
+  qa_assistant: "会进入 prompt_texts_json；适合问答助手或解释型流程读取。",
+  callback_summary: "会进入 prompt_texts_json；适合回写前生成外部系统可读说明。",
+};
 
 interface PromptFormValues {
   recognition_type: string;
@@ -59,6 +74,7 @@ export function PromptConfigPage() {
   const [guidance, setGuidance] = useState<LeaveAuditConfigGuidance | null>(null);
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm<PromptFormValues>();
+  const selectedPromptType = Form.useWatch("prompt_type", form);
 
   const selectedConfig = useMemo(
     () => configs.find((item) => promptKey(item) === selectedKey),
@@ -149,6 +165,13 @@ export function PromptConfigPage() {
         <Alert type="info" showIcon message="配置引导" description={guidance.prompt_config.join("；")} />
       ) : null}
 
+      <Alert
+        type="warning"
+        showIcon
+        message="提示词生效规则"
+        description="插件级配置优先于全局 * 配置；禁用的配置不会传入解析。只有 field_extraction 会直接覆盖 custom_prompt，verification 会直接覆盖 verification_prompt；其他类型会随 prompt_texts_json 传给 Dify，需要工作流显式读取对应 key。"
+      />
+
       <Card className="leave-audit-toolbar-card">
         <Form form={form} layout="vertical">
           <Form.Item label="选择已有提示词">
@@ -168,6 +191,12 @@ export function PromptConfigPage() {
           <Form.Item name="prompt_type" label="提示词类型" rules={[{ required: true, message: "请输入提示词类型" }]}>
             <Select showSearch options={promptTypeOptions} placeholder="field_extraction" />
           </Form.Item>
+          <Alert
+            type={selectedPromptType === "field_extraction" || selectedPromptType === "verification" ? "success" : "info"}
+            showIcon
+            message={selectedPromptType ? `${selectedPromptType} 生效方式` : "提示词类型生效方式"}
+            description={PROMPT_TYPE_HINTS[String(selectedPromptType || "")] ?? "会进入 prompt_texts_json；Dify 工作流需要按该 key 读取后才会生效。"}
+          />
           <Form.Item name="enabled" label="启用" valuePropName="checked">
             <Switch />
           </Form.Item>
