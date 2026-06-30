@@ -8,8 +8,8 @@ from typing import Any
 from id_doc_ocr.application.inference_service import InferenceService
 from id_doc_ocr.leave_audit.adapters.base import LeaveSystemAdapter
 from id_doc_ocr.leave_audit.domain.enums import LeaveAuditStatus
-from id_doc_ocr.leave_audit.domain.mapping import resolve_plugin_for_leave_task
-from id_doc_ocr.leave_audit.domain.models import LeaveAuditResult, LeaveAuditTask
+from id_doc_ocr.leave_audit.domain.mapping import LEAVE_TYPE_PLUGIN_MAPPING, resolve_plugin_for_leave_task
+from id_doc_ocr.leave_audit.domain.models import LeaveAttachment, LeaveAuditResult, LeaveAuditTask
 from id_doc_ocr.leave_audit.repository.sqlite_repository import SQLiteRepository
 from id_doc_ocr.parsers.dify_field_parser import dify_configuration_message, is_dify_configured
 from id_doc_ocr.utils.document_pages import DocumentPage, expand_document_pages
@@ -219,6 +219,38 @@ def _prompt_context(
     }
 
 
+def _plugin_for_attachment(task: LeaveAuditTask, attachment: LeaveAttachment) -> str:
+    explicit = attachment.plugin_name or attachment.metadata.get("plugin_name")
+    if explicit:
+        return str(explicit)
+    leave_type = str(task.leave_type or "").upper()
+    return LEAVE_TYPE_PLUGIN_MAPPING.get(leave_type, "diagnosis_proof")
+
+
+def _status_rank(status: LeaveAuditStatus) -> int:
+    ranks = {
+        LeaveAuditStatus.PASS: 0,
+        LeaveAuditStatus.REVIEW: 1,
+        LeaveAuditStatus.REJECT: 2,
+        LeaveAuditStatus.ERROR: 3,
+    }
+    return ranks.get(status, 4)
+
+
+def _attachment_result_summary(result: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "attachment_id": result.get("attachment_id"),
+        "filename": result.get("filename"),
+        "content_type": result.get("content_type"),
+        "plugin_name": result.get("plugin_name"),
+        "status": result.get("status"),
+        "verify_status": (result.get("verification_json") or {}).get("verify_status"),
+        "matched_attachment_type": (result.get("verification_json") or {}).get("matched_attachment_type"),
+        "risk_level": (result.get("verification_json") or {}).get("risk_level"),
+        "error_message": result.get("error_message"),
+    }
+
+
 def _log_audit_event(**fields: Any) -> None:
     details = " ".join(f"{key}={value}" for key, value in fields.items() if value is not None)
     logger.info("leave_audit_event %s", details)
@@ -235,9 +267,12 @@ class AuditService:
         if task is None:
             raise KeyError(f"Leave audit task not found: {request_id}")
         if field_parser_backend == "dify":
-            plugin_name = resolve_plugin_for_leave_task(task)
-            if not is_dify_configured(plugin_name):
-                raise ValueError(dify_configuration_message(plugin_name))
+            plugins = {_plugin_for_attachment(task, attachment) for attachment in task.attachments}
+            if not plugins:
+                plugins = {resolve_plugin_for_leave_task(task)}
+            unconfigured = [plugin_name for plugin_name in sorted(plugins) if not is_dify_configured(plugin_name)]
+            if unconfigured:
+                raise ValueError(dify_configuration_message(unconfigured[0]))
         return self.process_task(task, field_parser_backend=field_parser_backend)
 
     def process_task(self, task: LeaveAuditTask, field_parser_backend: str | None = None) -> LeaveAuditResult:
@@ -247,39 +282,6 @@ class AuditService:
         try:
             if not task.attachments:
                 raise ValueError("task has no attachments")
-            attachment = task.attachments[0]
-            attachment_id = attachment.attachment_id
-            plugin_name = resolve_plugin_for_leave_task(task)
-            payload = self.adapter.download_attachment(attachment.attachment_url)
-            mock_fields = dict(attachment.metadata.get("mock_fields") or task.raw_payload.get("mock_fields") or {})
-            filename = _attachment_filename(attachment.attachment_id, attachment.filename, attachment.content_type)
-            pages = expand_document_pages(payload, filename=filename, content_type=attachment.content_type)
-            page_runs: list[dict[str, Any]] = []
-            rule_config = self._rule_config(task.leave_type)
-            prompt_context = _prompt_context(
-                repository=self.repository,
-                plugin_name=plugin_name,
-                task=task,
-                rule_config=rule_config,
-            )
-            for page in pages:
-                analysis_result = self.inference_service.run(
-                    plugin_name=plugin_name,
-                    image=page.content,
-                    filename=page.filename or filename,
-                    fields=mock_fields,
-                    field_parser_backend=field_parser_backend,
-                    prompt_context=prompt_context,
-                )
-                page_runs.append({"page": page, "analysis": analysis_result["analysis"]})
-            analysis_json = _merge_page_analyses(
-                plugin_name=plugin_name,
-                attachment_id=attachment.attachment_id,
-                source_filename=filename,
-                source_content_type=attachment.content_type,
-                page_runs=page_runs,
-            )
-            analysis_json.setdefault("raw_artifacts", {})["prompt_context"] = prompt_context
             verification_request: dict[str, Any] = {
                 "request_id": task.request_id,
                 "leave_request_id": _leave_request_id_from_task(task),
@@ -290,20 +292,99 @@ class AuditService:
             }
             verification_request.update(dict(task.raw_payload.get("verification_context") or {}))
             field_mapping_config = self._field_mapping_config()
-            verification_json = verify_attachment(
-                analysis_json,
-                verification_request,
-                field_mapping_config=field_mapping_config,
-                rule_config=rule_config,
-            )
-            status = LeaveAuditStatus(str(verification_json.get("verify_status") or "REVIEW"))
-            result = LeaveAuditResult(
-                request_id=task.request_id,
-                status=status,
-                plugin_name=plugin_name,
-                analysis_json=analysis_json,
-                verification_json=verification_json,
-            )
+            rule_config = self._rule_config(task.leave_type)
+
+            attachment_results: list[dict[str, Any]] = []
+            for attachment in task.attachments:
+                attachment_id = attachment.attachment_id
+                plugin_name = _plugin_for_attachment(task, attachment)
+                filename = _attachment_filename(attachment.attachment_id, attachment.filename, attachment.content_type)
+                try:
+                    payload = self.adapter.download_attachment(attachment.attachment_url)
+                    mock_fields = dict(attachment.metadata.get("mock_fields") or task.raw_payload.get("mock_fields") or {})
+                    pages = expand_document_pages(payload, filename=filename, content_type=attachment.content_type)
+                    page_runs: list[dict[str, Any]] = []
+                    prompt_context = _prompt_context(
+                        repository=self.repository,
+                        plugin_name=plugin_name,
+                        task=task,
+                        rule_config=rule_config,
+                    )
+                    for page in pages:
+                        analysis_result = self.inference_service.run(
+                            plugin_name=plugin_name,
+                            image=page.content,
+                            filename=page.filename or filename,
+                            fields=mock_fields,
+                            field_parser_backend=field_parser_backend,
+                            prompt_context=prompt_context,
+                        )
+                        page_runs.append({"page": page, "analysis": analysis_result["analysis"]})
+                    analysis_json = _merge_page_analyses(
+                        plugin_name=plugin_name,
+                        attachment_id=attachment.attachment_id,
+                        source_filename=filename,
+                        source_content_type=attachment.content_type,
+                        page_runs=page_runs,
+                    )
+                    analysis_json.setdefault("raw_artifacts", {})["prompt_context"] = prompt_context
+                    verification_json = verify_attachment(
+                        analysis_json,
+                        verification_request,
+                        field_mapping_config=field_mapping_config,
+                        rule_config=rule_config,
+                    )
+                    status = LeaveAuditStatus(str(verification_json.get("verify_status") or "REVIEW"))
+                    attachment_results.append(
+                        {
+                            "attachment_id": attachment.attachment_id,
+                            "filename": filename,
+                            "content_type": attachment.content_type,
+                            "plugin_name": plugin_name,
+                            "status": status,
+                            "analysis_json": analysis_json,
+                            "verification_json": verification_json,
+                            "error_message": None,
+                        }
+                    )
+                except Exception as exc:
+                    attachment_results.append(
+                        {
+                            "attachment_id": attachment.attachment_id,
+                            "filename": filename,
+                            "content_type": attachment.content_type,
+                            "plugin_name": plugin_name,
+                            "status": LeaveAuditStatus.ERROR,
+                            "analysis_json": {},
+                            "verification_json": {},
+                            "error_message": f"{exc.__class__.__name__}: {exc}",
+                        }
+                    )
+            selected = min(attachment_results, key=lambda item: _status_rank(item["status"]))
+            status = selected["status"]
+            summaries = [_attachment_result_summary(item) for item in attachment_results]
+            if status == LeaveAuditStatus.ERROR:
+                result = LeaveAuditResult(
+                    request_id=task.request_id,
+                    status=LeaveAuditStatus.ERROR,
+                    plugin_name=selected["plugin_name"],
+                    analysis_json={},
+                    verification_json={"attachment_results": summaries},
+                    error_message=selected["error_message"],
+                )
+            else:
+                analysis_json = dict(selected["analysis_json"])
+                analysis_json.setdefault("raw_artifacts", {})["attachment_results"] = summaries
+                verification_json = dict(selected["verification_json"])
+                verification_json["attachment_results"] = summaries
+                verification_json["selected_attachment_id"] = selected["attachment_id"]
+                result = LeaveAuditResult(
+                    request_id=task.request_id,
+                    status=status,
+                    plugin_name=selected["plugin_name"],
+                    analysis_json=analysis_json,
+                    verification_json=verification_json,
+                )
         except Exception as exc:
             result = LeaveAuditResult(
                 request_id=task.request_id,

@@ -56,13 +56,13 @@ class _MultiPageInferenceService:
         return {"analysis": _analysis(fields)}
 
 
-def _analysis(fields: dict) -> dict:
+def _analysis(fields: dict, attachment_label: str = "MEDICAL_CERTIFICATE") -> dict:
     return {
         "doc_type": "diagnosis_proof",
         "classification_evidence": {
-            "attachment_label": "MEDICAL_CERTIFICATE",
+            "attachment_label": attachment_label,
             "attachment_confidence": 0.9,
-            "matched_keywords": ["MEDICAL_CERTIFICATE"],
+            "matched_keywords": [attachment_label],
         },
         "extracted_fields": [
             {"name": key, "value": value, "confidence": 0.95, "source": "parsed_field", "bbox": None, "evidence_text": None, "matched": False}
@@ -171,3 +171,86 @@ def test_audit_service_uses_rule_prompt_text_as_field_extraction_fallback(tmp_pa
     assert result.status == LeaveAuditStatus.REVIEW
     assert inference.calls[0]["prompt_context"]["custom_prompt"] == "旧配置提示词也要生效"
     assert inference.calls[0]["prompt_context"]["verification_prompt"] == "旧配置提示词也要生效"
+
+
+class _MultiAttachmentAdapter:
+    def fetch_pending_attachments(self):
+        return []
+
+    def download_attachment(self, attachment_url: str) -> bytes:
+        return {
+            "fixture://wrong.jpg": b"wrong-attachment",
+            "fixture://medical.jpg": b"medical-attachment",
+        }[attachment_url]
+
+    def push_audit_result(self, result):
+        pass
+
+
+class _MultiAttachmentInferenceService:
+    def __init__(self) -> None:
+        self.calls: list[dict] = []
+
+    def run(self, **kwargs):
+        self.calls.append(kwargs)
+        if kwargs["image"] == b"wrong-attachment":
+            return {"analysis": _analysis({"holder_name": "张三"}, attachment_label="MARRIAGE_CERTIFICATE")}
+        if kwargs["image"] == b"medical-attachment":
+            return {
+                "analysis": _analysis(
+                    {
+                        "patient_name": "张三",
+                        "rest_start_date": "2026-04-01",
+                        "rest_end_date": "2026-04-03",
+                    }
+                )
+            }
+        raise AssertionError(f"unexpected image bytes: {kwargs['image']!r}")
+
+
+def test_audit_service_selects_passing_attachment_when_task_has_multiple_attachments(tmp_path, monkeypatch):
+    repo = SQLiteRepository(tmp_path / "leave_audit.db")
+    task = LeaveAuditTask(
+        request_id="LV-MULTI-ATT-001",
+        leave_type="SICK",
+        employee_name="张三",
+        leave_start_date="2026-04-01",
+        leave_end_date="2026-04-03",
+        attachments=[
+            LeaveAttachment(
+                attachment_id="ATT-WRONG-001",
+                attachment_url="fixture://wrong.jpg",
+                filename="wrong.jpg",
+                content_type="image/jpeg",
+                plugin_name="diagnosis_proof",
+            ),
+            LeaveAttachment(
+                attachment_id="ATT-MEDICAL-001",
+                attachment_url="fixture://medical.jpg",
+                filename="medical.jpg",
+                content_type="image/jpeg",
+                plugin_name="diagnosis_proof",
+            ),
+        ],
+    )
+    repo.save_task(task)
+    monkeypatch.setattr(
+        "id_doc_ocr.leave_audit.service.audit_service.expand_document_pages",
+        lambda content, *, filename=None, content_type=None: [
+            DocumentPage(content=content, page_number=1, page_count=1, filename=filename, content_type=content_type)
+        ],
+    )
+    inference = _MultiAttachmentInferenceService()
+    service = AuditService(repo, _MultiAttachmentAdapter(), inference)
+
+    result = service.run_task("LV-MULTI-ATT-001")
+
+    assert result.status == LeaveAuditStatus.PASS
+    assert result.verification_json["selected_attachment_id"] == "ATT-MEDICAL-001"
+    assert [item["attachment_id"] for item in result.verification_json["attachment_results"]] == [
+        "ATT-WRONG-001",
+        "ATT-MEDICAL-001",
+    ]
+    assert [item["status"] for item in result.verification_json["attachment_results"]] == ["REJECT", "PASS"]
+    assert result.analysis_json["raw_artifacts"]["attachment_results"][1]["matched_attachment_type"] == "MEDICAL_CERTIFICATE"
+    assert [call["filename"] for call in inference.calls] == ["wrong.jpg", "medical.jpg"]
