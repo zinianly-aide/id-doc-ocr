@@ -12,6 +12,74 @@ from id_doc_ocr.leave_audit.domain.models import LeaveAttachment, LeaveAuditResu
 DEFAULT_DB_PATH = ".local/leave_audit.db"
 
 
+SCHEMA_MIGRATIONS: tuple[tuple[int, str, str], ...] = (
+    (
+        1,
+        "base_leave_audit_schema",
+        """
+        CREATE TABLE IF NOT EXISTS leave_audit_task (
+            request_id TEXT PRIMARY KEY,
+            leave_type TEXT NOT NULL,
+            employee_id TEXT,
+            employee_name TEXT NOT NULL,
+            leave_start_date TEXT,
+            leave_end_date TEXT,
+            status TEXT NOT NULL,
+            attachments_json TEXT NOT NULL,
+            raw_payload_json TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS leave_audit_result (
+            request_id TEXT PRIMARY KEY,
+            status TEXT NOT NULL,
+            plugin_name TEXT,
+            analysis_json TEXT NOT NULL,
+            verification_json TEXT NOT NULL,
+            error_message TEXT,
+            synced INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS leave_audit_review (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            request_id TEXT NOT NULL,
+            decision TEXT NOT NULL,
+            reviewer TEXT NOT NULL,
+            comment TEXT,
+            created_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS leave_audit_field_mapping (
+            canonical_field TEXT PRIMARY KEY,
+            candidates_json TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS leave_audit_rule_config (
+            leave_type TEXT PRIMARY KEY,
+            prompt_text TEXT NOT NULL,
+            rules_json TEXT NOT NULL,
+            enabled INTEGER NOT NULL DEFAULT 1,
+            updated_at TEXT NOT NULL
+        );
+        """,
+    ),
+    (
+        2,
+        "prompt_config",
+        """
+        CREATE TABLE IF NOT EXISTS leave_audit_prompt_config (
+            recognition_type TEXT NOT NULL,
+            prompt_type TEXT NOT NULL,
+            prompt_text TEXT NOT NULL,
+            enabled INTEGER NOT NULL DEFAULT 1,
+            updated_at TEXT NOT NULL,
+            PRIMARY KEY (recognition_type, prompt_type)
+        );
+        """,
+    ),
+)
+
+
 def _json(data: Any) -> str:
     return json.dumps(data, ensure_ascii=False, sort_keys=True)
 
@@ -35,61 +103,29 @@ class SQLiteRepository:
 
     def _init_schema(self) -> None:
         with self.connect() as conn:
-            conn.executescript(
-                """
-                CREATE TABLE IF NOT EXISTS leave_audit_task (
-                    request_id TEXT PRIMARY KEY,
-                    leave_type TEXT NOT NULL,
-                    employee_id TEXT,
-                    employee_name TEXT NOT NULL,
-                    leave_start_date TEXT,
-                    leave_end_date TEXT,
-                    status TEXT NOT NULL,
-                    attachments_json TEXT NOT NULL,
-                    raw_payload_json TEXT NOT NULL,
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL
-                );
-                CREATE TABLE IF NOT EXISTS leave_audit_result (
-                    request_id TEXT PRIMARY KEY,
-                    status TEXT NOT NULL,
-                    plugin_name TEXT,
-                    analysis_json TEXT NOT NULL,
-                    verification_json TEXT NOT NULL,
-                    error_message TEXT,
-                    synced INTEGER NOT NULL DEFAULT 0,
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL
-                );
-                CREATE TABLE IF NOT EXISTS leave_audit_review (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    request_id TEXT NOT NULL,
-                    decision TEXT NOT NULL,
-                    reviewer TEXT NOT NULL,
-                    comment TEXT,
-                    created_at TEXT NOT NULL
-                );
-                CREATE TABLE IF NOT EXISTS leave_audit_field_mapping (
-                    canonical_field TEXT PRIMARY KEY,
-                    candidates_json TEXT NOT NULL,
-                    updated_at TEXT NOT NULL
-                );
-                CREATE TABLE IF NOT EXISTS leave_audit_rule_config (
-                    leave_type TEXT PRIMARY KEY,
-                    prompt_text TEXT NOT NULL,
-                    rules_json TEXT NOT NULL,
-                    enabled INTEGER NOT NULL DEFAULT 1,
-                    updated_at TEXT NOT NULL
-                );
-                CREATE TABLE IF NOT EXISTS leave_audit_prompt_config (
-                    recognition_type TEXT NOT NULL,
-                    prompt_type TEXT NOT NULL,
-                    prompt_text TEXT NOT NULL,
-                    enabled INTEGER NOT NULL DEFAULT 1,
-                    updated_at TEXT NOT NULL,
-                    PRIMARY KEY (recognition_type, prompt_type)
-                );
-                """
+            self._apply_migrations(conn)
+
+    def _apply_migrations(self, conn: sqlite3.Connection) -> None:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS leave_audit_schema_migration (
+                version INTEGER PRIMARY KEY,
+                name TEXT NOT NULL,
+                applied_at TEXT NOT NULL
+            )
+            """
+        )
+        applied_versions = {
+            int(row["version"])
+            for row in conn.execute("SELECT version FROM leave_audit_schema_migration").fetchall()
+        }
+        for version, name, sql in SCHEMA_MIGRATIONS:
+            if version in applied_versions:
+                continue
+            conn.executescript(sql)
+            conn.execute(
+                "INSERT INTO leave_audit_schema_migration (version, name, applied_at) VALUES (?, ?, ?)",
+                (version, name, utc_now_iso()),
             )
 
     def save_task(self, task: LeaveAuditTask) -> None:

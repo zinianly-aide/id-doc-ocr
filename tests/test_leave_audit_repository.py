@@ -1,3 +1,5 @@
+import sqlite3
+
 from id_doc_ocr.leave_audit.domain.enums import LeaveAuditStatus
 from id_doc_ocr.leave_audit.domain.models import LeaveAttachment, LeaveAuditResult, LeaveAuditTask, LeaveReviewDecision
 from id_doc_ocr.leave_audit.repository.sqlite_repository import SQLiteRepository
@@ -42,3 +44,40 @@ def test_repository_saves_prompt_configs_and_resolves_plugin_overrides(tmp_path)
         "verification": "诊断证明审核提示",
     }
     assert repo.get_effective_prompt_texts("marriage_certificate") == {"field_extraction": "全局抽取提示"}
+
+
+def test_repository_records_schema_migrations(tmp_path):
+    db_path = tmp_path / "leave_audit.db"
+    SQLiteRepository(db_path)
+
+    with sqlite3.connect(db_path) as conn:
+        rows = conn.execute("SELECT version, name FROM leave_audit_schema_migration ORDER BY version").fetchall()
+
+    assert rows == [(1, "base_leave_audit_schema"), (2, "prompt_config")]
+
+
+def test_repository_migrates_legacy_database_without_prompt_table(tmp_path):
+    db_path = tmp_path / "legacy.db"
+    with sqlite3.connect(db_path) as conn:
+        conn.execute(
+            """
+            CREATE TABLE leave_audit_task (
+                request_id TEXT PRIMARY KEY,
+                leave_type TEXT NOT NULL,
+                employee_id TEXT,
+                employee_name TEXT NOT NULL,
+                leave_start_date TEXT,
+                leave_end_date TEXT,
+                status TEXT NOT NULL,
+                attachments_json TEXT NOT NULL,
+                raw_payload_json TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+
+    repo = SQLiteRepository(db_path)
+    repo.save_prompt_config("diagnosis_proof", "field_extraction", "迁移后可写入")
+
+    assert repo.get_effective_prompt_texts("diagnosis_proof") == {"field_extraction": "迁移后可写入"}
