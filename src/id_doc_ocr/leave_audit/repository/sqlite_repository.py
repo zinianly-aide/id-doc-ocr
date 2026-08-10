@@ -10,6 +10,7 @@ from id_doc_ocr.leave_audit.domain.async_status import CallbackStatus, DecisionS
 from id_doc_ocr.leave_audit.domain.config import ConfigKind, ConfigSnapshot, ConfigStatus
 from id_doc_ocr.leave_audit.domain.enums import LeaveAuditStatus
 from id_doc_ocr.leave_audit.domain.models import LeaveAttachment, LeaveAuditResult, LeaveAuditTask, LeaveReviewDecision, utc_now_iso
+from id_doc_ocr.leave_audit.messaging.outbox import OutboxEvent
 
 DEFAULT_DB_PATH = ".local/leave_audit.db"
 
@@ -129,6 +130,25 @@ SCHEMA_MIGRATIONS: tuple[tuple[int, str, str], ...] = (
         );
         CREATE INDEX IF NOT EXISTS idx_leave_audit_config_version_kind_status
             ON leave_audit_config_version (kind, status, created_at);
+        """,
+    ),
+    (
+        5,
+        "task_outbox",
+        """
+        CREATE TABLE IF NOT EXISTS leave_audit_outbox_event (
+            event_id TEXT PRIMARY KEY,
+            aggregate_type TEXT NOT NULL,
+            aggregate_id TEXT NOT NULL,
+            event_type TEXT NOT NULL,
+            payload_json TEXT NOT NULL,
+            published_at TEXT,
+            attempt_count INTEGER NOT NULL DEFAULT 0,
+            last_error TEXT,
+            created_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_leave_audit_outbox_pending
+            ON leave_audit_outbox_event (published_at, created_at);
         """,
     ),
 )
@@ -590,6 +610,65 @@ class SQLiteRepository:
             else:
                 rows = conn.execute("SELECT * FROM leave_audit_config_version WHERE kind = ? ORDER BY created_at DESC", (kind.value,)).fetchall()
         return [self.get_config_snapshot(row["version_id"]) for row in rows if row is not None]
+
+    def enqueue_outbox_event(self, event: OutboxEvent) -> None:
+        with self.connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO leave_audit_outbox_event
+                (event_id, aggregate_type, aggregate_id, event_type, payload_json, published_at, attempt_count, last_error, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(event_id) DO NOTHING
+                """,
+                (
+                    event.event_id,
+                    event.aggregate_type,
+                    event.aggregate_id,
+                    event.event_type,
+                    _json(event.payload),
+                    event.published_at,
+                    event.attempt_count,
+                    event.last_error,
+                    event.created_at,
+                ),
+            )
+
+    def list_pending_outbox(self, limit: int = 100) -> list[OutboxEvent]:
+        if limit < 1:
+            return []
+        with self.connect() as conn:
+            rows = conn.execute(
+                "SELECT * FROM leave_audit_outbox_event WHERE published_at IS NULL ORDER BY created_at ASC LIMIT ?",
+                (limit,),
+            ).fetchall()
+        return [
+            OutboxEvent(
+                event_id=row["event_id"],
+                aggregate_type=row["aggregate_type"],
+                aggregate_id=row["aggregate_id"],
+                event_type=row["event_type"],
+                payload=_loads(row["payload_json"], {}),
+                published_at=row["published_at"],
+                attempt_count=int(row["attempt_count"]),
+                last_error=row["last_error"],
+                created_at=row["created_at"],
+            )
+            for row in rows
+        ]
+
+    def mark_outbox_published(self, event_id: str) -> None:
+        with self.connect() as conn:
+            conn.execute(
+                "UPDATE leave_audit_outbox_event SET published_at = ?, attempt_count = attempt_count + 1, last_error = NULL WHERE event_id = ?",
+                (utc_now_iso(), event_id),
+            )
+
+    def mark_outbox_failed(self, event_id: str, error: str) -> None:
+        with self.connect() as conn:
+            conn.execute(
+                "UPDATE leave_audit_outbox_event SET attempt_count = attempt_count + 1, last_error = ? WHERE event_id = ?",
+                (error, event_id),
+            )
 
     def _row_to_task(self, row: sqlite3.Row) -> LeaveAuditTask:
         attachments = [

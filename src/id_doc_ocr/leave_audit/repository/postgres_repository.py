@@ -8,6 +8,7 @@ from id_doc_ocr.leave_audit.domain.async_status import CallbackStatus, DecisionS
 from id_doc_ocr.leave_audit.domain.config import ConfigKind, ConfigSnapshot, ConfigStatus
 from id_doc_ocr.leave_audit.domain.enums import LeaveAuditStatus
 from id_doc_ocr.leave_audit.domain.models import LeaveAttachment, LeaveAuditResult, LeaveAuditTask, LeaveReviewDecision, utc_now_iso
+from id_doc_ocr.leave_audit.messaging.outbox import OutboxEvent
 
 
 def _iso(value: Any) -> str:
@@ -437,6 +438,66 @@ class PostgresRepository:
                 cur.execute("SELECT version_id FROM config_version WHERE kind = %s ORDER BY created_at DESC", (kind.value,))
             rows = cur.fetchall()
         return [snapshot for row in rows if (snapshot := self.get_config_snapshot(row["version_id"])) is not None]
+
+    def enqueue_outbox_event(self, event: OutboxEvent) -> None:
+        with self.connect() as conn, conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO outbox_event
+                (event_id, aggregate_type, aggregate_id, event_type, payload, published_at, attempt_count, last_error, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT(event_id) DO NOTHING
+                """,
+                (
+                    event.event_id,
+                    event.aggregate_type,
+                    event.aggregate_id,
+                    event.event_type,
+                    self._json(event.payload),
+                    event.published_at,
+                    event.attempt_count,
+                    event.last_error,
+                    event.created_at,
+                ),
+            )
+
+    def list_pending_outbox(self, limit: int = 100) -> list[OutboxEvent]:
+        if limit < 1:
+            return []
+        with self.connect() as conn, conn.cursor() as cur:
+            cur.execute(
+                "SELECT * FROM outbox_event WHERE published_at IS NULL ORDER BY created_at ASC LIMIT %s",
+                (limit,),
+            )
+            rows = cur.fetchall()
+        return [
+            OutboxEvent(
+                event_id=str(row["event_id"]),
+                aggregate_type=row["aggregate_type"],
+                aggregate_id=row["aggregate_id"],
+                event_type=row["event_type"],
+                payload=row["payload"] or {},
+                published_at=_iso(row["published_at"]) if row["published_at"] else None,
+                attempt_count=int(row["attempt_count"]),
+                last_error=row["last_error"],
+                created_at=_iso(row["created_at"]),
+            )
+            for row in rows
+        ]
+
+    def mark_outbox_published(self, event_id: str) -> None:
+        with self.connect() as conn, conn.cursor() as cur:
+            cur.execute(
+                "UPDATE outbox_event SET published_at = %s, attempt_count = attempt_count + 1, last_error = NULL WHERE event_id = %s",
+                (utc_now_iso(), event_id),
+            )
+
+    def mark_outbox_failed(self, event_id: str, error: str) -> None:
+        with self.connect() as conn, conn.cursor() as cur:
+            cur.execute(
+                "UPDATE outbox_event SET attempt_count = attempt_count + 1, last_error = %s WHERE event_id = %s",
+                (error, event_id),
+            )
 
     def _row_to_task(self, row: dict[str, Any]) -> LeaveAuditTask:
         attachments = [
