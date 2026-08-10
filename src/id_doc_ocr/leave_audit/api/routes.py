@@ -15,6 +15,7 @@ from id_doc_ocr.leave_audit.api.schemas import (
     ReviewRequest,
     RuleConfigUpdateRequest,
 )
+from id_doc_ocr.leave_audit.repository.base import LeaveAuditRepository
 from id_doc_ocr.leave_audit.repository.sqlite_repository import SQLiteRepository
 from id_doc_ocr.leave_audit.service.audit_service import AuditService
 from id_doc_ocr.leave_audit.service.review_service import ReviewService
@@ -24,7 +25,7 @@ from id_doc_ocr.verification.rules import DEFAULT_FIELD_MAPPING_CONFIG, DEFAULT_
 router = APIRouter(prefix="/leave-audit", tags=["leave-audit"])
 
 
-def _repo(request: Request) -> SQLiteRepository:
+def _repo(request: Request) -> LeaveAuditRepository:
     repo = getattr(request.app.state, "leave_audit_repository", None)
     if repo is None:
         repo = SQLiteRepository()
@@ -60,13 +61,13 @@ def _review_to_dict(review) -> dict[str, Any]:
     return payload
 
 
-def _merged_field_mappings(repository: SQLiteRepository) -> dict[str, list[str]]:
+def _merged_field_mappings(repository: LeaveAuditRepository) -> dict[str, list[str]]:
     mappings = {key: list(values) for key, values in DEFAULT_FIELD_MAPPING_CONFIG.items()}
     mappings.update(repository.get_field_mappings())
     return mappings
 
 
-def _merged_rule_configs(repository: SQLiteRepository) -> list[dict[str, Any]]:
+def _merged_rule_configs(repository: LeaveAuditRepository) -> list[dict[str, Any]]:
     configs = {key: dict(value) for key, value in DEFAULT_RULE_CONFIGS.items()}
     for item in repository.get_rule_configs():
         configs[str(item["leave_type"]).upper()] = item

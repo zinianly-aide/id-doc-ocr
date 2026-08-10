@@ -3,6 +3,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from id_doc_ocr.leave_audit.adapters.base import LeaveSystemAdapter
+from id_doc_ocr.leave_audit.domain.async_status import CallbackStatus, DecisionStatus
 from id_doc_ocr.leave_audit.domain.enums import LeaveAuditStatus
 from id_doc_ocr.leave_audit.domain.models import LeaveAuditResult, LeaveAuditTask
 from id_doc_ocr.leave_audit.repository.sqlite_repository import SQLiteRepository
@@ -89,5 +90,10 @@ def test_non_dry_run_callback_calls_adapter_and_marks_synced(tmp_path, monkeypat
     assert payload["dry_run"] is False
     assert payload["callback_skipped"] is False
     assert len(adapter.pushed) == 1
-    assert repo.get_result("LV-DRY-001").synced is True
-    assert repo.get_task("LV-DRY-001").status == LeaveAuditStatus.SYNCED
+    result = repo.get_result("LV-DRY-001")
+    task = repo.get_task("LV-DRY-001")
+    assert result.synced is True
+    assert result.callback_status is CallbackStatus.SUCCEEDED
+    assert task.status == LeaveAuditStatus.PENDING
+    assert task.decision_status is DecisionStatus.PENDING
+    assert task.callback_status is CallbackStatus.SUCCEEDED

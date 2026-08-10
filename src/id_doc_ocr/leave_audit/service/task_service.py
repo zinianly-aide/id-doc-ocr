@@ -8,7 +8,7 @@ from id_doc_ocr.leave_audit.adapters.base import LeaveSystemAdapter
 from id_doc_ocr.leave_audit.adapters.oracle_tna import OracleTNALeaveSystemAdapter, OracleTNASource, oracle_tna_sync_configured
 from id_doc_ocr.leave_audit.domain.enums import LeaveAuditStatus
 from id_doc_ocr.leave_audit.domain.models import LeaveAuditTask
-from id_doc_ocr.leave_audit.repository.sqlite_repository import SQLiteRepository
+from id_doc_ocr.leave_audit.repository.base import LeaveAuditRepository
 from id_doc_ocr.leave_audit.service.audit_service import is_leave_audit_dry_run
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ def _log_task_event(**fields: Any) -> None:
 
 
 class TaskService:
-    def __init__(self, repository: SQLiteRepository, adapter: LeaveSystemAdapter) -> None:
+    def __init__(self, repository: LeaveAuditRepository, adapter: LeaveSystemAdapter) -> None:
         self.repository = repository
         self.adapter = adapter
 

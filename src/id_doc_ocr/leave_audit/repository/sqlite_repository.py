@@ -6,6 +6,8 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
+from id_doc_ocr.leave_audit.domain.async_status import CallbackStatus, DecisionStatus, OcrJobStatus
+from id_doc_ocr.leave_audit.domain.config import ConfigKind, ConfigSnapshot, ConfigStatus
 from id_doc_ocr.leave_audit.domain.enums import LeaveAuditStatus
 from id_doc_ocr.leave_audit.domain.models import LeaveAttachment, LeaveAuditResult, LeaveAuditTask, LeaveReviewDecision, utc_now_iso
 
@@ -77,6 +79,58 @@ SCHEMA_MIGRATIONS: tuple[tuple[int, str, str], ...] = (
         );
         """,
     ),
+    (
+        3,
+        "orthogonal_async_statuses",
+        """
+        ALTER TABLE leave_audit_task ADD COLUMN ocr_status TEXT NOT NULL DEFAULT 'CREATED';
+        ALTER TABLE leave_audit_task ADD COLUMN decision_status TEXT NOT NULL DEFAULT 'PENDING';
+        ALTER TABLE leave_audit_task ADD COLUMN callback_status TEXT NOT NULL DEFAULT 'NOT_REQUIRED';
+        ALTER TABLE leave_audit_task ADD COLUMN decision_version INTEGER NOT NULL DEFAULT 0;
+        ALTER TABLE leave_audit_task ADD COLUMN ocr_profile_snapshot_id TEXT;
+        ALTER TABLE leave_audit_task ADD COLUMN decision_policy_snapshot_id TEXT;
+        ALTER TABLE leave_audit_task ADD COLUMN field_mapping_snapshot_id TEXT;
+        ALTER TABLE leave_audit_task ADD COLUMN callback_policy_snapshot_id TEXT;
+        ALTER TABLE leave_audit_result ADD COLUMN job_id TEXT;
+        ALTER TABLE leave_audit_result ADD COLUMN attachment_id TEXT;
+        ALTER TABLE leave_audit_result ADD COLUMN ocr_status TEXT NOT NULL DEFAULT 'SUCCEEDED';
+        ALTER TABLE leave_audit_result ADD COLUMN decision_status TEXT;
+        ALTER TABLE leave_audit_result ADD COLUMN callback_status TEXT NOT NULL DEFAULT 'NOT_REQUIRED';
+        ALTER TABLE leave_audit_result ADD COLUMN decision_version INTEGER NOT NULL DEFAULT 0;
+        ALTER TABLE leave_audit_result ADD COLUMN ocr_profile_snapshot_id TEXT;
+        ALTER TABLE leave_audit_result ADD COLUMN decision_policy_snapshot_id TEXT;
+        ALTER TABLE leave_audit_result ADD COLUMN field_mapping_snapshot_id TEXT;
+        ALTER TABLE leave_audit_result ADD COLUMN callback_policy_snapshot_id TEXT;
+        UPDATE leave_audit_task
+        SET ocr_status = CASE WHEN status = 'PROCESSING' THEN 'PROCESSING' WHEN status IN ('PASS', 'REVIEW', 'REJECT') THEN 'SUCCEEDED' WHEN status = 'ERROR' THEN 'FAILED' ELSE 'CREATED' END,
+            decision_status = CASE status WHEN 'PASS' THEN 'PASS' WHEN 'REVIEW' THEN 'REVIEW_REQUIRED' WHEN 'REJECT' THEN 'REJECT' ELSE 'PENDING' END,
+            callback_status = CASE WHEN status = 'SYNCED' THEN 'SUCCEEDED' ELSE 'NOT_REQUIRED' END;
+        UPDATE leave_audit_result
+        SET ocr_status = CASE WHEN status = 'ERROR' THEN 'FAILED' ELSE 'SUCCEEDED' END,
+            decision_status = CASE status WHEN 'PASS' THEN 'PASS' WHEN 'REVIEW' THEN 'REVIEW_REQUIRED' WHEN 'REJECT' THEN 'REJECT' ELSE NULL END,
+            callback_status = CASE WHEN synced = 1 THEN 'SUCCEEDED' ELSE 'NOT_REQUIRED' END;
+        """,
+    ),
+    (
+        4,
+        "versioned_config_snapshots",
+        """
+        CREATE TABLE IF NOT EXISTS leave_audit_config_version (
+            version_id TEXT PRIMARY KEY,
+            kind TEXT NOT NULL,
+            status TEXT NOT NULL,
+            content_json TEXT NOT NULL,
+            content_hash TEXT NOT NULL,
+            created_by TEXT NOT NULL,
+            approved_by TEXT,
+            published_at TEXT,
+            change_reason TEXT,
+            created_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_leave_audit_config_version_kind_status
+            ON leave_audit_config_version (kind, status, created_at);
+        """,
+    ),
 )
 
 
@@ -146,8 +200,10 @@ class SQLiteRepository:
             conn.execute(
                 """
                 INSERT INTO leave_audit_task
-                (request_id, leave_type, employee_id, employee_name, leave_start_date, leave_end_date, status, attachments_json, raw_payload_json, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (request_id, leave_type, employee_id, employee_name, leave_start_date, leave_end_date, status, attachments_json, raw_payload_json, created_at, updated_at,
+                 ocr_status, decision_status, callback_status, decision_version, ocr_profile_snapshot_id, decision_policy_snapshot_id,
+                 field_mapping_snapshot_id, callback_policy_snapshot_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(request_id) DO UPDATE SET
                     leave_type=excluded.leave_type,
                     employee_id=excluded.employee_id,
@@ -157,7 +213,15 @@ class SQLiteRepository:
                     status=excluded.status,
                     attachments_json=excluded.attachments_json,
                     raw_payload_json=excluded.raw_payload_json,
-                    updated_at=excluded.updated_at
+                    updated_at=excluded.updated_at,
+                    ocr_status=excluded.ocr_status,
+                    decision_status=excluded.decision_status,
+                    callback_status=excluded.callback_status,
+                    decision_version=excluded.decision_version,
+                    ocr_profile_snapshot_id=excluded.ocr_profile_snapshot_id,
+                    decision_policy_snapshot_id=excluded.decision_policy_snapshot_id,
+                    field_mapping_snapshot_id=excluded.field_mapping_snapshot_id,
+                    callback_policy_snapshot_id=excluded.callback_policy_snapshot_id
                 """,
                 (
                     task.request_id,
@@ -171,6 +235,14 @@ class SQLiteRepository:
                     _json(task.raw_payload),
                     task.created_at,
                     task.updated_at,
+                    task.ocr_status.value,
+                    task.decision_status.value,
+                    task.callback_status.value,
+                    task.decision_version,
+                    task.ocr_profile_snapshot_id,
+                    task.decision_policy_snapshot_id,
+                    task.field_mapping_snapshot_id,
+                    task.callback_policy_snapshot_id,
                 ),
             )
 
@@ -189,7 +261,43 @@ class SQLiteRepository:
 
     def update_task_status(self, request_id: str, status: LeaveAuditStatus) -> None:
         with self.connect() as conn:
-            conn.execute("UPDATE leave_audit_task SET status = ?, updated_at = ? WHERE request_id = ?", (status.value, utc_now_iso(), request_id))
+            now = utc_now_iso()
+            if status is LeaveAuditStatus.SYNCED:
+                conn.execute(
+                    "UPDATE leave_audit_task SET callback_status = ?, updated_at = ? WHERE request_id = ?",
+                    (CallbackStatus.SUCCEEDED.value, now, request_id),
+                )
+                return
+            ocr_status = None
+            decision_status = None
+            if status is LeaveAuditStatus.PROCESSING:
+                ocr_status = OcrJobStatus.PROCESSING.value
+            elif status in {LeaveAuditStatus.PASS, LeaveAuditStatus.REVIEW, LeaveAuditStatus.REJECT}:
+                ocr_status = OcrJobStatus.SUCCEEDED.value
+                decision_status = {
+                    LeaveAuditStatus.PASS: DecisionStatus.PASS.value,
+                    LeaveAuditStatus.REVIEW: DecisionStatus.REVIEW_REQUIRED.value,
+                    LeaveAuditStatus.REJECT: DecisionStatus.REJECT.value,
+                }[status]
+            elif status is LeaveAuditStatus.ERROR:
+                ocr_status = OcrJobStatus.FAILED.value
+            updates = ["status = ?", "updated_at = ?"]
+            params: list[Any] = [status.value, now]
+            if ocr_status is not None:
+                updates.append("ocr_status = ?")
+                params.append(ocr_status)
+            if decision_status is not None:
+                updates.append("decision_status = ?")
+                params.append(decision_status)
+            params.append(request_id)
+            conn.execute(f"UPDATE leave_audit_task SET {', '.join(updates)} WHERE request_id = ?", tuple(params))
+
+    def update_callback_status(self, request_id: str, status: CallbackStatus) -> None:
+        with self.connect() as conn:
+            conn.execute(
+                "UPDATE leave_audit_task SET callback_status = ?, updated_at = ? WHERE request_id = ?",
+                (status.value, utc_now_iso(), request_id),
+            )
 
     def save_result(self, result: LeaveAuditResult) -> None:
         result.updated_at = utc_now_iso()
@@ -197,8 +305,10 @@ class SQLiteRepository:
             conn.execute(
                 """
                 INSERT INTO leave_audit_result
-                (request_id, status, plugin_name, analysis_json, verification_json, error_message, synced, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (request_id, status, plugin_name, analysis_json, verification_json, error_message, synced, created_at, updated_at,
+                 job_id, attachment_id, ocr_status, decision_status, callback_status, decision_version, ocr_profile_snapshot_id,
+                 decision_policy_snapshot_id, field_mapping_snapshot_id, callback_policy_snapshot_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(request_id) DO UPDATE SET
                     status=excluded.status,
                     plugin_name=excluded.plugin_name,
@@ -206,7 +316,17 @@ class SQLiteRepository:
                     verification_json=excluded.verification_json,
                     error_message=excluded.error_message,
                     synced=excluded.synced,
-                    updated_at=excluded.updated_at
+                    updated_at=excluded.updated_at,
+                    job_id=excluded.job_id,
+                    attachment_id=excluded.attachment_id,
+                    ocr_status=excluded.ocr_status,
+                    decision_status=excluded.decision_status,
+                    callback_status=excluded.callback_status,
+                    decision_version=excluded.decision_version,
+                    ocr_profile_snapshot_id=excluded.ocr_profile_snapshot_id,
+                    decision_policy_snapshot_id=excluded.decision_policy_snapshot_id,
+                    field_mapping_snapshot_id=excluded.field_mapping_snapshot_id,
+                    callback_policy_snapshot_id=excluded.callback_policy_snapshot_id
                 """,
                 (
                     result.request_id,
@@ -218,6 +338,16 @@ class SQLiteRepository:
                     1 if result.synced else 0,
                     result.created_at,
                     result.updated_at,
+                    result.job_id,
+                    result.attachment_id,
+                    result.ocr_status.value,
+                    result.decision_status.value if result.decision_status else None,
+                    result.callback_status.value,
+                    result.decision_version,
+                    result.ocr_profile_snapshot_id,
+                    result.decision_policy_snapshot_id,
+                    result.field_mapping_snapshot_id,
+                    result.callback_policy_snapshot_id,
                 ),
             )
 
@@ -236,6 +366,16 @@ class SQLiteRepository:
             synced=bool(row["synced"]),
             created_at=row["created_at"],
             updated_at=row["updated_at"],
+            job_id=row["job_id"],
+            attachment_id=row["attachment_id"],
+            ocr_status=OcrJobStatus(row["ocr_status"]),
+            decision_status=DecisionStatus(row["decision_status"]) if row["decision_status"] else None,
+            callback_status=CallbackStatus(row["callback_status"]),
+            decision_version=int(row["decision_version"]),
+            ocr_profile_snapshot_id=row["ocr_profile_snapshot_id"],
+            decision_policy_snapshot_id=row["decision_policy_snapshot_id"],
+            field_mapping_snapshot_id=row["field_mapping_snapshot_id"],
+            callback_policy_snapshot_id=row["callback_policy_snapshot_id"],
         )
 
     def save_review(self, decision: LeaveReviewDecision) -> None:
@@ -244,7 +384,15 @@ class SQLiteRepository:
                 "INSERT INTO leave_audit_review (request_id, decision, reviewer, comment, created_at) VALUES (?, ?, ?, ?, ?)",
                 (decision.request_id, decision.decision.value, decision.reviewer, decision.comment, decision.created_at),
             )
-            conn.execute("UPDATE leave_audit_task SET status = ?, updated_at = ? WHERE request_id = ?", (decision.decision.value, utc_now_iso(), decision.request_id))
+            decision_status = {
+                LeaveAuditStatus.PASS: DecisionStatus.PASS.value,
+                LeaveAuditStatus.REVIEW: DecisionStatus.REVIEW_REQUIRED.value,
+                LeaveAuditStatus.REJECT: DecisionStatus.REJECT.value,
+            }.get(decision.decision)
+            conn.execute(
+                "UPDATE leave_audit_task SET status = ?, decision_status = COALESCE(?, decision_status), decision_version = decision_version + 1, updated_at = ? WHERE request_id = ?",
+                (decision.decision.value, decision_status, utc_now_iso(), decision.request_id),
+            )
 
     def list_reviews(self, request_id: str) -> list[LeaveReviewDecision]:
         with self.connect() as conn:
@@ -386,6 +534,63 @@ class SQLiteRepository:
                 (normalized_recognition_type, normalized_prompt_type, prompt_text, 1 if enabled else 0, utc_now_iso()),
             )
 
+    def save_config_snapshot(self, snapshot: ConfigSnapshot) -> None:
+        with self.connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO leave_audit_config_version
+                (version_id, kind, status, content_json, content_hash, created_by, approved_by, published_at, change_reason, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(version_id) DO UPDATE SET
+                    kind=excluded.kind,
+                    status=excluded.status,
+                    content_json=excluded.content_json,
+                    content_hash=excluded.content_hash,
+                    created_by=excluded.created_by,
+                    approved_by=excluded.approved_by,
+                    published_at=excluded.published_at,
+                    change_reason=excluded.change_reason
+                """,
+                (
+                    snapshot.version_id,
+                    snapshot.kind.value,
+                    snapshot.status.value,
+                    _json(snapshot.content),
+                    snapshot.content_hash,
+                    snapshot.created_by,
+                    snapshot.approved_by,
+                    snapshot.published_at,
+                    snapshot.change_reason,
+                    snapshot.created_at,
+                ),
+            )
+
+    def get_config_snapshot(self, version_id: str) -> ConfigSnapshot | None:
+        with self.connect() as conn:
+            row = conn.execute("SELECT * FROM leave_audit_config_version WHERE version_id = ?", (version_id,)).fetchone()
+        if not row:
+            return None
+        return ConfigSnapshot(
+            version_id=row["version_id"],
+            kind=ConfigKind(row["kind"]),
+            status=ConfigStatus(row["status"]),
+            content=_loads(row["content_json"], {}),
+            content_hash=row["content_hash"],
+            created_by=row["created_by"],
+            approved_by=row["approved_by"],
+            published_at=row["published_at"],
+            change_reason=row["change_reason"],
+            created_at=row["created_at"],
+        )
+
+    def list_config_snapshots(self, kind: ConfigKind | None = None) -> list[ConfigSnapshot]:
+        with self.connect() as conn:
+            if kind is None:
+                rows = conn.execute("SELECT * FROM leave_audit_config_version ORDER BY created_at DESC").fetchall()
+            else:
+                rows = conn.execute("SELECT * FROM leave_audit_config_version WHERE kind = ? ORDER BY created_at DESC", (kind.value,)).fetchall()
+        return [self.get_config_snapshot(row["version_id"]) for row in rows if row is not None]
+
     def _row_to_task(self, row: sqlite3.Row) -> LeaveAuditTask:
         attachments = [
             LeaveAttachment(
@@ -410,4 +615,12 @@ class SQLiteRepository:
             raw_payload=_loads(row["raw_payload_json"], {}),
             created_at=row["created_at"],
             updated_at=row["updated_at"],
+            ocr_status=OcrJobStatus(row["ocr_status"]),
+            decision_status=DecisionStatus(row["decision_status"]),
+            callback_status=CallbackStatus(row["callback_status"]),
+            decision_version=int(row["decision_version"]),
+            ocr_profile_snapshot_id=row["ocr_profile_snapshot_id"],
+            decision_policy_snapshot_id=row["decision_policy_snapshot_id"],
+            field_mapping_snapshot_id=row["field_mapping_snapshot_id"],
+            callback_policy_snapshot_id=row["callback_policy_snapshot_id"],
         )

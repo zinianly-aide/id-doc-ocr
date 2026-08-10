@@ -36,6 +36,10 @@ paddle = [
 oracle = [
   "oracledb>=2.0,<4.0",
 ]
+postgres = [
+  "psycopg[binary]>=3.2,<4.0",
+  "alembic>=1.13,<2.0",
+]
 
 [project.scripts]
 id-doc-ocr = "id_doc_ocr.cli.main:main"
