@@ -519,6 +519,20 @@ class PostgresRepository:
         with self.connect() as conn, conn.cursor() as cur:
             cur.execute("INSERT INTO ocr_job (job_id,request_id,attachment_id,command_id,status,object_key,content_sha256,created_at,updated_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(job_id) DO NOTHING", (job_id,request_id,attachment_id,command_id,status,object_key,content_sha256,utc_now_iso(),utc_now_iso()))
 
+    def save_task_and_enqueue_ocr_jobs(self, task: LeaveAuditTask, jobs: list[dict[str, Any]], events: list[OutboxEvent]) -> None:
+        task.updated_at = utc_now_iso()
+        attachments = [{"attachment_id": a.attachment_id, "attachment_url": a.attachment_url, "filename": a.filename,
+                        "content_type": a.content_type, "plugin_name": a.plugin_name, "metadata": a.metadata} for a in task.attachments]
+        with self.connect() as conn, conn.cursor() as cur:
+            cur.execute("""INSERT INTO leave_audit_task (request_id,leave_type,employee_id,employee_name,leave_start_date,leave_end_date,status,ocr_status,decision_status,callback_status,decision_version,ocr_profile_snapshot_id,decision_policy_snapshot_id,field_mapping_snapshot_id,callback_policy_snapshot_id,attachments_json,raw_payload_json,created_at,updated_at)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                ON CONFLICT(request_id) DO UPDATE SET status=EXCLUDED.status,ocr_status=EXCLUDED.ocr_status,attachments_json=EXCLUDED.attachments_json,raw_payload_json=EXCLUDED.raw_payload_json,updated_at=EXCLUDED.updated_at""",
+                (task.request_id,task.leave_type,task.employee_id,task.employee_name,task.leave_start_date,task.leave_end_date,task.status.value,task.ocr_status.value,task.decision_status.value,task.callback_status.value,task.decision_version,task.ocr_profile_snapshot_id,task.decision_policy_snapshot_id,task.field_mapping_snapshot_id,task.callback_policy_snapshot_id,self._json(attachments),self._json(task.raw_payload),task.created_at,task.updated_at))
+            for job in jobs:
+                cur.execute("INSERT INTO ocr_job (job_id,request_id,attachment_id,command_id,status,object_key,content_sha256,created_at,updated_at) VALUES (%s,%s,%s,%s,'QUEUED',%s,%s,%s,%s) ON CONFLICT(job_id) DO NOTHING", (job["job_id"],task.request_id,job["attachment_id"],job["command_id"],job["object_key"],job["content_sha256"],utc_now_iso(),utc_now_iso()))
+            for event in events:
+                cur.execute("INSERT INTO outbox_event (event_id,aggregate_type,aggregate_id,event_type,payload,created_at) VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT(event_id) DO NOTHING", (event.event_id,event.aggregate_type,event.aggregate_id,event.event_type,self._json(event.payload),event.created_at))
+
     def list_pending_callbacks(self, limit: int = 100) -> list[CallbackOutboxItem]:
         with self.connect() as conn, conn.cursor() as cur:
             cur.execute("SELECT * FROM callback_outbox WHERE status IN ('PENDING','FAILED') ORDER BY created_at LIMIT %s", (limit,))

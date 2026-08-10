@@ -67,6 +67,20 @@ class TaskOutboxService:
         trace_id: str,
         command_id: str | None = None,
     ) -> OutboxEvent:
+        event = self.build_ocr_command_event(
+            request_id=request_id, job_id=job_id, attachment_id=attachment_id,
+            object_key=object_key, content_sha256=content_sha256, plugin_name=plugin_name,
+            pipeline_profile=pipeline_profile, ocr_profile_snapshot_id=ocr_profile_snapshot_id,
+            trace_id=trace_id, command_id=command_id,
+        )
+        self.repository.enqueue_outbox_event(event)
+        return event
+
+    def build_ocr_command_event(
+        self, *, request_id: str, job_id: str, attachment_id: str, object_key: str,
+        content_sha256: str, plugin_name: str, pipeline_profile: str,
+        ocr_profile_snapshot_id: str, trace_id: str, command_id: str | None = None,
+    ) -> OutboxEvent:
         command = OcrCommandV1(
             command_id=command_id or str(uuid.uuid4()),
             job_id=job_id,
@@ -87,7 +101,6 @@ class TaskOutboxService:
             event_type="ocr.execute.v1",
             payload=command.model_dump(mode="json"),
         )
-        self.repository.enqueue_outbox_event(event)
         return event
 
 

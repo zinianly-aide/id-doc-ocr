@@ -61,6 +61,8 @@ def test_leave_audit_async_run_returns_202_and_outboxes(tmp_path, monkeypatch):
     assert detail["ocr_status"] == "QUEUED"
     repository = client.app.state.leave_audit_repository
     assert len(repository.list_pending_outbox()) == 1
+    with repository.connect() as conn:
+        assert conn.execute("SELECT COUNT(*) FROM leave_audit_ocr_job").fetchone()[0] == 1
 
 
 def test_leave_audit_dify_run_requires_config_without_mutating_task(tmp_path, monkeypatch):

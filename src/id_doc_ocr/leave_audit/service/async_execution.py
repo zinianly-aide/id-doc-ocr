@@ -23,9 +23,10 @@ class AsyncExecutionService:
         task.ocr_profile_snapshot_id = profile
         task.ocr_status = OcrJobStatus.QUEUED
         task.status = task.status
-        self.repository.save_task(task)
         outbox = TaskOutboxService(self.repository)
         jobs: list[str] = []
+        job_rows: list[dict[str, str]] = []
+        events = []
         for attachment in task.attachments:
             payload = self.adapter.download_attachment(attachment.attachment_url)
             object_key = str(attachment.metadata.get("object_key") or f"leave-audit/{task.request_id}/{attachment.attachment_id}")
@@ -34,11 +35,12 @@ class AsyncExecutionService:
             attachment.metadata["content_sha256"] = sha256_hex(payload)
             job_id = str(uuid.uuid4())
             jobs.append(job_id)
-            event = outbox.enqueue_ocr_command(request_id=task.request_id, job_id=job_id, attachment_id=attachment.attachment_id,
+            event = outbox.build_ocr_command_event(request_id=task.request_id, job_id=job_id, attachment_id=attachment.attachment_id,
                                        object_key=stored.object_key, content_sha256=stored.content_sha256,
                                        plugin_name=attachment.plugin_name or "diagnosis_proof", pipeline_profile="production-v1",
                                        ocr_profile_snapshot_id=profile, trace_id=trace_id or task.request_id)
-            self.repository.create_ocr_job(job_id=job_id, request_id=task.request_id, attachment_id=attachment.attachment_id,
-                                           command_id=event.event_id, object_key=stored.object_key, content_sha256=stored.content_sha256)
-        self.repository.save_task(task)
+            events.append(event)
+            job_rows.append({"job_id": job_id, "attachment_id": attachment.attachment_id, "command_id": event.event_id,
+                             "object_key": stored.object_key, "content_sha256": stored.content_sha256})
+        self.repository.save_task_and_enqueue_ocr_jobs(task, job_rows, events)
         return jobs

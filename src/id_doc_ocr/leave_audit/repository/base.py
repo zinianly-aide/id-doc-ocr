@@ -7,6 +7,7 @@ from id_doc_ocr.leave_audit.domain.config import ConfigKind, ConfigSnapshot
 from id_doc_ocr.leave_audit.domain.enums import LeaveAuditStatus
 from id_doc_ocr.leave_audit.domain.models import LeaveAuditResult, LeaveAuditTask, LeaveReviewDecision
 from id_doc_ocr.leave_audit.messaging.outbox import CallbackOutboxItem
+from id_doc_ocr.leave_audit.messaging.outbox import OutboxEvent
 
 
 class LeaveAuditRepository(Protocol):
@@ -69,3 +70,5 @@ class LeaveAuditRepository(Protocol):
     def mark_callback_failed(self, callback_id: str, request_id: str, error: str, dead: bool = False) -> None: ...
 
     def create_ocr_job(self, *, job_id: str, request_id: str, attachment_id: str, command_id: str, object_key: str, content_sha256: str, status: str = "QUEUED") -> None: ...
+
+    def save_task_and_enqueue_ocr_jobs(self, task: LeaveAuditTask, jobs: list[dict[str, Any]], events: list[OutboxEvent]) -> None: ...
