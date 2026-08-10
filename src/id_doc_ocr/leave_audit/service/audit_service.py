@@ -7,7 +7,8 @@ from typing import Any
 
 from id_doc_ocr.application.inference_service import InferenceService
 from id_doc_ocr.leave_audit.adapters.base import LeaveSystemAdapter
-from id_doc_ocr.leave_audit.domain.async_status import CallbackStatus
+from id_doc_ocr.leave_audit.domain.async_status import CallbackStatus, DecisionStatus, OcrJobStatus
+from id_doc_ocr.leave_audit.domain.aggregation import AttachmentDecisionInput, aggregate_attachment_decisions
 from id_doc_ocr.leave_audit.domain.enums import LeaveAuditStatus
 from id_doc_ocr.leave_audit.domain.mapping import LEAVE_TYPE_PLUGIN_MAPPING, resolve_plugin_for_leave_task
 from id_doc_ocr.leave_audit.domain.models import LeaveAttachment, LeaveAuditResult, LeaveAuditTask
@@ -361,8 +362,24 @@ class AuditService:
                             "error_message": f"{exc.__class__.__name__}: {exc}",
                         }
                     )
-            selected = min(attachment_results, key=lambda item: _status_rank(item["status"]))
-            status = selected["status"]
+            aggregation = aggregate_attachment_decisions([
+                AttachmentDecisionInput(
+                    item["attachment_id"],
+                    OcrJobStatus.FAILED if item["status"] is LeaveAuditStatus.ERROR else OcrJobStatus.SUCCEEDED,
+                    {LeaveAuditStatus.PASS: DecisionStatus.PASS, LeaveAuditStatus.REVIEW: DecisionStatus.REVIEW_REQUIRED, LeaveAuditStatus.REJECT: DecisionStatus.REJECT}.get(item["status"]),
+                )
+                for item in attachment_results
+            ])
+            if aggregation.pending:
+                status = LeaveAuditStatus.ERROR
+                selected = next((item for item in attachment_results if item["status"] is LeaveAuditStatus.ERROR), attachment_results[0])
+            else:
+                status = {
+                    "PASS": LeaveAuditStatus.PASS,
+                    "REVIEW_REQUIRED": LeaveAuditStatus.REVIEW,
+                    "REJECT": LeaveAuditStatus.REJECT,
+                }[aggregation.decision_status.value]
+                selected = next((item for item in attachment_results if item["status"] is status), attachment_results[0])
             summaries = [_attachment_result_summary(item) for item in attachment_results]
             if status == LeaveAuditStatus.ERROR:
                 result = LeaveAuditResult(
