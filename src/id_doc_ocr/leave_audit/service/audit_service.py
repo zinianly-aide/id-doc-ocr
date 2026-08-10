@@ -7,10 +7,12 @@ from typing import Any
 
 from id_doc_ocr.application.inference_service import InferenceService
 from id_doc_ocr.leave_audit.adapters.base import LeaveSystemAdapter
+from id_doc_ocr.leave_audit.domain.async_status import CallbackStatus, DecisionStatus, OcrJobStatus
+from id_doc_ocr.leave_audit.domain.aggregation import AttachmentDecisionInput, aggregate_attachment_decisions
 from id_doc_ocr.leave_audit.domain.enums import LeaveAuditStatus
 from id_doc_ocr.leave_audit.domain.mapping import LEAVE_TYPE_PLUGIN_MAPPING, resolve_plugin_for_leave_task
 from id_doc_ocr.leave_audit.domain.models import LeaveAttachment, LeaveAuditResult, LeaveAuditTask
-from id_doc_ocr.leave_audit.repository.sqlite_repository import SQLiteRepository
+from id_doc_ocr.leave_audit.repository.base import LeaveAuditRepository
 from id_doc_ocr.parsers.dify_field_parser import dify_configuration_message, is_dify_configured
 from id_doc_ocr.utils.document_pages import DocumentPage, expand_document_pages
 from id_doc_ocr.verification.rules import DEFAULT_FIELD_MAPPING_CONFIG, DEFAULT_RULE_CONFIGS, verify_attachment
@@ -257,7 +259,7 @@ def _log_audit_event(**fields: Any) -> None:
 
 
 class AuditService:
-    def __init__(self, repository: SQLiteRepository, adapter: LeaveSystemAdapter, inference_service: InferenceService | None = None) -> None:
+    def __init__(self, repository: LeaveAuditRepository, adapter: LeaveSystemAdapter, inference_service: InferenceService | None = None) -> None:
         self.repository = repository
         self.adapter = adapter
         self.inference_service = inference_service or InferenceService()
@@ -360,8 +362,24 @@ class AuditService:
                             "error_message": f"{exc.__class__.__name__}: {exc}",
                         }
                     )
-            selected = min(attachment_results, key=lambda item: _status_rank(item["status"]))
-            status = selected["status"]
+            aggregation = aggregate_attachment_decisions([
+                AttachmentDecisionInput(
+                    item["attachment_id"],
+                    OcrJobStatus.FAILED if item["status"] is LeaveAuditStatus.ERROR else OcrJobStatus.SUCCEEDED,
+                    {LeaveAuditStatus.PASS: DecisionStatus.PASS, LeaveAuditStatus.REVIEW: DecisionStatus.REVIEW_REQUIRED, LeaveAuditStatus.REJECT: DecisionStatus.REJECT}.get(item["status"]),
+                )
+                for item in attachment_results
+            ])
+            if aggregation.pending:
+                status = LeaveAuditStatus.ERROR
+                selected = next((item for item in attachment_results if item["status"] is LeaveAuditStatus.ERROR), attachment_results[0])
+            else:
+                status = {
+                    "PASS": LeaveAuditStatus.PASS,
+                    "REVIEW_REQUIRED": LeaveAuditStatus.REVIEW,
+                    "REJECT": LeaveAuditStatus.REJECT,
+                }[aggregation.decision_status.value]
+                selected = next((item for item in attachment_results if item["status"] is status), attachment_results[0])
             summaries = [_attachment_result_summary(item) for item in attachment_results]
             if status == LeaveAuditStatus.ERROR:
                 result = LeaveAuditResult(
@@ -445,14 +463,20 @@ class AuditService:
                     "payload": callback_payload,
                 }
             else:
+                self.repository.update_callback_status(request_id, CallbackStatus.PROCESSING)
+                result.callback_status = CallbackStatus.PROCESSING
                 self.adapter.push_audit_result(result)
                 result.synced = True
-                self.repository.update_task_status(request_id, LeaveAuditStatus.SYNCED)
+                result.callback_status = CallbackStatus.SUCCEEDED
+                self.repository.update_callback_status(request_id, CallbackStatus.SUCCEEDED)
             self.repository.save_result(result)
             return result, metadata
         except Exception as exc:
             error_type = exc.__class__.__name__
             error_message = str(exc)
+            if not dry_run:
+                result.callback_status = CallbackStatus.FAILED
+                self.repository.update_callback_status(request_id, CallbackStatus.FAILED)
             raise
         finally:
             elapsed_ms = (time.perf_counter() - started) * 1000.0

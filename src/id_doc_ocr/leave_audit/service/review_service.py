@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from id_doc_ocr.leave_audit.domain.enums import LeaveAuditStatus
 from id_doc_ocr.leave_audit.domain.models import LeaveReviewDecision
-from id_doc_ocr.leave_audit.repository.sqlite_repository import SQLiteRepository
+from id_doc_ocr.leave_audit.repository.base import LeaveAuditRepository
 
 
 class ReviewService:
-    def __init__(self, repository: SQLiteRepository) -> None:
+    def __init__(self, repository: LeaveAuditRepository) -> None:
         self.repository = repository
 
     def submit(self, *, request_id: str, decision: str, reviewer: str, comment: str | None = None) -> LeaveReviewDecision:

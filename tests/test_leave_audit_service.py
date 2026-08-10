@@ -245,8 +245,10 @@ def test_audit_service_selects_passing_attachment_when_task_has_multiple_attachm
 
     result = service.run_task("LV-MULTI-ATT-001")
 
-    assert result.status == LeaveAuditStatus.PASS
-    assert result.verification_json["selected_attachment_id"] == "ATT-MEDICAL-001"
+    # Default ALL_REQUIRED policy rejects when any required attachment fails;
+    # a passing sibling must not mask a rejected attachment.
+    assert result.status == LeaveAuditStatus.REJECT
+    assert result.verification_json["selected_attachment_id"] == "ATT-WRONG-001"
     assert [item["attachment_id"] for item in result.verification_json["attachment_results"]] == [
         "ATT-WRONG-001",
         "ATT-MEDICAL-001",

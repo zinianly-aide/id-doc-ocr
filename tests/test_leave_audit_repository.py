@@ -1,6 +1,7 @@
 import sqlite3
 
 from id_doc_ocr.leave_audit.domain.enums import LeaveAuditStatus
+from id_doc_ocr.leave_audit.domain.async_status import CallbackStatus, DecisionStatus, OcrJobStatus
 from id_doc_ocr.leave_audit.domain.models import LeaveAttachment, LeaveAuditResult, LeaveAuditTask, LeaveReviewDecision
 from id_doc_ocr.leave_audit.repository.sqlite_repository import SQLiteRepository
 
@@ -19,6 +20,9 @@ def test_repository_saves_and_queries_task_result_and_review(tmp_path):
     assert loaded is not None
     assert loaded.employee_name == "张三"
     assert loaded.attachments[0].attachment_url == "fixture://a.jpg"
+    assert loaded.ocr_status is OcrJobStatus.CREATED
+    assert loaded.decision_status is DecisionStatus.PENDING
+    assert loaded.callback_status is CallbackStatus.NOT_REQUIRED
 
     result = LeaveAuditResult(request_id="LV-TEST-001", status=LeaveAuditStatus.PASS, verification_json={"verify_status": "PASS"})
     repo.save_result(result)
@@ -53,7 +57,15 @@ def test_repository_records_schema_migrations(tmp_path):
     with sqlite3.connect(db_path) as conn:
         rows = conn.execute("SELECT version, name FROM leave_audit_schema_migration ORDER BY version").fetchall()
 
-    assert rows == [(1, "base_leave_audit_schema"), (2, "prompt_config")]
+    assert rows == [
+        (1, "base_leave_audit_schema"),
+        (2, "prompt_config"),
+        (3, "orthogonal_async_statuses"),
+        (4, "versioned_config_snapshots"),
+        (5, "task_outbox"),
+        (6, "consumed_messages_and_callback_outbox"),
+        (7, "ocr_jobs"),
+    ]
 
 
 def test_repository_migrates_legacy_database_without_prompt_table(tmp_path):

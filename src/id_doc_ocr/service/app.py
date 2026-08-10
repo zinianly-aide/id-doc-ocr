@@ -547,7 +547,7 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=[origin.strip() for origin in os.getenv("ID_DOC_OCR_CORS_ORIGINS", "http://localhost:8080").split(",") if origin.strip()],
         allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -576,6 +576,8 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
             "default_detector_backend": service_settings.default_detector_backend,
             "default_rectify_backend": service_settings.default_rectify_backend,
             "default_field_parser_backend": service_settings.default_field_parser_backend,
+            "execution_mode": os.getenv("ID_DOC_OCR_EXECUTION_MODE", "sync"),
+            "cors_origins": os.getenv("ID_DOC_OCR_CORS_ORIGINS", "http://localhost:8080"),
         }
 
     @app.get("/capabilities")
