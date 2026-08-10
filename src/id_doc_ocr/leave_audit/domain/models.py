@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
+from id_doc_ocr.leave_audit.domain.async_status import CallbackStatus, DecisionStatus, OcrJobStatus
 from id_doc_ocr.leave_audit.domain.enums import LeaveAuditStatus
 
 
@@ -34,6 +35,33 @@ class LeaveAuditTask:
     raw_payload: dict[str, Any] = field(default_factory=dict)
     created_at: str = field(default_factory=utc_now_iso)
     updated_at: str = field(default_factory=utc_now_iso)
+    # ``status`` remains as a compatibility field for existing callers. New
+    # code must use the three orthogonal statuses below.
+    ocr_status: OcrJobStatus = OcrJobStatus.CREATED
+    decision_status: DecisionStatus = DecisionStatus.PENDING
+    callback_status: CallbackStatus = CallbackStatus.NOT_REQUIRED
+    decision_version: int = 0
+    ocr_profile_snapshot_id: str | None = None
+    decision_policy_snapshot_id: str | None = None
+    field_mapping_snapshot_id: str | None = None
+    callback_policy_snapshot_id: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.status is LeaveAuditStatus.PROCESSING:
+            self.ocr_status = OcrJobStatus.PROCESSING
+        elif self.status is LeaveAuditStatus.PASS:
+            self.ocr_status = OcrJobStatus.SUCCEEDED
+            self.decision_status = DecisionStatus.PASS
+        elif self.status is LeaveAuditStatus.REVIEW:
+            self.ocr_status = OcrJobStatus.SUCCEEDED
+            self.decision_status = DecisionStatus.REVIEW_REQUIRED
+        elif self.status is LeaveAuditStatus.REJECT:
+            self.ocr_status = OcrJobStatus.SUCCEEDED
+            self.decision_status = DecisionStatus.REJECT
+        elif self.status is LeaveAuditStatus.ERROR:
+            self.ocr_status = OcrJobStatus.FAILED
+        elif self.status is LeaveAuditStatus.PULLED and self.ocr_status is OcrJobStatus.CREATED:
+            self.ocr_status = OcrJobStatus.CREATED
 
 
 @dataclass(slots=True)
@@ -47,6 +75,28 @@ class LeaveAuditResult:
     synced: bool = False
     created_at: str = field(default_factory=utc_now_iso)
     updated_at: str = field(default_factory=utc_now_iso)
+    job_id: str | None = None
+    attachment_id: str | None = None
+    ocr_status: OcrJobStatus = OcrJobStatus.SUCCEEDED
+    decision_status: DecisionStatus | None = None
+    callback_status: CallbackStatus = CallbackStatus.NOT_REQUIRED
+    decision_version: int = 0
+    ocr_profile_snapshot_id: str | None = None
+    decision_policy_snapshot_id: str | None = None
+    field_mapping_snapshot_id: str | None = None
+    callback_policy_snapshot_id: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.status is LeaveAuditStatus.ERROR:
+            self.ocr_status = OcrJobStatus.FAILED
+        if self.decision_status is None:
+            self.decision_status = {
+                LeaveAuditStatus.PASS: DecisionStatus.PASS,
+                LeaveAuditStatus.REVIEW: DecisionStatus.REVIEW_REQUIRED,
+                LeaveAuditStatus.REJECT: DecisionStatus.REJECT,
+            }.get(self.status)
+        if self.synced:
+            self.callback_status = CallbackStatus.SUCCEEDED
 
 
 @dataclass(slots=True)
