@@ -178,6 +178,25 @@ SCHEMA_MIGRATIONS: tuple[tuple[int, str, str], ...] = (
             ON leave_audit_callback_outbox (status, next_attempt_at, created_at);
         """,
     ),
+    (
+        7,
+        "ocr_jobs",
+        """
+        CREATE TABLE IF NOT EXISTS leave_audit_ocr_job (
+            job_id TEXT PRIMARY KEY,
+            request_id TEXT NOT NULL,
+            attachment_id TEXT NOT NULL,
+            command_id TEXT,
+            status TEXT NOT NULL,
+            attempt INTEGER NOT NULL DEFAULT 1,
+            object_key TEXT NOT NULL,
+            content_sha256 TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_leave_audit_ocr_job_request ON leave_audit_ocr_job(request_id, attachment_id);
+        """,
+    ),
 )
 
 
@@ -292,6 +311,10 @@ class SQLiteRepository:
                     task.callback_policy_snapshot_id,
                 ),
             )
+
+    def create_ocr_job(self, *, job_id: str, request_id: str, attachment_id: str, command_id: str, object_key: str, content_sha256: str, status: str = "QUEUED") -> None:
+        with self.connect() as conn:
+            conn.execute("""INSERT INTO leave_audit_ocr_job (job_id,request_id,attachment_id,command_id,status,object_key,content_sha256,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(job_id) DO NOTHING""", (job_id, request_id, attachment_id, command_id, status, object_key, content_sha256, utc_now_iso(), utc_now_iso()))
 
     def get_task(self, request_id: str) -> LeaveAuditTask | None:
         with self.connect() as conn:

@@ -34,9 +34,11 @@ class AsyncExecutionService:
             attachment.metadata["content_sha256"] = sha256_hex(payload)
             job_id = str(uuid.uuid4())
             jobs.append(job_id)
-            outbox.enqueue_ocr_command(request_id=task.request_id, job_id=job_id, attachment_id=attachment.attachment_id,
+            event = outbox.enqueue_ocr_command(request_id=task.request_id, job_id=job_id, attachment_id=attachment.attachment_id,
                                        object_key=stored.object_key, content_sha256=stored.content_sha256,
                                        plugin_name=attachment.plugin_name or "diagnosis_proof", pipeline_profile="production-v1",
                                        ocr_profile_snapshot_id=profile, trace_id=trace_id or task.request_id)
+            self.repository.create_ocr_job(job_id=job_id, request_id=task.request_id, attachment_id=attachment.attachment_id,
+                                           command_id=event.event_id, object_key=stored.object_key, content_sha256=stored.content_sha256)
         self.repository.save_task(task)
         return jobs

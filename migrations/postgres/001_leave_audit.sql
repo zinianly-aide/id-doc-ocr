@@ -46,6 +46,20 @@ CREATE TABLE IF NOT EXISTS leave_audit_result (
     updated_at TIMESTAMPTZ NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS ocr_job (
+    job_id UUID PRIMARY KEY,
+    request_id TEXT NOT NULL REFERENCES leave_audit_task(request_id),
+    attachment_id TEXT NOT NULL,
+    command_id UUID,
+    status TEXT NOT NULL,
+    attempt INTEGER NOT NULL DEFAULT 1,
+    object_key TEXT NOT NULL,
+    content_sha256 TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_ocr_job_request ON ocr_job(request_id, attachment_id);
+
 CREATE TABLE IF NOT EXISTS leave_audit_review (
     id BIGSERIAL PRIMARY KEY,
     request_id TEXT NOT NULL REFERENCES leave_audit_task(request_id),

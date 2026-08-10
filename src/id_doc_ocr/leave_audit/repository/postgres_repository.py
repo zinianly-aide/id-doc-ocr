@@ -515,6 +515,10 @@ class PostgresRepository:
                 cur.execute("INSERT INTO callback_outbox (callback_id,request_id,decision_version,payload,status,created_at,updated_at) VALUES (%s,%s,%s,%s,'PENDING',%s,%s) ON CONFLICT(request_id,decision_version) DO NOTHING", (str(uuid.uuid4()),result.request_id,result.decision_version,self._json(callback_payload),utc_now_iso(),utc_now_iso()))
             return True
 
+    def create_ocr_job(self, *, job_id: str, request_id: str, attachment_id: str, command_id: str, object_key: str, content_sha256: str, status: str = "QUEUED") -> None:
+        with self.connect() as conn, conn.cursor() as cur:
+            cur.execute("INSERT INTO ocr_job (job_id,request_id,attachment_id,command_id,status,object_key,content_sha256,created_at,updated_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(job_id) DO NOTHING", (job_id,request_id,attachment_id,command_id,status,object_key,content_sha256,utc_now_iso(),utc_now_iso()))
+
     def list_pending_callbacks(self, limit: int = 100) -> list[CallbackOutboxItem]:
         with self.connect() as conn, conn.cursor() as cur:
             cur.execute("SELECT * FROM callback_outbox WHERE status IN ('PENDING','FAILED') ORDER BY created_at LIMIT %s", (limit,))
