@@ -70,7 +70,28 @@ class OcrResultConsumerService:
                                   decision_policy_snapshot_id=task.decision_policy_snapshot_id,
                                   field_mapping_snapshot_id=task.field_mapping_snapshot_id,
                                   callback_policy_snapshot_id=task.callback_policy_snapshot_id)
+        existing = self.repository.get_result(event.request_id)
         callback_payload = _callback_payload_from_result(result)
+        if existing is not None and existing.attachment_id != event.attachment_id:
+            aggregate = aggregate_attachment_decisions([
+                AttachmentDecisionInput(existing.attachment_id or "existing", existing.ocr_status, existing.decision_status),
+                AttachmentDecisionInput(event.attachment_id, result.ocr_status, result.decision_status),
+            ])
+            if aggregate.pending:
+                result.status = LeaveAuditStatus.ERROR
+                result.decision_status = None
+                result.callback_status = CallbackStatus.NOT_REQUIRED
+                callback_payload = None
+            else:
+                result.decision_status = aggregate.decision_status
+                result.status = {DecisionStatus.PASS: LeaveAuditStatus.PASS, DecisionStatus.REVIEW_REQUIRED: LeaveAuditStatus.REVIEW, DecisionStatus.REJECT: LeaveAuditStatus.REJECT}[aggregate.decision_status]
+            result.verification_json = dict(result.verification_json)
+            result.verification_json["attachment_results"] = [
+                {"attachment_id": existing.attachment_id, "status": existing.status.value},
+                {"attachment_id": event.attachment_id, "status": status.value},
+            ]
+            if callback_payload is not None:
+                callback_payload = _callback_payload_from_result(result)
         return self.repository.apply_ocr_result(consumer_name=self.consumer_name, event_id=event.event_id, result=result, callback_payload=callback_payload)
 
 
