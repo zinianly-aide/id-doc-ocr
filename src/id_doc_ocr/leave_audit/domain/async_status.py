@@ -33,4 +33,3 @@ class AggregationPolicy(str, Enum):
     ALL_REQUIRED = "ALL_REQUIRED"
     ANY_SUFFICIENT = "ANY_SUFFICIENT"
     REQUIRED_GROUPS = "REQUIRED_GROUPS"
-

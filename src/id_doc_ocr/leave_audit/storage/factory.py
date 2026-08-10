@@ -15,4 +15,3 @@ def create_object_storage() -> ObjectStorage:
 
         return S3ObjectStorage()
     raise ValueError(f"unsupported OBJECT_STORAGE_BACKEND: {backend}")
-

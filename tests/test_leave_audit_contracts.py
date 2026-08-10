@@ -86,4 +86,3 @@ def test_success_event_references_large_result_in_object_storage():
     )
     assert event.result_object_key == "ocr-results/job-1.json"
     assert event.result_sha256 == _sha("b")
-

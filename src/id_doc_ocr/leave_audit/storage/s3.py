@@ -51,4 +51,3 @@ class S3ObjectStorage:
         response = self.client.head_object(Bucket=self.bucket, Key=object_key)
         content = self.get_bytes(object_key)
         return StoredObject(object_key, sha256_hex(content), int(response.get("ContentLength", len(content))))
-

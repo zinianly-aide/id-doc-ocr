@@ -38,4 +38,3 @@ class LocalObjectStorage:
     def head(self, object_key: str) -> StoredObject:
         content = self.get_bytes(object_key)
         return StoredObject(object_key, sha256_hex(content), len(content))
-

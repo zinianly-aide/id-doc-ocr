@@ -71,4 +71,3 @@ def test_runtime_retry_routes_are_bounded():
     assert OcrWorkerRuntime.retry_routing_key(2) == "ocr.execute.retry.5m"
     assert OcrWorkerRuntime.retry_routing_key(3) == "ocr.execute.retry.30m"
     assert OcrWorkerRuntime.retry_routing_key(99) == "ocr.execute.retry.30m"
-

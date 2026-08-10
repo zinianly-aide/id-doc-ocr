@@ -54,4 +54,3 @@ class ConfigSnapshot:
         self.approved_by = approved_by
         self.status = ConfigStatus.PUBLISHED
         self.published_at = utc_now_iso()
-

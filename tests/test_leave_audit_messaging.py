@@ -79,4 +79,3 @@ def test_outbox_failed_publish_is_retryable_and_keeps_event(tmp_path):
     assert len(pending) == 1
     assert pending[0].attempt_count == 1
     assert "rabbit unavailable" in (pending[0].last_error or "")
-

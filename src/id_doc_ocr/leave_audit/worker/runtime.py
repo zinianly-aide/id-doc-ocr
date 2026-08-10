@@ -84,4 +84,3 @@ def build_default_runtime(settings: RabbitMQSettings | None = None) -> OcrWorker
         publisher=RabbitMqPublisher(effective),
         settings=effective,
     )
-

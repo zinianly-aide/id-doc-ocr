@@ -47,4 +47,3 @@ def test_any_sufficient_requires_explicit_policy():
 def test_required_groups_is_explicitly_unimplemented():
     with pytest.raises(NotImplementedError):
         aggregate_attachment_decisions([resolved(DecisionStatus.PASS)], policy=AggregationPolicy.REQUIRED_GROUPS)
-
