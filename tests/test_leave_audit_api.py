@@ -49,6 +49,20 @@ def test_leave_audit_api_sync_list_detail_run_and_review(tmp_path):
     assert stats.json()["stats"]["REVIEW"] >= 1
 
 
+def test_leave_audit_async_run_returns_202_and_outboxes(tmp_path, monkeypatch):
+    monkeypatch.setenv("ID_DOC_OCR_EXECUTION_MODE", "async")
+    monkeypatch.setenv("ID_DOC_OCR_OBJECT_STORAGE_ROOT", str(tmp_path / "objects"))
+    client = build_client(tmp_path)
+    assert client.post("/leave-audit/sync").status_code == 200
+    response = client.post("/leave-audit/tasks/LV-MOCK-SICK-PASS-001/run")
+    assert response.status_code == 202
+    assert response.json()["status"] == "QUEUED"
+    detail = client.get("/leave-audit/tasks/LV-MOCK-SICK-PASS-001").json()["task"]
+    assert detail["ocr_status"] == "QUEUED"
+    repository = client.app.state.leave_audit_repository
+    assert len(repository.list_pending_outbox()) == 1
+
+
 def test_leave_audit_dify_run_requires_config_without_mutating_task(tmp_path, monkeypatch):
     monkeypatch.delenv("ID_DOC_OCR_DIFY_API_KEY", raising=False)
     monkeypatch.delenv("DIFY_API_KEY", raising=False)

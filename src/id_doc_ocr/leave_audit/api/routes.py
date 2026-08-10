@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import os
 from dataclasses import asdict
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 
 from id_doc_ocr.application.inference_service import InferenceService
@@ -20,6 +22,8 @@ from id_doc_ocr.leave_audit.repository.sqlite_repository import SQLiteRepository
 from id_doc_ocr.leave_audit.service.audit_service import AuditService
 from id_doc_ocr.leave_audit.service.review_service import ReviewService
 from id_doc_ocr.leave_audit.service.task_service import TaskService
+from id_doc_ocr.leave_audit.service.async_execution import AsyncExecutionService
+from id_doc_ocr.leave_audit.storage.factory import create_object_storage
 from id_doc_ocr.verification.rules import DEFAULT_FIELD_MAPPING_CONFIG, DEFAULT_RULE_CONFIGS
 
 router = APIRouter(prefix="/leave-audit", tags=["leave-audit"])
@@ -125,15 +129,32 @@ def sync_tasks(request: Request) -> dict[str, Any]:
 
 
 @router.post("/tasks/{request_id}/run")
-def run_task(request: Request, request_id: str, field_parser_backend: str | None = None) -> dict[str, Any]:
-    service = AuditService(_repo(request), _adapter(request), InferenceService(getattr(request.app.state, "settings", None)))
+def run_task(request: Request, request_id: str, field_parser_backend: str | None = None) -> Any:
+    repository = _repo(request)
+    adapter = _adapter(request)
+    execution_mode = str(os.getenv("ID_DOC_OCR_EXECUTION_MODE", "sync")).strip().lower()
+    if execution_mode not in {"sync", "shadow", "async"}:
+        raise HTTPException(status_code=500, detail="ID_DOC_OCR_EXECUTION_MODE must be sync, shadow or async")
+    task = repository.get_task(request_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="leave audit task not found")
+    if execution_mode == "async":
+        jobs = AsyncExecutionService(repository, adapter, create_object_storage()).queue_task(task, trace_id=request.headers.get("x-trace-id") or request_id)
+        return JSONResponse(status_code=202, content=jsonable_encoder({"request_id": request_id, "job_id": jobs[0] if len(jobs) == 1 else None, "job_ids": jobs, "status": "QUEUED", "execution_mode": execution_mode}))
+    service = AuditService(repository, adapter, InferenceService(getattr(request.app.state, "settings", None)))
     try:
         result = service.run_task(request_id, field_parser_backend=field_parser_backend)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    return jsonable_encoder({"result": _result_to_dict(result)})
+    if execution_mode == "shadow":
+        try:
+            jobs = AsyncExecutionService(repository, adapter, create_object_storage()).queue_task(task, trace_id=request.headers.get("x-trace-id") or request_id)
+        except Exception:
+            jobs = []
+        return jsonable_encoder({"result": _result_to_dict(result), "execution_mode": execution_mode, "shadow": {"queued": bool(jobs), "job_ids": jobs}})
+    return jsonable_encoder({"result": _result_to_dict(result), "execution_mode": execution_mode})
 
 
 @router.post("/tasks/{request_id}/review")
