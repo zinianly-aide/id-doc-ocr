@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import time
 from id_doc_ocr.leave_audit.adapters.base import LeaveSystemAdapter
 from id_doc_ocr.leave_audit.domain.enums import LeaveAuditStatus
 from id_doc_ocr.leave_audit.domain.models import LeaveAuditResult
@@ -28,3 +30,9 @@ class CallbackOutboxWorker:
             self.repository.mark_callback_succeeded(item.callback_id, item.request_id)
             processed += 1
         return processed
+
+    def run_forever(self, poll_interval: float | None = None) -> None:  # pragma: no cover - process entrypoint
+        interval = poll_interval if poll_interval is not None else float(os.getenv("CALLBACK_WORKER_POLL_SECONDS", "5"))
+        while True:
+            self.process_pending()
+            time.sleep(interval)

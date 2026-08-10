@@ -51,6 +51,7 @@ object-storage = [
 id-doc-ocr = "id_doc_ocr.cli.main:main"
 id-doc-ocr-api = "id_doc_ocr.cli.main:main_api"
 id-doc-ocr-worker = "id_doc_ocr.cli.worker:main"
+id-doc-ocr-result-worker = "id_doc_ocr.cli.result_worker:main"
 id-doc-ocr-callback-worker = "id_doc_ocr.cli.callback_worker:main"
 
 [tool.setuptools.packages.find]

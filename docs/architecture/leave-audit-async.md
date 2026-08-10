@@ -69,6 +69,7 @@ ID_DOC_OCR_EXECUTION_MODE=sync  id-doc-ocr-api
 ID_DOC_OCR_EXECUTION_MODE=shadow id-doc-ocr-api
 ID_DOC_OCR_EXECUTION_MODE=async  id-doc-ocr-api
 id-doc-ocr-worker
+id-doc-ocr-result-worker
 id-doc-ocr-callback-worker
 ```
 

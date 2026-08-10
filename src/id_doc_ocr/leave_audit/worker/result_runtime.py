@@ -5,7 +5,7 @@ from typing import Any
 from id_doc_ocr.leave_audit.contracts.ocr import OcrResultEventV1
 from id_doc_ocr.leave_audit.messaging.config import RabbitMQSettings
 from id_doc_ocr.leave_audit.messaging.topology import RabbitTopology
-from id_doc_ocr.leave_audit.repository.sqlite_repository import SQLiteRepository
+from id_doc_ocr.leave_audit.repository.factory import create_leave_audit_repository
 from id_doc_ocr.leave_audit.service.result_consumer import OcrResultConsumerService
 from id_doc_ocr.leave_audit.storage.factory import create_object_storage
 
@@ -38,5 +38,5 @@ class OcrResultConsumerRuntime:
 
 
 def build_default_result_runtime(settings: RabbitMQSettings | None = None) -> OcrResultConsumerRuntime:
-    repository = SQLiteRepository()
+    repository = create_leave_audit_repository()
     return OcrResultConsumerRuntime(OcrResultConsumerService(repository, create_object_storage()), settings)
