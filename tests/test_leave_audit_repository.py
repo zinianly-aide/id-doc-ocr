@@ -63,6 +63,7 @@ def test_repository_records_schema_migrations(tmp_path):
         (3, "orthogonal_async_statuses"),
         (4, "versioned_config_snapshots"),
         (5, "task_outbox"),
+        (6, "consumed_messages_and_callback_outbox"),
     ]
 
 

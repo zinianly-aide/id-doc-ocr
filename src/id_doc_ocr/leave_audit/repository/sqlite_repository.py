@@ -10,7 +10,7 @@ from id_doc_ocr.leave_audit.domain.async_status import CallbackStatus, DecisionS
 from id_doc_ocr.leave_audit.domain.config import ConfigKind, ConfigSnapshot, ConfigStatus
 from id_doc_ocr.leave_audit.domain.enums import LeaveAuditStatus
 from id_doc_ocr.leave_audit.domain.models import LeaveAttachment, LeaveAuditResult, LeaveAuditTask, LeaveReviewDecision, utc_now_iso
-from id_doc_ocr.leave_audit.messaging.outbox import OutboxEvent
+from id_doc_ocr.leave_audit.messaging.outbox import CallbackOutboxItem, OutboxEvent
 
 DEFAULT_DB_PATH = ".local/leave_audit.db"
 
@@ -149,6 +149,33 @@ SCHEMA_MIGRATIONS: tuple[tuple[int, str, str], ...] = (
         );
         CREATE INDEX IF NOT EXISTS idx_leave_audit_outbox_pending
             ON leave_audit_outbox_event (published_at, created_at);
+        """,
+    ),
+    (
+        6,
+        "consumed_messages_and_callback_outbox",
+        """
+        CREATE TABLE IF NOT EXISTS leave_audit_consumed_message (
+            consumer_name TEXT NOT NULL,
+            event_id TEXT NOT NULL,
+            received_at TEXT NOT NULL,
+            PRIMARY KEY (consumer_name, event_id)
+        );
+        CREATE TABLE IF NOT EXISTS leave_audit_callback_outbox (
+            callback_id TEXT PRIMARY KEY,
+            request_id TEXT NOT NULL,
+            decision_version INTEGER NOT NULL,
+            payload_json TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'PENDING',
+            attempt_count INTEGER NOT NULL DEFAULT 0,
+            next_attempt_at TEXT,
+            last_error TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            UNIQUE(request_id, decision_version)
+        );
+        CREATE INDEX IF NOT EXISTS idx_leave_audit_callback_pending
+            ON leave_audit_callback_outbox (status, next_attempt_at, created_at);
         """,
     ),
 )
@@ -397,6 +424,76 @@ class SQLiteRepository:
             field_mapping_snapshot_id=row["field_mapping_snapshot_id"],
             callback_policy_snapshot_id=row["callback_policy_snapshot_id"],
         )
+
+    def apply_ocr_result(self, *, consumer_name: str, event_id: str, result: LeaveAuditResult,
+                         callback_payload: dict[str, Any] | None = None) -> bool:
+        """Atomically consume an event, persist its result and enqueue callback."""
+        result.updated_at = utc_now_iso()
+        with self.connect() as conn:
+            inserted = conn.execute(
+                "INSERT OR IGNORE INTO leave_audit_consumed_message (consumer_name, event_id, received_at) VALUES (?, ?, ?)",
+                (consumer_name, event_id, utc_now_iso()),
+            ).rowcount
+            if not inserted:
+                return False
+            conn.execute(
+                """
+                INSERT INTO leave_audit_result
+                (request_id, status, plugin_name, analysis_json, verification_json, error_message, synced, created_at, updated_at,
+                 job_id, attachment_id, ocr_status, decision_status, callback_status, decision_version, ocr_profile_snapshot_id,
+                 decision_policy_snapshot_id, field_mapping_snapshot_id, callback_policy_snapshot_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(request_id) DO UPDATE SET status=excluded.status, plugin_name=excluded.plugin_name,
+                  analysis_json=excluded.analysis_json, verification_json=excluded.verification_json,
+                  error_message=excluded.error_message, synced=excluded.synced, updated_at=excluded.updated_at,
+                  job_id=excluded.job_id, attachment_id=excluded.attachment_id, ocr_status=excluded.ocr_status,
+                  decision_status=excluded.decision_status, callback_status=excluded.callback_status,
+                  decision_version=excluded.decision_version, ocr_profile_snapshot_id=excluded.ocr_profile_snapshot_id,
+                  decision_policy_snapshot_id=excluded.decision_policy_snapshot_id, field_mapping_snapshot_id=excluded.field_mapping_snapshot_id,
+                  callback_policy_snapshot_id=excluded.callback_policy_snapshot_id
+                """,
+                (result.request_id, result.status.value, result.plugin_name, _json(result.analysis_json), _json(result.verification_json),
+                 result.error_message, int(result.synced), result.created_at, result.updated_at, result.job_id, result.attachment_id,
+                 result.ocr_status.value, result.decision_status.value if result.decision_status else None, result.callback_status.value,
+                 result.decision_version, result.ocr_profile_snapshot_id, result.decision_policy_snapshot_id,
+                 result.field_mapping_snapshot_id, result.callback_policy_snapshot_id),
+            )
+            conn.execute(
+                """UPDATE leave_audit_task SET status=?, ocr_status=?, decision_status=?, callback_status=?,
+                   decision_version=?, updated_at=? WHERE request_id=?""",
+                (result.status.value, result.ocr_status.value, result.decision_status.value if result.decision_status else DecisionStatus.PENDING.value,
+                 result.callback_status.value, result.decision_version, utc_now_iso(), result.request_id),
+            )
+            if callback_payload is not None:
+                import uuid
+                callback_id = str(uuid.uuid4())
+                conn.execute(
+                    """INSERT OR IGNORE INTO leave_audit_callback_outbox
+                    (callback_id, request_id, decision_version, payload_json, status, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, 'PENDING', ?, ?)""",
+                    (callback_id, result.request_id, result.decision_version, _json(callback_payload), utc_now_iso(), utc_now_iso()),
+                )
+            return True
+
+    def list_pending_callbacks(self, limit: int = 100) -> list[CallbackOutboxItem]:
+        with self.connect() as conn:
+            rows = conn.execute("SELECT * FROM leave_audit_callback_outbox WHERE status IN ('PENDING','FAILED') ORDER BY created_at LIMIT ?", (limit,)).fetchall()
+        return [CallbackOutboxItem(callback_id=row["callback_id"], request_id=row["request_id"], decision_version=int(row["decision_version"]), payload=_loads(row["payload_json"], {}), status=row["status"], attempt_count=int(row["attempt_count"]), next_attempt_at=row["next_attempt_at"], last_error=row["last_error"], created_at=row["created_at"], updated_at=row["updated_at"]) for row in rows]
+
+    def mark_callback_processing(self, callback_id: str) -> None:
+        with self.connect() as conn:
+            conn.execute("UPDATE leave_audit_callback_outbox SET status='PROCESSING', attempt_count=attempt_count+1, updated_at=? WHERE callback_id=?", (utc_now_iso(), callback_id))
+
+    def mark_callback_succeeded(self, callback_id: str, request_id: str) -> None:
+        with self.connect() as conn:
+            conn.execute("UPDATE leave_audit_callback_outbox SET status='SUCCEEDED', updated_at=? WHERE callback_id=?", (utc_now_iso(), callback_id))
+            conn.execute("UPDATE leave_audit_task SET callback_status=?, updated_at=? WHERE request_id=?", (CallbackStatus.SUCCEEDED.value, utc_now_iso(), request_id))
+
+    def mark_callback_failed(self, callback_id: str, request_id: str, error: str, dead: bool = False) -> None:
+        status = CallbackStatus.DEAD.value if dead else CallbackStatus.FAILED.value
+        with self.connect() as conn:
+            conn.execute("UPDATE leave_audit_callback_outbox SET status=?, last_error=?, updated_at=? WHERE callback_id=?", ("DEAD" if dead else "FAILED", error[:500], utc_now_iso(), callback_id))
+            conn.execute("UPDATE leave_audit_task SET callback_status=?, updated_at=? WHERE request_id=?", (status, utc_now_iso(), request_id))
 
     def save_review(self, decision: LeaveReviewDecision) -> None:
         with self.connect() as conn:

@@ -27,6 +27,20 @@ class OutboxEvent:
     last_error: str | None = None
 
 
+@dataclass(slots=True)
+class CallbackOutboxItem:
+    callback_id: str
+    request_id: str
+    decision_version: int
+    payload: dict[str, Any]
+    status: str = "PENDING"
+    attempt_count: int = 0
+    next_attempt_at: str | None = None
+    last_error: str | None = None
+    created_at: str = field(default_factory=_now)
+    updated_at: str = field(default_factory=_now)
+
+
 class OutboxRepository(Protocol):
     def enqueue_outbox_event(self, event: OutboxEvent) -> None: ...
     def list_pending_outbox(self, limit: int = 100) -> list[OutboxEvent]: ...
@@ -99,4 +113,3 @@ class OutboxPublisher:
             self.repository.mark_outbox_published(event.event_id)
             published += 1
         return published
-
