@@ -43,10 +43,14 @@ postgres = [
 rabbitmq = [
   "pika>=1.3,<2.0",
 ]
+object-storage = [
+  "boto3>=1.34,<2.0",
+]
 
 [project.scripts]
 id-doc-ocr = "id_doc_ocr.cli.main:main"
 id-doc-ocr-api = "id_doc_ocr.cli.main:main_api"
+id-doc-ocr-worker = "id_doc_ocr.cli.worker:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

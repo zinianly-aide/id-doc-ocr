@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-import os
+import ssl
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -43,7 +43,7 @@ class RabbitMqPublisher:
         parameters = pika.URLParameters(self.settings.url)
         parameters.virtual_host = self.settings.vhost
         if self.settings.tls:
-            parameters.ssl_options = pika.SSLOptions()
+            parameters.ssl_options = pika.SSLOptions(ssl.create_default_context())
         self._connection = pika.BlockingConnection(parameters)
         self._channel = self._connection.channel()
         RabbitTopology(self.settings).declare(self._channel)
@@ -73,4 +73,3 @@ class RabbitMqPublisher:
     def close(self) -> None:
         if self._connection is not None and not self._connection.is_closed:
             self._connection.close()
-

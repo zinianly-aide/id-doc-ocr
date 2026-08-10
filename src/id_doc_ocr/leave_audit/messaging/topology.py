@@ -45,9 +45,11 @@ class RabbitTopology:
             arguments["x-queue-type"] = "quorum"
             if name == self.settings.command_queue:
                 arguments["x-delivery-limit"] = self.settings.max_attempts
+        if name == self.settings.command_queue:
+            arguments["x-dead-letter-exchange"] = self.settings.dead_letter_exchange
+            arguments["x-dead-letter-routing-key"] = "ocr.execute.dead"
         if ttl is not None:
             arguments["x-message-ttl"] = ttl
             arguments["x-dead-letter-exchange"] = self.settings.commands_exchange
             arguments["x-dead-letter-routing-key"] = self.settings.command_routing_key
         channel.queue_declare(queue=name, durable=True, arguments=arguments)
-
